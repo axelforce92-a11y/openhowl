@@ -16,6 +16,7 @@ import { resolveUserPath } from './paths.js';
 import { newSession, saveSession, loadSession, deleteSession, listSessions, titleFrom } from './sessions.js';
 import { ensureDefaults, listSkills, matchSkills, SOUL_FILE, SKILLS_DIR } from './skills.js';
 import { loadHooks, runHook, HOOKS_DIR } from './hooks.js';
+import { Scheduler, describe as describeSchedule, parseWhen } from './schedule.js';
 
 export const COMMANDS = [
   ['/goal <obiettivo> [--max N]', 'Loop engineering: pianifica → esegue → verifica → ripete fino al risultato'],
@@ -26,7 +27,10 @@ export const COMMANDS = [
   ['/brain [nome]', 'Elenca o attiva un modello salvato'],
   ['/skills', 'Elenca le skill che Howl sa usare'],
   ['/soul', 'Dove modificare identità e carattere di Howl'],
-  ['/hooks [reload]', 'Elenca o ricarica gli hook (automazioni)'],
+  ['/hooks [reload]', 'Elenca o ricarica gli hook'],
+  ['/task', 'Elenca le automazioni a orario'],
+  ['/task add <quando> :: <compito>', 'Nuova automazione, es. `/task add ogni giorno alle 8 :: controlla le novità AI e scrivimi il riassunto`'],
+  ['/task run|on|off|del|log <id>', 'Esegui adesso, attiva, metti in pausa, elimina o mostra lo storico'],
   ['/provider <nome>', `Cambia provider (${Object.keys(PRESETS).join(', ')})`],
   ['/model <id>', 'Cambia modello'],
   ['/cwd <percorso>', 'Cambia cartella di lavoro'],
@@ -77,7 +81,8 @@ export class Harness {
   sendSessions() {
     const list = listSessions();
     if (!list.some((s) => s.id === this.session.id)) list.unshift({ id: this.session.id, title: this.session.title, updatedAt: Date.now(), messages: this.agent.messages.length });
-    this.send('sessions', { sessions: list, current: this.session.id });
+    // l'elenco delle conversazioni è già nello snapshot: non serve tenerlo anche nel log della chat
+    this.broadcast('sessions', { sessions: list, current: this.session.id });
   }
 
   newChat() {
@@ -153,6 +158,10 @@ export class Harness {
       }
     }
     this.agent.tools = this.allTools();
+    this.scheduler = new Scheduler(this);
+    this.scheduler.start();
+    const next = this.scheduler.publicTasks().filter((t) => t.nextRun).sort((a, b) => a.nextRun - b.nextRun)[0];
+    if (next) this.send('info', { text: `🕗 Automazioni attive: ${this.scheduler.tasks.filter((t) => t.enabled).length}. Prossima: **${next.name}** ${new Date(next.nextRun).toLocaleString('it-IT')}` });
   }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -165,6 +174,12 @@ export class Harness {
     }
     for (const fn of this.listeners) { try { fn(ev); } catch {} }
     if (!type.endsWith('_delta')) this.persist();
+  }
+
+  // Evento verso le interfacce che NON entra nella conversazione aperta (avanzamento delle automazioni).
+  broadcast(type, data = {}) {
+    const ev = { type, ts: Date.now(), ...data };
+    for (const fn of this.listeners) { try { fn(ev); } catch {} }
   }
 
   allTools() { return [...builtinTools(), ...this.mcpTools]; }
@@ -249,6 +264,7 @@ export class Harness {
       config: this.publicConfig(), log: this.log, goal: this.goal.state, todos: this.todos,
       usage: this.usage, context: this.context, busy: this.busy, commands: COMMANDS,
       sessions: listSessions(), session: { id: this.session.id, title: this.session.title },
+      tasks: this.scheduler?.publicTasks() || [], taskRunning: this.scheduler?.running?.taskId || null,
     };
   }
 
@@ -487,6 +503,51 @@ export class Harness {
         return info(this.hooks?.length
           ? `**Hook attivi** (cartella \`${HOOKS_DIR}\`)\n${this.hooks.map((h) => `- \`${h.name}\` → ${Object.keys(h).filter((k) => k !== 'name').join(', ') || 'nessun punto di aggancio'}`).join('\n')}\n\nUsa \`/hooks reload\` dopo averli modificati.`
           : `Nessun hook. Aggiungi un file .mjs in:\n\`${HOOKS_DIR}\``);
+
+      case 'task': case 'tasks': case 'automazioni': {
+        const sc = this.scheduler;
+        if (!sc) return info('Pianificatore non ancora pronto.');
+        const when = (ts) => (ts ? new Date(ts).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+        const [sub, ...rest] = arg.split(/\s+/);
+        const restArg = rest.join(' ').trim();
+
+        if (!arg || sub === 'list') {
+          const list = sc.publicTasks();
+          if (!list.length) return info('Nessuna automazione.\n\nEsempio: `/task add ogni giorno alle 8 :: cerca le novità sull\'AI e scrivimi un riassunto con le fonti`');
+          return info(`**Automazioni** (${list.length})\n` + list.map((t) =>
+            `- ${t.enabled ? '🟢' : '⚪'} **${t.name}** \`${t.id}\` — ${t.when}`
+            + `${t.nextRun ? ` · prossima ${when(t.nextRun)}` : ''}`
+            + `${t.lastRun ? ` · ultima ${t.lastStatus === 'ok' ? '✅' : '⚠️'} ${when(t.lastRun)}` : ''}`).join('\n'));
+        }
+
+        if (sub === 'add' || sub === 'new') {
+          const [whenPart, ...taskParts] = restArg.split('::');
+          const prompt = taskParts.join('::').trim();
+          if (!prompt) return info('Uso: `/task add <quando> :: <cosa fare>`\nEsempio: `/task add ogni lunedì alle 9 :: prepara il riepilogo della settimana`');
+          if (!parseWhen(whenPart)) return info(`Non ho capito "${whenPart.trim()}". Esempi: \`ogni giorno alle 8:00\`, \`ogni lunedì e giovedì alle 9:30\`, \`ogni 30 minuti\`, \`domani alle 18\`.`);
+          const t = sc.create({ when: whenPart, prompt, name: prompt.slice(0, 50) });
+          return info(`🕗 Automazione **${t.name}** creata — ${describeSchedule(t.schedule)}.\nPrima esecuzione: ${when(t.nextRun)}. Id \`${t.id}\`.`);
+        }
+
+        const t = sc.find(restArg);
+        if (!t) return info(`Automazione "${restArg}" non trovata. Vedi \`/task\`.`);
+        if (sub === 'del' || sub === 'rm' || sub === 'delete') { sc.remove(t.id); return info(`Automazione **${t.name}** eliminata.`); }
+        if (sub === 'on' || sub === 'enable') { sc.update(t.id, { enabled: true }); return info(`**${t.name}** riattivata — prossima ${when(t.nextRun)}.`); }
+        if (sub === 'off' || sub === 'disable' || sub === 'pause') { sc.update(t.id, { enabled: false }); return info(`**${t.name}** in pausa.`); }
+        if (sub === 'log' || sub === 'storico') {
+          const runs = (t.runs || []).slice(-8).reverse();
+          return info(`**${t.name}** — ${describeSchedule(t.schedule)}\n\n> ${t.prompt}\n\n` + (runs.length
+            ? `**Ultime esecuzioni**\n${runs.map((r) => `- ${r.ok ? '✅' : '⚠️'} ${when(r.at)} (${Math.round(r.ms / 1000)}s) — ${(r.report || '').replace(/\s+/g, ' ').slice(0, 160)}`).join('\n')}`
+            : 'Mai eseguita.'));
+        }
+        if (sub === 'run' || sub === 'esegui') {
+          if (this.busy) return info('Sto già lavorando: /stop prima di lanciare un\'automazione.');
+          info(`🕗 Eseguo **${t.name}** adesso…`);
+          sc.execute(t, 'manual').catch((e) => this.send('error', { text: e.message }));
+          return;
+        }
+        return info('Uso: `/task`, `/task add <quando> :: <cosa>`, `/task run|on|off|del|log <id>`');
+      }
 
       case 'memory': {
         const m = fs.existsSync(MEMORY_FILE) ? fs.readFileSync(MEMORY_FILE, 'utf8') : '';

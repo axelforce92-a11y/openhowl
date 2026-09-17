@@ -34,6 +34,11 @@
           <ol class="criteria" id="goalCriteria"></ol>
         </section>
 
+        <section class="card task-card" id="taskPanel" hidden>
+          <div class="card-h"><span>Automazioni</span><span class="pill" id="taskPill"></span></div>
+          <div class="task-next" id="taskNext"></div>
+        </section>
+
         <section class="card" id="todoPanel" hidden>
           <div class="card-h"><span>Piano</span><span class="muted" id="todoCount"></span></div>
           <ul class="todos" id="todos"></ul>
@@ -88,6 +93,7 @@
             <div class="dd-menu right" id="moreMenu" hidden>
               <button data-act="cwd"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span><b>Cartella di lavoro</b><small id="wsPath"></small></span></button>
               <button data-act="compact"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16M9 4l3 3 3-3M9 20l3-3 3 3"/></svg><span><b>Compatta il contesto</b><small>Riassume la conversazione per liberare spazio</small></span></button>
+              <button data-act="tasks"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/></svg><span><b>Automazioni</b><small>Compiti che Howl svolge a orario</small></span></button>
               <button data-act="memory"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/></svg><span><b>Memoria</b><small>Cosa Howl ricorda di te</small></span></button>
               <button data-act="tools"><svg viewBox="0 0 24 24"><path d="m14 7 3-3 3 3-3 3M4 20l7-7M10 6 6 10l-3-3 4-4z"/></svg><span><b>Strumenti</b><small id="toolCount"></small></span></button>
               <button data-act="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.2M12 17h.01"/></svg><span><b>Comandi disponibili</b><small>Elenco dei comandi con /</small></span></button>
@@ -165,6 +171,44 @@
         <button class="btn" id="uaCancel">Annulla</button>
         <button class="btn primary" id="uaDone">Fatto, continua</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ───────── Automazioni ───────── -->
+  <div class="modal" id="tasks" hidden>
+    <div class="modal-card wide">
+      <div class="modal-h"><h3>Automazioni</h3><button class="x" id="tkClose" title="Chiudi">✕</button></div>
+      <p class="muted">Compiti che Howl svolge da solo a orario, anche quando non sei al computer. Ogni esecuzione diventa una conversazione che ritrovi nella barra laterale.</p>
+
+      <div class="sec-h">I miei compiti <button class="link" id="tkNew">＋ Nuova automazione</button></div>
+      <div id="tkList" class="br-list"></div>
+
+      <form class="br-form" id="tkForm" hidden>
+        <div class="sec-h" id="tkFormTitle">Nuova automazione</div>
+        <div class="presets" id="tkPresets"></div>
+        <div class="grid2">
+          <label class="span2">Nome<input name="name" placeholder="es. Rassegna stampa AI" required></label>
+          <label class="span2">Cosa deve fare<textarea name="prompt" rows="3" placeholder="Cerca le novità sull'intelligenza artificiale delle ultime 24 ore e scrivi un riassunto con le fonti in Documenti/rassegna.md" required></textarea></label>
+          <label>Quando
+            <select name="kind">
+              <option value="daily">Ogni giorno</option>
+              <option value="weekly">Certi giorni della settimana</option>
+              <option value="interval">A intervalli</option>
+              <option value="once">Una volta sola</option>
+            </select>
+          </label>
+          <label data-f="time">Orario<input name="time" type="time" value="08:00"></label>
+          <label data-f="every">Ogni quanti minuti<input name="everyMin" type="number" min="1" step="1" value="60"></label>
+          <label data-f="at">Data e ora<input name="at" type="datetime-local"></label>
+          <label class="span2" data-f="days">Giorni<div class="days" id="tkDays"></div></label>
+          <label>Permessi<select name="mode"><option value="auto">Può agire da solo</option><option value="readonly">Solo leggere e cercare</option></select></label>
+          <label class="check"><input type="checkbox" name="notify" checked> Avvisami quando ha finito</label>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn" id="tkCancel">Annulla</button>
+          <button type="submit" class="btn primary">Salva</button>
+        </div>
+      </form>
     </div>
   </div>
 

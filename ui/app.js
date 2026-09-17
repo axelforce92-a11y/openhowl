@@ -29,11 +29,12 @@
     bolt: '<path d="M13 2 4.5 13.5H11l-1 8.5 9-12h-6.5z"/>',
     trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>',
+    clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/>',
   };
   const ICON_OF = {
     read_file: 'file', write_file: 'pen', edit_file: 'pen', create_folder: 'folder', list_dir: 'folder', glob: 'search', grep: 'search',
     run_command: 'term', process_output: 'term', web_search: 'globe', web_fetch: 'globe', browser: 'compass',
-    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale',
+    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale', schedule_task: 'clock',
   };
   const svg = (k) => `<svg viewBox="0 0 24 24">${P[k]}</svg>`;
   const icon = (name) => svg(ICON_OF[name] || (name.startsWith('mcp__') ? 'plug' : 'cog'));
@@ -42,7 +43,7 @@
     read_file: 'Legge un file', write_file: 'Scrive un file', edit_file: 'Modifica il codice', create_folder: 'Crea una cartella',
     run_command: 'Esegue un comando', web_search: 'Cerca sul web', web_fetch: 'Legge una pagina', browser: 'Naviga nel browser',
     computer: 'Usa il computer', delegate: 'Chiama il branco', grep: 'Cerca nel codice', glob: 'Cerca file',
-    todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro',
+    todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro', schedule_task: 'Programma un\'automazione',
   };
   const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', error: 'Errore' };
   const POSE = { idle: 'idle', streaming: 'idle', success: 'success', thinking: 'thinking', tool: 'working', approval: 'approval', waiting: 'approval', error: 'approval' };
@@ -53,6 +54,7 @@
   ];
 
   let commands = [], config = {}, replaying = false, resetTimer = null, sessions = [], currentId = null;
+  let tasks = [], taskRunning = null, taskTool = null;
   const segs = new Map(), tools = new Map();
   let approvalQueue = [];
 
@@ -359,6 +361,7 @@
         }
         renderTodos(ev.todos);
         renderGoal(ev.goal);
+        tasks = ev.tasks || []; taskRunning = ev.taskRunning || null; renderTasks();
         setUsage(ev.usage);
         renderContext(ev.context);
         setBusy(ev.busy);
@@ -420,6 +423,19 @@
           `<div class="vh">Verifica · giro ${ev.iteration} <span class="bar"><i style="width:${ev.score}%"></i></span> ${ev.score}/100</div>` +
           `<div>${inline(ev.feedback || '')}</div>` +
           (ev.missing?.length ? `<ul>${ev.missing.map((m) => `<li>${inline(m)}</li>`).join('')}</ul>` : '')));
+        break;
+      case 'tasks': tasks = ev.tasks; taskRunning = ev.running || null; renderTasks(); break;
+      case 'task_started':
+        taskRunning = ev.taskId; taskTool = null; renderTasks();
+        add(div('msg line', md(`🕗 Automazione **${ev.name}** avviata${ev.trigger === 'manual' ? ' a mano' : ''}…`)));
+        break;
+      case 'task_progress': taskTool = ev.tool ? (TOOL_SAY[ev.tool] || ev.tool) : null; renderTasks(); break;
+      case 'task_done':
+        taskRunning = null; taskTool = null; renderTasks();
+        add(div(`msg task-done ${ev.ok ? '' : 'bad'}`,
+          `<div class="th">${svg('clock')} ${esc(ev.name)} — ${ev.ok ? 'fatto' : 'non riuscita'}${ev.ms ? ` · ${Math.round(ev.ms / 1000)}s` : ''}` +
+          (ev.sessionId ? `<button class="link" data-open-session="${esc(ev.sessionId)}">apri la conversazione</button>` : '') + '</div>' +
+          `<div>${md(ev.report || '')}</div>`));
         break;
       case 'usage': setUsage(ev.usage); break;
       case 'context': renderContext(ev.context); break;
@@ -490,12 +506,18 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); post('/api/chat/new'); return; }
     if (e.key !== 'Escape') return;
     if (!$('brains').hidden) { $('brains').hidden = true; return; }
+    if (!$('tasks').hidden) { $('tasks').hidden = true; return; }
     if (closeMenus()) return;
     if (!$('suggest').hidden) { hideSuggest(); return; }
     if (document.body.classList.contains('busy')) { e.preventDefault(); stop(); }
   });
 
-  feed.addEventListener('click', (e) => { const b = e.target.closest('[data-ex]'); if (b) { input.value = b.dataset.ex; autosize(); input.focus(); } });
+  feed.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ex]');
+    if (b) { input.value = b.dataset.ex; autosize(); input.focus(); return; }
+    const s = e.target.closest('[data-open-session]');
+    if (s) post('/api/chat/open', { id: s.dataset.openSession });
+  });
   $('newChat').onclick = () => post('/api/chat/new');
 
   // titolo della conversazione: doppio clic per rinominare
@@ -533,6 +555,7 @@
     if (!b) return;
     closeMenus();
     const act = b.dataset.act;
+    if (act === 'tasks') openTasks();
     if (act === 'cwd') { input.value = `/cwd ${config.workspace}`; input.focus(); }
     if (act === 'compact') send('/compact');
     if (act === 'memory') send('/memory');
@@ -660,6 +683,154 @@
   }
   form.onsubmit = (e) => { e.preventDefault(); save(false); };
   $('brSaveUse').onclick = () => save(true);
+
+  /* ───────── automazioni ───────── */
+  const taskApi = (action, body) => post(`/api/tasks/${action}`, body).then((r) => r.json());
+  const DAYS_SHORT = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+
+  // "tra 12 minuti", "oggi alle 08:00", "gio 25 set, 09:30"
+  function untilText(ts) {
+    if (!ts) return 'in pausa';
+    const min = Math.round((ts - Date.now()) / 60000);
+    if (min <= 0) return 'a momenti';
+    if (min < 60) return `tra ${min} min`;
+    const d = new Date(ts), now = new Date();
+    const hm = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    if (d.toDateString() === now.toDateString()) return `oggi alle ${hm}`;
+    const dom = new Date(now); dom.setDate(now.getDate() + 1);
+    if (d.toDateString() === dom.toDateString()) return `domani alle ${hm}`;
+    return `${d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}, ${hm}`;
+  }
+
+  function renderTasks() {
+    const panel = $('taskPanel');
+    panel.hidden = !tasks.length;
+    if (!tasks.length) { if (!$('tasks').hidden) renderTaskList(); return; }
+    const run = tasks.find((t) => t.id === taskRunning);
+    const next = tasks.filter((t) => t.enabled && t.nextRun).sort((a, b) => a.nextRun - b.nextRun)[0];
+    const pill = $('taskPill');
+    pill.textContent = run ? 'in corso' : `${tasks.filter((t) => t.enabled).length} attive`;
+    pill.dataset.s = run ? 'run' : '';
+    $('taskNext').innerHTML = run
+      ? `<b>${esc(run.name)}</b><small>${esc(taskTool || 'ci sta lavorando…')}</small>`
+      : next ? `<b>${esc(next.name)}</b><small>${esc(untilText(next.nextRun))}</small>`
+        : '<small>Nessuna in programma</small>';
+    if (!$('tasks').hidden) renderTaskList();
+  }
+  $('taskPanel').onclick = () => openTasks();
+
+  function renderTaskList() {
+    $('tkList').innerHTML = tasks.length ? tasks.map((t) => {
+      const run = t.id === taskRunning;
+      const last = t.lastRun ? `${t.lastStatus === 'ok' ? '✅' : '⚠️'} ultima ${untilLast(t.lastRun)}${t.lastReport ? ` — ${esc(t.lastReport.replace(/\s+/g, ' ').slice(0, 90))}` : ''}` : 'mai eseguita';
+      return `<div class="tk-item ${t.enabled ? '' : 'off'} ${run ? 'run' : ''}">
+        <div><div class="n">${esc(t.name)}</div>
+        <div class="w">${esc(t.when)}${t.enabled && t.nextRun ? ` · ${esc(untilText(t.nextRun))}` : ' · in pausa'}${t.mode === 'readonly' ? ' · sola lettura' : ''}</div>
+        <div class="last">${run ? '⏳ in esecuzione…' : last}</div></div>
+        <div class="acts">
+          <button data-run="${esc(t.id)}" ${run ? 'disabled' : ''}>Esegui</button>
+          <button data-tog="${esc(t.id)}">${t.enabled ? 'Pausa' : 'Attiva'}</button>
+          <button data-edit="${esc(t.id)}">Modifica</button>
+          <button data-del="${esc(t.id)}" title="Elimina">✕</button>
+        </div></div>`;
+    }).join('') : '<span class="muted">Nessuna automazione. Creane una, oppure chiedila a Howl in chat: «ogni mattina alle 8 controlla le novità e scrivimi il riassunto».</span>';
+  }
+  const untilLast = (ts) => {
+    const min = Math.round((Date.now() - ts) / 60000);
+    if (min < 60) return `${min} min fa`;
+    const d = new Date(ts);
+    return d.toDateString() === new Date().toDateString()
+      ? `oggi alle ${d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`
+      : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const tkForm = $('tkForm');
+  function openTasks() { $('tasks').hidden = false; tkForm.hidden = true; renderTaskList(); taskApi('list', {}).then((r) => { if (r.tasks) { tasks = r.tasks; taskRunning = r.running; renderTasks(); } }); }
+  $('tkClose').onclick = () => { $('tasks').hidden = true; };
+  $('tkCancel').onclick = () => { tkForm.hidden = true; };
+  $('tasks').addEventListener('mousedown', (e) => { if (e.target.id === 'tasks') $('tasks').hidden = true; });
+
+  $('tkDays').innerHTML = [1, 2, 3, 4, 5, 6, 0].map((d) => `<button type="button" data-day="${d}">${DAYS_SHORT[d]}</button>`).join('');
+  $('tkDays').onclick = (e) => { const b = e.target.closest('[data-day]'); if (b) b.classList.toggle('on'); };
+
+  const TK_PRESETS = [
+    ['Rassegna del mattino', { name: 'Rassegna del mattino', kind: 'daily', time: '08:00', prompt: 'Cerca sul web le notizie più importanti delle ultime 24 ore sull\'intelligenza artificiale, verifica le fonti e scrivi un riassunto di 5 punti con i link.' }],
+    ['Riepilogo del lunedì', { name: 'Riepilogo della settimana', kind: 'weekly', days: [1], time: '09:00', prompt: 'Guarda i file modificati nella cartella di lavoro nell\'ultima settimana e scrivi un riepilogo di cosa è cambiato.' }],
+    ['Controllo ogni ora', { name: 'Controllo', kind: 'interval', everyMin: 60, prompt: 'Controlla che il sito in produzione risponda e segnala se qualcosa non va.' }],
+  ];
+  $('tkPresets').innerHTML = TK_PRESETS.map(([label], i) => `<button type="button" data-tp="${i}">${label}</button>`).join('');
+  $('tkPresets').onclick = (e) => { const b = e.target.closest('[data-tp]'); if (b) fillTaskForm(TK_PRESETS[+b.dataset.tp][1]); };
+
+  function showFields() {
+    const kind = tkForm.elements.kind.value;
+    const show = { daily: ['time'], weekly: ['time', 'days'], interval: ['every'], once: ['at'] }[kind] || [];
+    for (const el of tkForm.querySelectorAll('[data-f]')) el.hidden = !show.includes(el.dataset.f);
+  }
+  tkForm.elements.kind.onchange = showFields;
+
+  let editingTask = null;
+  function fillTaskForm(v = {}) {
+    const f = tkForm.elements;
+    if (v.name !== undefined) f.name.value = v.name;
+    if (v.prompt !== undefined) f.prompt.value = v.prompt;
+    f.kind.value = v.kind || 'daily';
+    f.time.value = v.time || '08:00';
+    f.everyMin.value = v.everyMin || 60;
+    if (v.at) { const d = new Date(v.at); f.at.value = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+    f.mode.value = v.mode || 'auto';
+    f.notify.checked = v.notify !== false;
+    const days = v.days || [];
+    for (const b of $('tkDays').children) b.classList.toggle('on', days.includes(+b.dataset.day));
+    showFields();
+  }
+  function openTaskForm(task) {
+    editingTask = task?.id || null;
+    $('tkFormTitle').textContent = task ? 'Modifica automazione' : 'Nuova automazione';
+    fillTaskForm(task ? { ...task, ...task.schedule } : { name: '', prompt: '', kind: 'daily', time: '08:00', days: [], mode: 'auto', notify: true });
+    tkForm.hidden = false;
+    tkForm.elements.name.focus();
+  }
+  $('tkNew').onclick = () => openTaskForm(null);
+
+  $('tkList').onclick = async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const d = b.dataset;
+    if (d.edit) return openTaskForm(tasks.find((t) => t.id === d.edit));
+    if (d.run) { b.textContent = '…'; const r = await taskApi('run', { id: d.run }); if (r.error) alert(r.error); return; }
+    if (d.tog) {
+      const t = tasks.find((x) => x.id === d.tog);
+      const r = await taskApi('update', { id: d.tog, enabled: !t.enabled });
+      if (r.tasks) { tasks = r.tasks; renderTasks(); }
+      return;
+    }
+    if (d.del && confirm('Eliminare questa automazione?')) {
+      const r = await taskApi('delete', { id: d.del });
+      if (r.tasks) { tasks = r.tasks; renderTasks(); }
+    }
+  };
+
+  tkForm.onsubmit = async (e) => {
+    e.preventDefault();
+    if (!tkForm.reportValidity()) return;
+    const f = tkForm.elements;
+    const kind = f.kind.value;
+    const schedule = { kind };
+    if (kind === 'daily' || kind === 'weekly') schedule.time = f.time.value || '08:00';
+    if (kind === 'weekly') schedule.days = [...$('tkDays').children].filter((b) => b.classList.contains('on')).map((b) => +b.dataset.day);
+    if (kind === 'interval') schedule.everyMin = Math.max(1, +f.everyMin.value || 60);
+    if (kind === 'once') {
+      const at = Date.parse(f.at.value);
+      if (!Number.isFinite(at)) return alert('Scegli data e ora.');
+      schedule.at = at;
+    }
+    if (kind === 'weekly' && !schedule.days.length) return alert('Scegli almeno un giorno della settimana.');
+    const body = { id: editingTask, name: f.name.value, prompt: f.prompt.value, mode: f.mode.value, notify: f.notify.checked, schedule };
+    const r = await taskApi(editingTask ? 'update' : 'create', body);
+    if (r.error) return alert(r.error);
+    tasks = r.tasks; renderTasks();
+    tkForm.hidden = true;
+  };
 
   connect();
 })();

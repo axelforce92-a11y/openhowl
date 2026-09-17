@@ -170,6 +170,17 @@ app.whenReady().then(async () => {
       n.on('click', openMain);
       n.show();
     }
+    // automazioni: l'utente di solito non è davanti allo schermo, quindi il riassunto arriva come notifica
+    if (ev.type === 'task_started') { tray?.setToolTip(`OpenHowl — automazione "${ev.name}"…`); }
+    if (ev.type === 'task_done') {
+      refreshTray();
+      if (ev.notify && Notification.isSupported()) {
+        const body = String(ev.report || '').replace(/[#*`>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+        const n = new Notification({ title: `🐺 ${ev.name} — ${ev.ok ? 'fatto' : 'non riuscita'}`, body: body || 'Nessun riassunto.', icon: ICON });
+        n.on('click', openMain);
+        n.show();
+      }
+    }
     if (ev.type === 'user_action_request' && Notification.isSupported()) {
       const n = new Notification({ title: `OpenHowl — ${ev.title}`, body: ev.message, icon: ICON });
       n.on('click', openMain);

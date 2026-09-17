@@ -1,8 +1,9 @@
 node_modules/
 dist/
 .env
+.openhowl/
 .orbit/
 workspace/
 assets/raw/_*.jpg
-orbit/
+.tmp-home/
 *.log

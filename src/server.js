@@ -70,6 +70,27 @@ export async function startServer({ port } = {}) {
     }
   }
 
+  // Automazioni a orario
+  function taskApi(action, body) {
+    const sc = h.scheduler;
+    if (!sc) throw new Error('Pianificatore non pronto.');
+    switch (action) {
+      case 'list': return { tasks: sc.publicTasks(), running: sc.running?.taskId || null };
+      case 'create': return { task: sc.create(body), tasks: sc.publicTasks() };
+      case 'update': return { task: sc.update(body.id, body), tasks: sc.publicTasks() };
+      case 'delete': sc.remove(body.id); return { tasks: sc.publicTasks() };
+      case 'run': {
+        const t = sc.find(body.id);
+        if (!t) throw new Error('Automazione non trovata.');
+        if (h.busy) throw new Error('Howl sta già lavorando: interrompi prima di eseguirla a mano.');
+        sc.execute(t, 'manual').catch((e) => h.broadcast('task_done', { taskId: t.id, name: t.name, ok: false, report: e.message, notify: false }));
+        return { ok: true };
+      }
+      case 'stop': sc.running?.abort.abort(); return { ok: true };
+      default: throw new Error('azione sconosciuta');
+    }
+  }
+
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(req.headers.host || '')) { res.writeHead(403); return res.end('host non consentito'); }
@@ -99,6 +120,9 @@ export async function startServer({ port } = {}) {
       if (url.pathname === '/api/chat/open') { h.openSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/delete') { h.removeSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/rename') { h.renameSession(body.id, body.title); return json(res, { ok: true }); }
+      if (url.pathname.startsWith('/api/tasks/')) {
+        try { return json(res, taskApi(url.pathname.slice(11), body)); } catch (e) { return json(res, { error: e.message }); }
+      }
       if (url.pathname.startsWith('/api/brains/')) {
         try { return json(res, await brainApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
       }
@@ -132,6 +156,7 @@ export async function startServer({ port } = {}) {
     harness: h,
     close() {
       h.stop();
+      h.scheduler?.stop();
       for (const c of h.mcpClients) c.close();
       shutdownShells();
       shutdownComputer();
