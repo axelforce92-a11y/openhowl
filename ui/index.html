@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="howl-token" content="%%HOWL_TOKEN%%">
+  <title>OpenHowl</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preload" as="image" href="wolf/idle.png">
+  <link rel="preload" as="image" href="wolf/thinking.png">
+  <link rel="preload" as="image" href="wolf/working.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ───────── Barra laterale ───────── -->
+    <aside class="side">
+      <div class="side-top drag">
+        <img class="logo nodrag" src="wolf/head.png" alt="">
+        <b class="nodrag">OpenHowl</b>
+        <button class="icon-btn nodrag" id="newChat" title="Nuova conversazione (Ctrl+N)">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+
+      <div class="chats" id="chats"></div>
+
+      <div class="side-bottom">
+        <section class="card goal" id="goalPanel" hidden>
+          <div class="card-h"><span>Obiettivo</span><span class="pill" id="goalStatus"></span></div>
+          <div class="goal-obj" id="goalObjective"></div>
+          <div class="goal-row"><span>Giro <b id="goalIter">0/0</b></span><span><b id="goalScore">0</b>/100</span></div>
+          <div class="bar"><i id="goalBar"></i></div>
+          <ol class="criteria" id="goalCriteria"></ol>
+        </section>
+
+        <section class="card" id="todoPanel" hidden>
+          <div class="card-h"><span>Piano</span><span class="muted" id="todoCount"></span></div>
+          <ul class="todos" id="todos"></ul>
+        </section>
+
+        <section class="howl-card">
+          <div class="wolf-mini" id="wolfMini" data-state="idle">
+            <img src="wolf/idle.png" data-pose="idle" class="on" alt="">
+            <img src="wolf/thinking.png" data-pose="thinking" alt="">
+            <img src="wolf/working.png" data-pose="working" alt="">
+            <img src="wolf/approval.png" data-pose="approval" alt="">
+            <img src="wolf/success.png" data-pose="success" alt="">
+          </div>
+          <div class="howl-info">
+            <div class="howl-name">Howl <span class="state-dot"></span></div>
+            <div class="howl-state" id="stateLabel">Inattivo</div>
+          </div>
+          <button class="icon-btn pin" id="mascotToggle" title="Mostra Howl sul desktop (Ctrl+Shift+M)" hidden>
+            <svg viewBox="0 0 24 24"><circle cx="7" cy="9.5" r="1.7"/><circle cx="11" cy="6.6" r="1.7"/><circle cx="15.5" cy="7.4" r="1.7"/><circle cx="18.4" cy="11" r="1.7"/><path d="M8 16.2c0-2.4 2-4.3 4.5-4.3s4.5 1.9 4.5 4.3a2.8 2.8 0 0 1-2.8 2.8h-3.4A2.8 2.8 0 0 1 8 16.2z"/></svg>
+          </button>
+        </section>
+
+        <div class="meter" id="ctxMeter" title="Spazio occupato nella finestra di contesto del modello">
+          <div class="meter-top"><span>Contesto</span><b id="ctxText">0%</b></div>
+          <div class="bar"><i id="ctxBar"></i></div>
+          <div class="meter-sub"><span id="ctxTokens">0 / 0 token</span><span id="usageTotal"></span></div>
+        </div>
+
+        <div class="controls">
+          <div class="dd" id="modeDd">
+            <button class="dd-btn" id="modeBtn" aria-haspopup="true">
+              <span class="dd-ic" id="modeIcon"></span>
+              <span class="dd-t"><small>Autonomia</small><b id="modeLabel">Chiedi conferma</b></span>
+              <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="dd-menu" id="modeMenu" hidden></div>
+          </div>
+
+          <div class="dd" id="brainDd">
+            <button class="dd-btn" id="brainBtn" aria-haspopup="true">
+              <span class="dd-ic"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/><path d="M12 5a3 3 0 1 1 6 .1A3 3 0 0 1 20 11a3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg></span>
+              <span class="dd-t"><small>Modello</small><b id="brainName">—</b></span>
+              <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+
+          <div class="dd" id="moreDd">
+            <button class="dd-btn slim" id="moreBtn" aria-haspopup="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>
+              <span>Impostazioni</span>
+            </button>
+            <div class="dd-menu right" id="moreMenu" hidden>
+              <button data-act="cwd"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span><b>Cartella di lavoro</b><small id="wsPath"></small></span></button>
+              <button data-act="compact"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16M9 4l3 3 3-3M9 20l3-3 3 3"/></svg><span><b>Compatta il contesto</b><small>Riassume la conversazione per liberare spazio</small></span></button>
+              <button data-act="memory"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/></svg><span><b>Memoria</b><small>Cosa Howl ricorda di te</small></span></button>
+              <button data-act="tools"><svg viewBox="0 0 24 24"><path d="m14 7 3-3 3 3-3 3M4 20l7-7M10 6 6 10l-3-3 4-4z"/></svg><span><b>Strumenti</b><small id="toolCount"></small></span></button>
+              <button data-act="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.2M12 17h.01"/></svg><span><b>Comandi disponibili</b><small>Elenco dei comandi con /</small></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ───────── Conversazione ───────── -->
+    <main class="main">
+      <header class="topbar drag">
+        <h1 class="chat-title nodrag" id="chatTitle" title="Doppio clic per rinominare"></h1>
+      </header>
+
+      <div class="feed" id="feed">
+        <div class="welcome" id="welcome">
+          <img class="welcome-wolf" src="wolf/idle.png" alt="">
+          <h2>Come posso aiutarti?</h2>
+          <p>Scrivo codice, cerco sul web, navigo i siti e uso le app del tuo computer.<br>Per i lavori lunghi usa <code>/goal</code>: procedo e verifico finché non è fatto.</p>
+          <div class="examples">
+            <button data-ex="Cerca le ultime notizie sull'intelligenza artificiale e fammi un riassunto con le fonti"><b>Ricerca sul web</b><small>con le fonti verificate</small></button>
+            <button data-ex="Apri il browser su wikipedia.org, cerca 'Lupo grigio' e riassumi la pagina"><b>Naviga un sito</b><small>al posto mio</small></button>
+            <button data-ex="Fai uno screenshot del mio schermo e dimmi cosa vedi"><b>Guarda lo schermo</b><small>e commenta cosa vede</small></button>
+            <button data-ex="/goal Crea nella cartella di lavoro un gioco Snake in HTML in un'unica pagina con punteggio e game over --max 5"><b>/goal</b><small>lavora e verifica da solo</small></button>
+          </div>
+        </div>
+      </div>
+
+      <form class="composer" id="composer">
+        <div class="suggest" id="suggest" hidden></div>
+        <textarea id="input" rows="1" placeholder="Scrivi un messaggio…  ( / per i comandi )" autofocus></textarea>
+        <div class="composer-bar">
+          <span class="hint" id="hint">Invio per inviare · Shift+Invio per andare a capo</span>
+          <button type="submit" class="sq send" id="sendBtn" title="Invia (Invio)">
+            <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+          </button>
+          <button type="button" class="sq stop" id="stopBtn" title="Interrompi (Esc)" hidden>
+            <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
+          </button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <!-- ───────── Permesso ───────── -->
+  <div class="modal" id="approval" hidden>
+    <div class="modal-card">
+      <div class="ap-head">
+        <img src="wolf/approval.png" alt="">
+        <div><h3>Howl chiede il permesso</h3><p id="apAgent" class="muted"></p></div>
+      </div>
+      <div class="ap-tool" id="apTool"></div>
+      <div class="ap-danger" id="apDanger" hidden>Azione potenzialmente pericolosa: controlla bene prima di consentire.</div>
+      <pre class="ap-input" id="apInput"></pre>
+      <div class="actions">
+        <button class="btn" id="apDeny">Nega <kbd>Esc</kbd></button>
+        <button class="btn" id="apAlways">Consenti sempre</button>
+        <button class="btn primary" id="apAllow">Consenti <kbd>Invio</kbd></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Serve l'utente (es. verifica anti-robot) ───────── -->
+  <div class="modal" id="userAction" hidden>
+    <div class="modal-card">
+      <div class="ap-head">
+        <img src="wolf/approval.png" alt="">
+        <div><h3 id="uaTitle">Serve il tuo aiuto</h3><p class="muted">Howl è in pausa e ti aspetta.</p></div>
+      </div>
+      <p id="uaMessage"></p>
+      <div class="ap-tool" id="uaUrl"></div>
+      <p class="muted ua-wait"><span class="spinner"></span> Riprendo da solo appena la verifica è completata.</p>
+      <div class="actions">
+        <button class="btn" id="uaCancel">Annulla</button>
+        <button class="btn primary" id="uaDone">Fatto, continua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Modelli ───────── -->
+  <div class="modal" id="brains" hidden>
+    <div class="modal-card wide">
+      <div class="modal-h"><h3>Modello di Howl</h3><button class="x" id="brClose" title="Chiudi">✕</button></div>
+      <p class="muted">Collega qualsiasi modello: locale (LM Studio, Ollama, vLLM, llama.cpp) o cloud (Qwen, OpenRouter, DeepSeek, OpenAI, Claude).</p>
+
+      <div class="sec-h">Rilevati sul tuo computer <button class="link" id="brRescan">Riscansiona</button></div>
+      <div id="brDetected" class="detected"><span class="muted">Scansione…</span></div>
+
+      <div class="sec-h">I miei modelli <button class="link" id="brNew">＋ Aggiungi</button></div>
+      <div id="brList" class="br-list"></div>
+
+      <form class="br-form" id="brForm" hidden>
+        <div class="sec-h" id="brFormTitle">Nuovo modello</div>
+        <div class="presets" id="brPresets"></div>
+        <div class="grid2">
+          <label>Nome<input name="name" placeholder="es. Qwen 3.5 locale" required></label>
+          <label>Tipo API<select name="kind"><option value="openai">Compatibile OpenAI</option><option value="anthropic">Anthropic</option></select></label>
+          <label class="span2">Indirizzo (base URL)<input name="baseUrl" placeholder="http://127.0.0.1:1234/v1" required spellcheck="false"></label>
+          <label class="span2">Chiave API <small>(vuota per i modelli locali)</small><input name="apiKey" type="password" autocomplete="off" spellcheck="false"></label>
+          <label class="span2">Modello
+            <div class="row"><input name="model" list="brModels" placeholder="qwen/qwen3.5-9b" required spellcheck="false"><button type="button" class="btn" id="brLoad">Carica elenco</button></div>
+            <datalist id="brModels"></datalist>
+          </label>
+          <label>Finestra di contesto <small>(token)</small><input name="contextLimit" type="number" min="2000" step="1000" value="32000"></label>
+          <label>Risposta massima <small>(token)</small><input name="maxTokens" type="number" min="256" step="256" value="4096"></label>
+          <label class="check"><input type="checkbox" name="vision"> Vede le immagini</label>
+          <label class="check"><input type="checkbox" name="echoReasoning"> Rinvia il ragionamento</label>
+        </div>
+        <div class="test-out" id="brTestOut" hidden></div>
+        <div class="actions">
+          <button type="button" class="btn" id="brCancel">Annulla</button>
+          <button type="button" class="btn" id="brTest">Prova</button>
+          <button type="submit" class="btn">Salva</button>
+          <button type="button" class="btn primary" id="brSaveUse">Salva e usa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

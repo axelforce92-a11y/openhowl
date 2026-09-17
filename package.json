@@ -1,0 +1,58 @@
+{
+  "name": "openhowl",
+  "productName": "OpenHowl",
+  "version": "1.0.0",
+  "description": "OpenHowl — l'agente AI open source che lavora sul tuo PC, con il lupo sul desktop",
+  "author": "OpenHowl",
+  "license": "MIT",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "bin": { "howl": "src/cli.js" },
+  "scripts": {
+    "app": "electron .",
+    "server": "node src/server.js",
+    "cli": "node src/cli.js",
+    "assets": "python scripts/make_assets.py",
+    "dist": "electron-builder --win nsis"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "playwright-core": "^1.50.0"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.openhowl.app",
+    "productName": "OpenHowl",
+    "copyright": "OpenHowl",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": [
+      "electron/**",
+      "src/**",
+      "ui/**",
+      "build/icon.png",
+      "build/tray.png",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asarUnpack": ["src/tools/computer_helper.py", "node_modules/playwright-core/**"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "artifactName": "OpenHowl-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpenHowl",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "runAfterFinish": true
+    }
+  }
+}

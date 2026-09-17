@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="howl-token" content="%%HOWL_TOKEN%%">
+  <title>OpenHowl — mascotte</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; font-family: system-ui, 'Segoe UI', sans-serif; }
+    .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+
+    .bubble {
+      position: relative; max-width: 210px; margin-bottom: 6px; padding: 8px 12px; border-radius: 14px;
+      background: rgba(255, 255, 255, .97); color: #1e293b; font-size: 12.5px; line-height: 1.35;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, .18), 0 0 0 1px rgba(15, 23, 42, .06);
+      opacity: 0; transform: translateY(6px) scale(.96); transition: opacity .25s, transform .25s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .bubble.show { opacity: 1; transform: none; }
+    .bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: rgba(255, 255, 255, .97); }
+    .bubble .txt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .bubble.error { background: #fff1f2; color: #9f1239; }
+    .bubble.error::after { border-top-color: #fff1f2; }
+    .bubble.approval { background: #fffbeb; color: #92400e; cursor: pointer; }
+    .bubble.approval::after { border-top-color: #fffbeb; }
+    .dots span { display: inline-block; width: 4px; height: 4px; margin: 0 1px; border-radius: 50%; background: currentColor; animation: dot 1s infinite; }
+    .dots span:nth-child(2) { animation-delay: .15s; }
+    .dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes dot { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
+
+    .stop {
+      flex: none; width: 22px; height: 22px; border: 0; border-radius: 7px; cursor: pointer; display: none;
+      background: #dc2626; color: #fff; place-items: center; padding: 0;
+    }
+    .stop svg { width: 10px; height: 10px; fill: currentColor; }
+    .stop:hover { filter: brightness(1.1); }
+    body.busy .stop { display: grid; }
+
+    .wolf { position: relative; width: 200px; height: 232px; cursor: grab; -webkit-user-drag: none; }
+    .wolf:active { cursor: grabbing; }
+    .wolf img {
+      position: absolute; bottom: 0; left: 50%; height: 100%; transform: translateX(-50%);
+      opacity: 0; transition: opacity .35s ease; pointer-events: none;
+      filter: drop-shadow(0 8px 10px rgba(15, 23, 42, .28));
+    }
+    .wolf img.on { opacity: 1; }
+    .body { position: absolute; inset: 0; transform-origin: 50% 100%; animation: breathe 3.6s ease-in-out infinite; }
+    .glow { position: absolute; left: 50%; bottom: 2px; width: 120px; height: 16px; margin-left: -60px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 184, 166, .35), transparent); opacity: 0; transition: opacity .4s; }
+
+    @keyframes breathe { 0%, 100% { transform: scaleY(1) rotate(0deg); } 50% { transform: scaleY(1.018) rotate(-.6deg); } }
+    @keyframes think { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1.5deg) translateY(-2px); } }
+    @keyframes work { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes talk { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03) translateY(-1px); } }
+    @keyframes ask { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+    @keyframes jump { 0%, 100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-26px) scale(1.04, .96); } 55% { transform: translateY(0) scale(.97, 1.03); } 78% { transform: translateY(-9px); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-6px) rotate(-2deg); } 40% { transform: translateX(6px) rotate(2deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+    @keyframes waitpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+
+    body[data-state=thinking] .body { animation: think 2.2s ease-in-out infinite; }
+    body[data-state=tool] .body { animation: work .5s ease-in-out infinite; }
+    body[data-state=streaming] .body { animation: talk .45s ease-in-out infinite; }
+    body[data-state=approval] .body { animation: ask 1.2s ease-in-out infinite; }
+    body[data-state=success] .body { animation: jump .7s cubic-bezier(.3, 1.6, .5, 1) 2; }
+    body[data-state=error] .body { animation: shake .5s ease-in-out 2; }
+    body[data-state=error] img.on { filter: drop-shadow(0 8px 10px rgba(220, 38, 38, .5)) saturate(.75) hue-rotate(-12deg); }
+    body[data-state=waiting] .body { animation: waitpulse 1.8s ease-in-out infinite; }
+    body[data-state=tool] .glow, body[data-state=thinking] .glow { opacity: 1; }
+
+    .spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #14b8a6; pointer-events: none; animation: spark .9s ease-out forwards; }
+    @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .body { animation: none !important; } }
+  </style>
+</head>
+<body data-state="idle">
+  <div class="stage">
+    <div class="bubble" id="bubble"><span class="txt" id="txt">Ciao! Sono Howl.</span><button class="stop" id="stop" title="Interrompi"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button></div>
+    <div class="wolf" id="wolf" title="Clic: apri OpenHowl · Trascina per spostare · Tasto destro: menu">
+      <div class="glow"></div>
+      <div class="body">
+        <img src="wolf/idle.png" data-pose="idle" class="on" alt="">
+        <img src="wolf/thinking.png" data-pose="thinking" alt="">
+        <img src="wolf/approval.png" data-pose="approval" alt="">
+        <img src="wolf/working.png" data-pose="working" alt="">
+        <img src="wolf/success.png" data-pose="success" alt="">
+      </div>
+    </div>
+  </div>
+  <script src="mascot.js"></script>
+</body>
+</html>
