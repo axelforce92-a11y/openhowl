@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveUserPath } from './paths.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Dati dell'utente (cervelli, memoria, goal, profilo browser) fuori dalla cartella del programma:
@@ -52,7 +53,7 @@ export function loadConfig() {
   const provider = env.OPENHOWL_PROVIDER || file.provider ||
     (env.ANTHROPIC_API_KEY ? 'anthropic' : env.DEEPSEEK_API_KEY ? 'deepseek' : env.OPENAI_API_KEY ? 'openai' : env.OPENROUTER_API_KEY ? 'openrouter' : 'anthropic');
   if (!PRESETS[provider]) throw new Error(`Provider sconosciuto: ${provider}`);
-  const workspace = path.resolve(env.OPENHOWL_WORKSPACE || file.workspace || path.join(os.homedir(), 'OpenHowl'));
+  const workspace = resolveUserPath(process.cwd(), env.OPENHOWL_WORKSPACE || file.workspace || path.join(os.homedir(), 'OpenHowl'));
   fs.mkdirSync(workspace, { recursive: true });
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const brains = loadBrains();

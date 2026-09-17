@@ -27,6 +27,38 @@ ORBIT gestisce anche le particolarità dei modelli locali: `<think>` nel testo, 
 
 Preset da `.env` ancora disponibili: `anthropic`, `deepseek`, `openai`, `openrouter`, `qwen`, `lmstudio`, `ollama`.
 
+## Identità, skills e hooks
+Tutto in `~/.openhowl/`, modificabile a mano:
+
+| Cosa | Dove | A cosa serve |
+|---|---|---|
+| **Identità** | `SOUL.md` | Carattere, tono e limiti di Howl. Sempre nel prompt. `/soul` |
+| **Skills** | `skills/<nome>/SKILL.md` | Istruzioni per un lavoro specifico. Nel prompt c'è solo nome + descrizione; il corpo si carica a richiesta con lo strumento `skill`, e con `triggers:` viene suggerita da sola. `/skills` |
+| **Hooks** | `hooks/*.mjs` | Intercettano ogni strumento: `beforeTool` (bloccare/modificare/approvare), `afterTool` (cambiare il risultato), `onUserMessage`. `/hooks reload` |
+| **Memoria** | `memory.md` | Fatti duraturi salvati dallo strumento `remember`. `/memory` |
+| **Chat** | `sessions/*.json` | Storico delle conversazioni |
+| **Modelli** | `brains.json` | Profili dei modelli (le chiavi restano sul tuo PC) |
+
+Esempio di skill:
+
+```markdown
+---
+name: report-settimanale
+description: Preparare il report settimanale del team con i dati di vendita.
+triggers: report, settimanale, vendite
+---
+# Report settimanale
+1. Leggi i CSV in Documenti/vendite …
+```
+
+Esempio di hook che blocca un percorso:
+
+```js
+export async function beforeTool({ name, input }) {
+  if (name === 'run_command' && /docker/.test(input.command)) return { deny: 'docker non consentito' };
+}
+```
+
 ## Architettura
 
 ```

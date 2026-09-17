@@ -14,6 +14,8 @@ import { buildSystemPrompt } from './prompt.js';
 import { McpClient } from './mcp.js';
 import { resolveUserPath } from './paths.js';
 import { newSession, saveSession, loadSession, deleteSession, listSessions, titleFrom } from './sessions.js';
+import { ensureDefaults, listSkills, matchSkills, SOUL_FILE, SKILLS_DIR } from './skills.js';
+import { loadHooks, runHook, HOOKS_DIR } from './hooks.js';
 
 export const COMMANDS = [
   ['/goal <obiettivo> [--max N]', 'Loop engineering: pianifica → esegue → verifica → ripete fino al risultato'],
@@ -21,7 +23,10 @@ export const COMMANDS = [
   ['/goal resume [--max N]', 'Riprende l\'ultimo goal non completato'],
   ['/stop', 'Interrompe il lavoro in corso'],
   ['/mode ask|auto|readonly', 'Permessi: chiedi / autonomo / sola lettura'],
-  ['/brain [nome]', 'Elenca o attiva un cervello (modello) salvato'],
+  ['/brain [nome]', 'Elenca o attiva un modello salvato'],
+  ['/skills', 'Elenca le skill che Howl sa usare'],
+  ['/soul', 'Dove modificare identità e carattere di Howl'],
+  ['/hooks [reload]', 'Elenca o ricarica gli hook (automazioni)'],
   ['/provider <nome>', `Cambia provider (${Object.keys(PRESETS).join(', ')})`],
   ['/model <id>', 'Cambia modello'],
   ['/cwd <percorso>', 'Cambia cartella di lavoro'],
@@ -133,6 +138,9 @@ export class Harness {
   }
 
   async init() {
+    ensureDefaults();
+    this.hooks = await loadHooks(this);
+    if (this.hooks.length) this.send('info', { text: `Hook attivi: ${this.hooks.map((h) => `\`${h.name}\``).join(', ')}` });
     for (const [name, conf] of Object.entries(this.cfg.mcpServers)) {
       try {
         const client = new McpClient(name, conf);
@@ -333,7 +341,15 @@ export class Harness {
     if (this.busy) return this.send('info', { text: 'Sto già lavorando: premi Interrompi prima di inviare altro.' });
     if (!this.agent.messages.length) { this.session.title = titleFrom(text); this.sendSessions(); }
     this.send('user', { text });
-    await this.runTask((signal) => this.agent.run(text, { signal }));
+    const hooked = await runHook(this, 'onUserMessage', { text });
+    let prompt = hooked.text || text;
+    const relevant = matchSkills(prompt);
+    if (relevant.length) {
+      this.send('info', { text: `📘 Skill pertinente: ${relevant.map((s) => `**${s.name}**`).join(', ')}` });
+      prompt += `\n\n[harness] Skill pertinenti a questa richiesta: ${relevant.map((s) => s.name).join(', ')}. ` +
+        `Carica le istruzioni con lo strumento skill PRIMA di iniziare e poi seguile.`;
+    }
+    await this.runTask((signal) => this.agent.run(prompt, { signal }));
   }
 
   async runTask(fn) {
@@ -452,6 +468,25 @@ export class Harness {
 
       case 'tools':
         return info(`**${this.allTools().length} strumenti**\n${this.allTools().map((t) => `- \`${t.name}\` — ${t.description.split('. ')[0]}`).join('\n')}`);
+
+      case 'soul':
+        return info(`**Identità di Howl** — modifica questo file per cambiarne il carattere:\n\`${SOUL_FILE}\``);
+
+      case 'skills': {
+        const s = listSkills();
+        return info(s.length
+          ? `**${s.length} skill disponibili** (cartella \`${SKILLS_DIR}\`)\n${s.map((x) => `- **${x.name}** — ${x.description}`).join('\n')}`
+          : `Nessuna skill. Crea una cartella con dentro un file SKILL.md in:\n\`${SKILLS_DIR}\``);
+      }
+
+      case 'hooks':
+        if (arg === 'reload') {
+          this.hooks = await loadHooks(this);
+          return info(`Hook ricaricati: ${this.hooks.length}`);
+        }
+        return info(this.hooks?.length
+          ? `**Hook attivi** (cartella \`${HOOKS_DIR}\`)\n${this.hooks.map((h) => `- \`${h.name}\` → ${Object.keys(h).filter((k) => k !== 'name').join(', ') || 'nessun punto di aggancio'}`).join('\n')}\n\nUsa \`/hooks reload\` dopo averli modificati.`
+          : `Nessun hook. Aggiungi un file .mjs in:\n\`${HOOKS_DIR}\``);
 
       case 'memory': {
         const m = fs.existsSync(MEMORY_FILE) ? fs.readFileSync(MEMORY_FILE, 'utf8') : '';

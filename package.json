@@ -32,6 +32,8 @@
       "electron/**",
       "src/**",
       "ui/**",
+      "skills/**",
+      "hooks/**",
       "build/icon.png",
       "build/tray.png",
       "package.json",

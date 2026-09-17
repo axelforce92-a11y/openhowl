@@ -7,6 +7,7 @@ import { shellTools } from './shell.js';
 import { webTools } from './web.js';
 import { browserTool } from './browser.js';
 import { computerTool } from './computer.js';
+import { skillTool } from '../skills.js';
 
 export const MEMORY_FILE = path.join(DATA_DIR, 'memory.md');
 
@@ -62,4 +63,4 @@ const metaTools = [
   },
 ];
 
-export const builtinTools = () => [...fsTools, ...shellTools, ...webTools, browserTool, computerTool, ...metaTools];
+export const builtinTools = () => [...fsTools, ...shellTools, ...webTools, browserTool, computerTool, skillTool, ...metaTools];

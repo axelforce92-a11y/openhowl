@@ -1,5 +1,6 @@
 // L'agent loop: modello → strumenti → risultati → modello … finché il modello non ha più nulla da fare.
 import { chat } from './providers.js';
+import { runHook } from './hooks.js';
 
 let segCounter = 0;
 const KEEP_IMAGES = 3;
@@ -145,13 +146,23 @@ export class Agent {
     if (!tool) return fail(`Strumento sconosciuto: ${tu.name}`);
     const risk = typeof tool.risk === 'function' ? tool.risk(input) : tool.risk;
 
-    const allowed = await this.h.approve({ name: tu.name, input, risk, agent: this.name });
+    // hooks: possono bloccare, modificare i parametri o approvare automaticamente
+    const pre = await runHook(this.h, 'beforeTool', { name: tu.name, input });
+    if (pre.deny) {
+      this.emit('info', { text: `⛔ Azione bloccata dall'hook \`${pre.hook}\`: ${pre.deny}` });
+      return fail(`Azione bloccata da un hook dell'utente: ${pre.deny}. Non insistere: proponi un'alternativa.`);
+    }
+    Object.assign(input, pre.input || {});
+
+    const allowed = pre.approve || await this.h.approve({ name: tu.name, input, risk, agent: this.name });
     if (signal?.aborted) throw abortError();
     if (!allowed) return fail('L\'utente ha NEGATO il permesso per questa azione. Non riprovarla identica: proponi un\'alternativa o chiedi chiarimenti.');
 
     this.emit('state', { state: 'tool', tool: tu.name });
     try {
       const out = normalizeOutput(await tool.run(input, { h: this.h, agent: this, signal, workspace: this.h.cfg.workspace }));
+      const post = await runHook(this.h, 'afterTool', { name: tu.name, input, output: out.text });
+      if (typeof post.output === 'string') out.text = post.output;
       const text = clip(out.text, 50000);
       const content = [
         ...(text ? [{ type: 'text', text }] : []),
