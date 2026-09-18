@@ -20,7 +20,7 @@ npm run cli                        # oppure interfaccia da terminale
 npm run dist                       # crea l'installer per Windows in dist/
 ```
 
-L'installer per Windows è allegato a ogni [release](https://github.com/axelforce92/openhowl/releases).
+L'installer per Windows è allegato a ogni [release](https://github.com/axelforce92-a11y/openhowl/releases).
 L'app installata si aggiorna da sola: controlla le nuove versioni all'avvio e ogni 6 ore, le scarica e le installa
 alla chiusura successiva. Dal menu nell'area di notifica puoi cercare un aggiornamento subito, riavviare per
 installarlo, oppure disattivare l'aggiornamento automatico.

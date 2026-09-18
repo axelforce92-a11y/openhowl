@@ -5,13 +5,13 @@
   "description": "OpenHowl — l'agente AI open source che lavora sul tuo PC, con il lupo sul desktop",
   "author": "OpenHowl",
   "license": "MIT",
-  "homepage": "https://github.com/axelforce92/openhowl",
+  "homepage": "https://github.com/axelforce92-a11y/openhowl",
   "repository": {
     "type": "git",
-    "url": "https://github.com/axelforce92/openhowl.git"
+    "url": "https://github.com/axelforce92-a11y/openhowl.git"
   },
   "bugs": {
-    "url": "https://github.com/axelforce92/openhowl/issues"
+    "url": "https://github.com/axelforce92-a11y/openhowl/issues"
   },
   "keywords": [
     "ai",
@@ -74,7 +74,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "axelforce92",
+        "owner": "axelforce92-a11y",
         "repo": "openhowl"
       }
     ],

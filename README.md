@@ -23,7 +23,7 @@ npm run cli                        # or the terminal interface
 npm run dist                       # build the Windows installer into dist/
 ```
 
-Windows installers are attached to every [release](https://github.com/axelforce92/openhowl/releases); the installed
+Windows installers are attached to every [release](https://github.com/axelforce92-a11y/openhowl/releases); the installed
 app updates itself from there.
 
 ## 🕗 Automations: Howl works when you don't
