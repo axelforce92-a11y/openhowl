@@ -91,6 +91,7 @@
               <button data-act="tasks"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/></svg><span><b>Automazioni</b><small>Compiti che Howl svolge a orario</small></span></button>
               <button data-act="memory"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/></svg><span><b>Memoria</b><small>Cosa Howl ricorda di te</small></span></button>
               <button data-act="tools"><svg viewBox="0 0 24 24"><path d="m14 7 3-3 3 3-3 3M4 20l7-7M10 6 6 10l-3-3 4-4z"/></svg><span><b>Strumenti</b><small id="toolCount"></small></span></button>
+              <button data-act="update" id="updItem" hidden><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span><b id="updItemTitle">Aggiornamenti</b><small id="updItemSub"></small></span></button>
               <button data-act="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.2M12 17h.01"/></svg><span><b>Comandi disponibili</b><small>Elenco dei comandi con /</small></span></button>
             </div>
           </div>
@@ -102,6 +103,7 @@
     <main class="main">
       <header class="topbar drag">
         <h1 class="chat-title nodrag" id="chatTitle" title="Doppio clic per rinominare"></h1>
+        <button class="upd-btn nodrag" id="updBtn" hidden></button>
       </header>
 
       <div class="feed" id="feed">

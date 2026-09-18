@@ -563,6 +563,7 @@
     closeMenus();
     const act = b.dataset.act;
     if (act === 'tasks') openTasks();
+    if (act === 'update') { if (upd.status === 'ready') desk.installUpdate(); else desk.checkUpdate(); }
     if (act === 'cwd') { input.value = `/cwd ${config.workspace}`; input.focus(); }
     if (act === 'compact') send('/compact');
     if (act === 'memory') send('/memory');
@@ -579,6 +580,37 @@
     desk.getMascot().then(paint);
     desk.onMascot(paint);
     pin.onclick = () => { const next = !pin.classList.contains('on'); paint(next); desk.setMascot(next); };
+  }
+
+  /* ───────── aggiornamenti dell'app desktop ───────── */
+  // L'app scarica da sola le versioni nuove; qui c'è solo il pulsante per installarle subito.
+  let upd = { status: 'dev' };
+  function renderUpdate(u) {
+    upd = u || upd;
+    const btn = $('updBtn'), item = $('updItem');
+    const packaged = upd.status !== 'dev';
+    item.hidden = !packaged;
+    btn.hidden = !['downloading', 'ready'].includes(upd.status);
+    btn.className = `upd-btn nodrag ${upd.status === 'ready' ? 'ready' : ''}`;
+    btn.disabled = upd.status !== 'ready';
+    if (upd.status === 'ready') btn.innerHTML = `${svg('bolt')} Aggiorna ora alla ${esc(upd.version)}`;
+    else if (upd.status === 'downloading') btn.innerHTML = `Scarico la ${esc(upd.version || 'nuova versione')} <span class="upd-bar"><i style="width:${upd.percent || 0}%"></i></span>`;
+    btn.title = upd.status === 'ready' ? "L'app si chiude, si aggiorna e si riapre da sola (pochi secondi)" : '';
+    const sub = {
+      idle: `Versione ${upd.current} · cerca aggiornamenti`,
+      checking: 'Controllo in corso…',
+      downloading: `Scarico la ${upd.version}… ${upd.percent || 0}%`,
+      ready: `La ${upd.version} è pronta: clic per installarla`,
+      latest: `Hai già l'ultima versione (${upd.current})`,
+      error: 'Controllo non riuscito: riprova più tardi',
+    }[upd.status] || '';
+    $('updItemTitle').textContent = upd.status === 'ready' ? 'Aggiorna ora' : 'Aggiornamenti';
+    $('updItemSub').textContent = sub;
+  }
+  if (desk?.getUpdate) {
+    desk.getUpdate().then(renderUpdate);
+    desk.onUpdate(renderUpdate);
+    $('updBtn').onclick = () => { if (upd.status === 'ready') { $('updBtn').textContent = 'Aggiorno…'; desk.installUpdate(); } };
   }
 
   /* ───────── modelli ───────── */

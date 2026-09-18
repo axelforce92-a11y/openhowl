@@ -110,49 +110,73 @@ function setMascot(on) {
 }
 
 /* ── aggiornamenti automatici (dalle release su GitHub) ── */
+// Si scaricano da soli in background; quando sono pronti l'interfaccia mostra "Aggiorna ora".
 const CHECK_EVERY = 6 * 3600 * 1000;
-let updateReady = null; // versione scaricata e pronta a installarsi
-let checking = false;
+// status: idle | checking | downloading | ready | latest | error | dev
+const upd = { current: app.getVersion(), status: app.isPackaged ? 'idle' : 'dev', version: null, percent: 0, error: null };
+let manualCheck = false;
+
+let trayKey = '';
+function setUpd(patch) {
+  Object.assign(upd, patch);
+  mainWin?.webContents.send('update:state', { ...upd });
+  // il menu dell'area di notifica si ricostruisce solo a scatti del 10%, non a ogni pacchetto scaricato
+  const key = `${upd.status}:${Math.floor(upd.percent / 10)}`;
+  if (key !== trayKey) { trayKey = key; refreshTray(); }
+}
 
 function setupUpdates() {
   if (!app.isPackaged) return; // in sviluppo non c'è nulla da aggiornare
   const { autoUpdater } = require('electron-updater');
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('update-available', (info) => setUpd({ status: 'downloading', version: info.version, percent: 0, error: null }));
+  autoUpdater.on('download-progress', (p) => setUpd({ status: 'downloading', percent: Math.round(p.percent || 0) }));
   autoUpdater.on('update-downloaded', (info) => {
-    updateReady = info.version;
-    refreshTray();
-    if (Notification.isSupported()) {
-      const n = new Notification({ title: `OpenHowl ${info.version} è pronto`, body: 'Si installa alla prossima chiusura, oppure riavvia ora dal menu nell\'area di notifica.', icon: ICON });
+    setUpd({ status: 'ready', version: info.version, percent: 100 });
+    if (Notification.isSupported() && !mainWin?.isFocused()) {
+      const n = new Notification({ title: `OpenHowl ${info.version} è pronto`, body: 'Apri OpenHowl e premi "Aggiorna ora": ci vogliono pochi secondi.', icon: ICON });
       n.on('click', openMain);
       n.show();
     }
   });
-  autoUpdater.on('error', (e) => console.error('Aggiornamento non riuscito:', e?.message || e));
-  autoUpdater.on('update-not-available', () => { if (checking) { checking = false; refreshTray(); } });
+  autoUpdater.on('update-not-available', () => setUpd({ status: manualCheck ? 'latest' : 'idle' }));
+  autoUpdater.on('error', (e) => {
+    console.error('Aggiornamento non riuscito:', e?.message || e);
+    setUpd({ status: manualCheck ? 'error' : 'idle', error: String(e?.message || e).slice(0, 200) });
+  });
 
   checkUpdates = (manual = false) => {
+    if (upd.status === 'downloading' || upd.status === 'ready' || upd.status === 'checking') return;
     if (!prefs.autoUpdate && !manual) return;
-    checking = true;
-    refreshTray();
-    autoUpdater.checkForUpdates().catch(() => {}).finally(() => { checking = false; refreshTray(); });
+    manualCheck = manual;
+    setUpd({ status: 'checking', error: null });
+    autoUpdater.checkForUpdates().catch(() => {});
   };
-  installUpdate = () => { quitting = true; autoUpdater.quitAndInstall(); };
+  installUpdate = () => {
+    if (upd.status !== 'ready') return;
+    quitting = true;
+    autoUpdater.quitAndInstall(true, true); // installa in silenzio e riapre l'app
+  };
 
-  setTimeout(() => checkUpdates(), 15000);
+  setTimeout(() => checkUpdates(), 10000);
   setInterval(() => checkUpdates(), CHECK_EVERY);
 }
 let checkUpdates = () => {};
 let installUpdate = () => {};
 
+ipcMain.handle('update:get', (e) => (trusted(e) ? { ...upd } : null));
+ipcMain.on('update:check', (e) => { if (trusted(e)) checkUpdates(true); });
+ipcMain.on('update:install', (e) => { if (trusted(e)) installUpdate(); });
+
 /* ── area di notifica ── */
 function refreshTray() {
   if (!tray) return;
   tray.setToolTip(busy ? 'OpenHowl — sta lavorando…' : 'OpenHowl');
-  const updateItems = !app.isPackaged ? [] : updateReady
-    ? [{ label: `Riavvia e installa la ${updateReady}`, click: installUpdate }]
+  const updateItems = !app.isPackaged ? [] : upd.status === 'ready'
+    ? [{ label: `Aggiorna ora alla ${upd.version}`, click: installUpdate }]
     : [
-      { label: checking ? 'Controllo aggiornamenti…' : 'Cerca aggiornamenti', enabled: !checking, click: () => checkUpdates(true) },
+      { label: upd.status === 'checking' ? 'Controllo aggiornamenti…' : upd.status === 'downloading' ? `Scarico la ${upd.version}… ${upd.percent}%` : 'Cerca aggiornamenti', enabled: upd.status !== 'checking' && upd.status !== 'downloading', click: () => checkUpdates(true) },
       { label: 'Aggiorna automaticamente', type: 'checkbox', checked: prefs.autoUpdate, click: (i) => { prefs.autoUpdate = i.checked; savePrefs(); refreshTray(); } },
     ];
   tray.setContextMenu(Menu.buildFromTemplate([

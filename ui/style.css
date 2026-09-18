@@ -168,6 +168,12 @@ body[data-state=idle] .state-dot { background: var(--faint); }
 .topbar { height: 46px; flex: none; display: flex; align-items: center; padding: 0 16px; }
 body.desktop .topbar { padding-right: 145px; }
 .chat-title { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text-2); max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upd-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 99px; border: 1px solid var(--line-2); background: var(--panel); color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.upd-btn.ready { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 4px var(--accent-soft); animation: upd-pulse 2.4s ease-in-out infinite; }
+.upd-btn.ready:hover { background: var(--accent-2); }
+.upd-btn .upd-bar { width: 46px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.upd-btn .upd-bar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+@keyframes upd-pulse { 50% { box-shadow: 0 0 0 7px var(--accent-soft); } }
 .chat-title[contenteditable=true] { outline: none; border-bottom: 1px solid var(--accent); }
 
 .feed { flex: 1; overflow-y: auto; overflow-anchor: none; padding: 4px max(20px, calc((100% - 760px) / 2)) 20px; display: flex; flex-direction: column; gap: 13px; }
