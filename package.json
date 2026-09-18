@@ -75,7 +75,8 @@
       {
         "provider": "github",
         "owner": "axelforce92-a11y",
-        "repo": "openhowl"
+        "repo": "openhowl",
+        "releaseType": "release"
       }
     ],
     "win": {
