@@ -29,7 +29,7 @@ let busy = false;
 
 /* ── preferenze desktop ── */
 const PREFS_FILE = path.join(process.env.OPENHOWL_HOME, 'desktop.json');
-let prefs = { mascot: true, mascotPos: null };
+let prefs = { mascot: true, mascotPos: null, autoUpdate: true };
 try { prefs = { ...prefs, ...JSON.parse(fs.readFileSync(PREFS_FILE, 'utf8')) }; } catch {}
 const savePrefs = () => { try { fs.mkdirSync(path.dirname(PREFS_FILE), { recursive: true }); fs.writeFileSync(PREFS_FILE, JSON.stringify(prefs, null, 2)); } catch {} };
 
@@ -109,10 +109,52 @@ function setMascot(on) {
   refreshTray();
 }
 
+/* ── aggiornamenti automatici (dalle release su GitHub) ── */
+const CHECK_EVERY = 6 * 3600 * 1000;
+let updateReady = null; // versione scaricata e pronta a installarsi
+let checking = false;
+
+function setupUpdates() {
+  if (!app.isPackaged) return; // in sviluppo non c'è nulla da aggiornare
+  const { autoUpdater } = require('electron-updater');
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('update-downloaded', (info) => {
+    updateReady = info.version;
+    refreshTray();
+    if (Notification.isSupported()) {
+      const n = new Notification({ title: `OpenHowl ${info.version} è pronto`, body: 'Si installa alla prossima chiusura, oppure riavvia ora dal menu nell\'area di notifica.', icon: ICON });
+      n.on('click', openMain);
+      n.show();
+    }
+  });
+  autoUpdater.on('error', (e) => console.error('Aggiornamento non riuscito:', e?.message || e));
+  autoUpdater.on('update-not-available', () => { if (checking) { checking = false; refreshTray(); } });
+
+  checkUpdates = (manual = false) => {
+    if (!prefs.autoUpdate && !manual) return;
+    checking = true;
+    refreshTray();
+    autoUpdater.checkForUpdates().catch(() => {}).finally(() => { checking = false; refreshTray(); });
+  };
+  installUpdate = () => { quitting = true; autoUpdater.quitAndInstall(); };
+
+  setTimeout(() => checkUpdates(), 15000);
+  setInterval(() => checkUpdates(), CHECK_EVERY);
+}
+let checkUpdates = () => {};
+let installUpdate = () => {};
+
 /* ── area di notifica ── */
 function refreshTray() {
   if (!tray) return;
   tray.setToolTip(busy ? 'OpenHowl — sta lavorando…' : 'OpenHowl');
+  const updateItems = !app.isPackaged ? [] : updateReady
+    ? [{ label: `Riavvia e installa la ${updateReady}`, click: installUpdate }]
+    : [
+      { label: checking ? 'Controllo aggiornamenti…' : 'Cerca aggiornamenti', enabled: !checking, click: () => checkUpdates(true) },
+      { label: 'Aggiorna automaticamente', type: 'checkbox', checked: prefs.autoUpdate, click: (i) => { prefs.autoUpdate = i.checked; savePrefs(); refreshTray(); } },
+    ];
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Apri OpenHowl', accelerator: SHORTCUT_OPEN, click: openMain },
     { label: 'Mascotte sul desktop', type: 'checkbox', checked: prefs.mascot, accelerator: SHORTCUT_MASCOT, click: (i) => setMascot(i.checked) },
@@ -120,6 +162,7 @@ function refreshTray() {
     { type: 'separator' },
     { label: 'Avvia con Windows', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (i) => app.setLoginItemSettings({ openAtLogin: i.checked, args: ['--hidden'] }) },
     { label: 'Apri cartella dati', click: () => shell.openPath(process.env.OPENHOWL_HOME) },
+    ...(updateItems.length ? [{ type: 'separator' }, ...updateItems] : []),
     { type: 'separator' },
     { label: 'Esci', click: () => { quitting = true; app.quit(); } },
   ]));
@@ -189,6 +232,7 @@ app.whenReady().then(async () => {
   });
 
   createTray();
+  setupUpdates();
   if (!process.argv.includes('--hidden')) createMain();
   if (prefs.mascot) createMascot();
 

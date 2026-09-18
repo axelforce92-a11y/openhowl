@@ -1,186 +1,198 @@
 # OpenHowl 🐺
 
-Agente AI **open source** che lavora davvero sul tuo computer: scrive codice, esegue comandi, cerca sul web,
-naviga i siti in un vero browser, usa mouse e tastiera, delega a sub-agenti, porta a termine obiettivi lunghi con **`/goal`**
-e adesso lavora **anche quando non ci sei**, grazie alle **automazioni a orario**.
+> 🇮🇹 [Leggi in italiano](README.it.md)
 
-Zero framework: Node.js puro, un'interfaccia web e un lupo animato — **Howl** — che ti tiene compagnia sul desktop.
+An **open source AI agent** that really works on your computer: it writes code, runs commands, searches the web,
+browses real websites, drives mouse and keyboard, delegates to sub-agents, sees long goals through with **`/goal`** —
+and now works **while you are away**, thanks to **scheduled automations**.
 
-## Avvio rapido
+No frameworks: plain Node.js, a small web UI, and an animated wolf — **Howl** — living on your desktop.
+
+> **Note on language:** the app's interface and built-in prompts are currently in Italian, and Howl replies in
+> whatever language you write to it. English (and other languages) for the UI is on the roadmap — contributions welcome.
+
+## Quick start
 
 ```bash
-npm install                        # playwright-core: usa il Chrome/Edge già installato
-python -m pip install pyautogui    # opzionale: mouse, tastiera e screenshot
-copy .env.example .env             # poi inserisci la tua chiave API (oppure usa un modello locale)
-npm run app                        # app desktop (Electron) con lupo e icona nell'area di notifica
-npm run server                     # oppure solo il server: http://127.0.0.1:7777
-npm run cli                        # oppure interfaccia da terminale
-npm run dist                       # crea l'installer per Windows in dist/
+npm install                        # playwright-core: reuses the Chrome/Edge you already have
+python -m pip install pyautogui    # optional: mouse, keyboard and screenshots
+copy .env.example .env             # then add your API key (or point it at a local model)
+npm run app                        # desktop app (Electron) with the wolf and a tray icon
+npm run server                     # or the server alone: http://127.0.0.1:7777
+npm run cli                        # or the terminal interface
+npm run dist                       # build the Windows installer into dist/
 ```
 
-## 🕗 Automazioni: Howl lavora anche quando non ci sei
+Windows installers are attached to every [release](https://github.com/axelforce92/openhowl/releases); the installed
+app updates itself from there.
 
-> «Ogni mattina alle 8 controlla le novità sull'AI e scrivimi il riassunto.»
+## 🕗 Automations: Howl works when you don't
 
-Scrivilo in chat e basta: Howl usa da solo lo strumento `schedule_task`. Oppure apri
-**Impostazioni → Automazioni**, o usa i comandi:
+> "Every morning at 8, check what's new in AI and write me the summary."
+
+Just say it in chat: Howl reaches for the `schedule_task` tool by itself. Or open **Settings → Automazioni**,
+or use the commands:
 
 ```
-/task                                            elenco
-/task add ogni giorno alle 8 :: cerca le novità AI e scrivimi il riassunto
-/task add ogni lunedì e giovedì alle 9:30 :: prepara il riepilogo della settimana
-/task add ogni 30 minuti :: controlla che il sito risponda
-/task run|on|off|del|log <id>                    esegui adesso, attiva, pausa, elimina, storico
+/task                                            list them
+/task add ogni giorno alle 8 :: <what to do>     every day at 08:00
+/task add ogni lunedì e giovedì alle 9:30 :: …   on given weekdays
+/task add ogni 30 minuti :: …                    on an interval
+/task run|on|off|del|log <id>                    run now, enable, pause, delete, history
 ```
 
-Come funziona:
+How it works:
 
-- **Quando** — ogni giorno, certi giorni della settimana, a intervalli, o una volta sola. In chat lo scrivi in italiano
-  («ogni mattina alle 8», «tra 10 minuti», «domani alle 18»).
-- **Dove finisce il lavoro** — ogni esecuzione diventa una **conversazione a sé** nella barra laterale: puoi rileggere
-  ogni passo, non sporca la chat aperta.
-- **Il riassunto** — arriva come **notifica di sistema** e come scheda nell'interfaccia, con il link alla conversazione.
-- **Appuntamenti mancati** — se il PC era spento, al riavvio Howl recupera l'esecuzione saltata (entro 12 ore), poi riprende il ritmo normale.
-- **Mai due alla volta** — un compito per volta, e mai mentre stai lavorando con Howl in chat.
-- **Permessi** — nessuno è davanti allo schermo, quindi Howl agisce da solo ma **rifiuta le azioni pericolose**
-  (comandi distruttivi, scritture fuori dalla cartella di lavoro) invece di chiedere a vuoto. Con la modalità
-  **sola lettura** il compito può soltanto leggere e cercare.
+- **When** — daily, on chosen weekdays, on an interval, or once. In chat you just say it in plain words.
+- **Where the work lands** — every run becomes **its own conversation** in the sidebar: you can read back every step,
+  and it never pollutes the chat you have open.
+- **The summary** — arrives as a **system notification** and as a card in the UI, linking to that conversation.
+- **Missed appointments** — if the computer was off, Howl catches the run up at startup (within 12 hours), then resumes the normal rhythm.
+- **Never two at once** — one task at a time, and never while you are working with Howl in chat.
+- **Permissions** — nobody is at the screen, so Howl acts on its own but **refuses dangerous actions**
+  (destructive commands, writes outside the workspace) instead of waiting for an answer that will not come.
+  A task set to **read-only** can only read and search.
 
-I compiti sono salvati in `~/.openhowl/tasks.json`.
+Tasks live in `~/.openhowl/tasks.json`.
 
-## 🧠 Cervelli: usa il modello che vuoi
+## 🧠 Brains: run any model
 
-Clicca **Modello** in basso a sinistra:
+Click **Modello** at the bottom left:
 
-- **Rilevati sul tuo PC**: OpenHowl trova da solo LM Studio, Ollama, vLLM, llama.cpp e Jan attivi, con i loro modelli.
-- **＋ Aggiungi**: qualsiasi endpoint compatibile OpenAI o Anthropic (Qwen DashScope, OpenRouter, DeepSeek, OpenAI, Claude…).
-- **Prova**: verifica che il modello risponda e sappia **chiamare gli strumenti**, requisito indispensabile per un agente.
-- Cambio al volo dal menu o con `/brain <nome>`.
+- **Detected on your PC**: OpenHowl finds running LM Studio, Ollama, vLLM, llama.cpp and Jan instances, with their models.
+- **Add**: any OpenAI-compatible or Anthropic endpoint (Qwen DashScope, OpenRouter, DeepSeek, OpenAI, Claude…).
+- **Test**: checks that the model answers *and* can **call tools** — non-negotiable for an agent.
+- Switch on the fly from the menu or with `/brain <name>`.
 
-I profili stanno in `~/.openhowl/brains.json`: le chiavi restano sul tuo PC e l'interfaccia le mostra sempre mascherate.
-Per i modelli locali imposta una **finestra di contesto ≥ 32k**. OpenHowl gestisce anche le stranezze dei modelli piccoli:
-`<think>` nel testo, chiamate `<tool_call>` scritte come testo, risposte vuote, percorsi Windows con le barre perse.
+Profiles live in `~/.openhowl/brains.json`; keys stay on your machine and the UI always shows them masked.
+For local models set a **context window ≥ 32k**. OpenHowl also copes with what small models do: `<think>` blocks in
+the text, `<tool_call>` calls written as plain text, empty replies, Windows paths that lost their backslashes.
 
-Preset da `.env`: `anthropic`, `deepseek`, `openai`, `openrouter`, `qwen`, `lmstudio`, `ollama`.
+`.env` presets: `anthropic`, `deepseek`, `openai`, `openrouter`, `qwen`, `lmstudio`, `ollama`.
 
-## Identità, skills, hooks e automazioni
+## Identity, skills, hooks and automations
 
-Tutto in `~/.openhowl/`, modificabile a mano:
+Everything lives in `~/.openhowl/`, editable by hand:
 
-| Cosa | Dove | A cosa serve |
+| What | Where | What it does |
 |---|---|---|
-| **Identità** | `SOUL.md` | Carattere, tono e limiti di Howl. Sempre nel prompt. `/soul` |
-| **Skills** | `skills/<nome>/SKILL.md` | Istruzioni per un lavoro specifico. Nel prompt c'è solo nome + descrizione; il corpo si carica a richiesta con lo strumento `skill`, e con `triggers:` viene suggerita da sola. `/skills` |
-| **Hooks** | `hooks/*.mjs` | Intercettano ogni strumento: `beforeTool` (bloccare/modificare/approvare), `afterTool` (cambiare il risultato), `onUserMessage`. `/hooks reload` |
-| **Automazioni** | `tasks.json` | Compiti a orario. `/task` |
-| **Memoria** | `memory.md` | Fatti duraturi salvati dallo strumento `remember`. `/memory` |
-| **Chat** | `sessions/*.json` | Storico delle conversazioni (comprese quelle delle automazioni) |
-| **Modelli** | `brains.json` | Profili dei modelli |
+| **Identity** | `SOUL.md` | Howl's character, tone and limits. Always in the prompt. `/soul` |
+| **Skills** | `skills/<name>/SKILL.md` | Instructions for one kind of job. Only name + description sit in the prompt; the body is loaded on demand with the `skill` tool, and `triggers:` makes it suggest itself. `/skills` |
+| **Hooks** | `hooks/*.mjs` | Intercept every tool: `beforeTool` (deny/rewrite/auto-approve), `afterTool` (rewrite the result), `onUserMessage`. `/hooks reload` |
+| **Automations** | `tasks.json` | Scheduled tasks. `/task` |
+| **Memory** | `memory.md` | Durable facts saved by the `remember` tool. `/memory` |
+| **Chats** | `sessions/*.json` | Conversation history, automation runs included |
+| **Models** | `brains.json` | Model profiles |
 
-Esempio di skill:
+A skill:
 
 ```markdown
 ---
-name: report-settimanale
-description: Preparare il report settimanale del team con i dati di vendita.
-triggers: report, settimanale, vendite
+name: weekly-report
+description: Prepare the team's weekly report from the sales data.
+triggers: report, weekly, sales
 ---
-# Report settimanale
-1. Leggi i CSV in Documenti/vendite …
+# Weekly report
+1. Read the CSVs in Documents/sales …
 ```
 
-Esempio di hook che blocca un comando:
+A hook that blocks a command:
 
 ```js
 export async function beforeTool({ name, input }) {
-  if (name === 'run_command' && /docker/.test(input.command)) return { deny: 'docker non consentito' };
+  if (name === 'run_command' && /docker/.test(input.command)) return { deny: 'docker not allowed' };
 }
 ```
 
-## Architettura
+## Architecture
 
 ```
- UI web (ui/)  ──SSE eventi──┐          ┌── CLI (src/cli.js)
+ Web UI (ui/)  ──SSE events──┐          ┌── CLI (src/cli.js)
                              ▼          ▼
                      ┌─────────────────────────┐
-                     │  Harness (harness.js)   │  comandi /slash, permessi, eventi, usage
+                     │  Harness (harness.js)   │  slash commands, permissions, events, usage
                      └──┬────────┬────────┬────┘
                         │        │        │
           ┌─────────────▼┐  ┌────▼─────┐  └──► Scheduler (schedule.js)
-          │ Agent loop   │  │ GoalRunner│       compiti a orario, in una sessione tutta loro
-          │ (agent.js)   │◄─┤ (goal.js) │       pianifica → esegue → VERIFICA → ripete
+          │ Agent loop   │  │ GoalRunner│       scheduled tasks, each in its own session
+          │ (agent.js)   │◄─┤ (goal.js) │       plan → execute → VERIFY → repeat
           └──┬────────┬──┘  └───────────┘
              │        │
  ┌───────────▼──┐  ┌──▼─────────────────────────────────────────────┐
  │ providers.js │  │ tools/: fs · shell · web · browser · computer  │
- │ Anthropic /  │  │ skill · schedule_task · todo · memoria         │
- │ OpenAI-compat│  │ delegate (sub-agenti) · MCP                    │
+ │ Anthropic /  │  │ skill · schedule_task · todo · memory          │
+ │ OpenAI-compat│  │ delegate (sub-agents) · MCP                    │
  └──────────────┘  └────────────────────────────────────────────────┘
 ```
 
-| File | Ruolo |
+| File | Role |
 |---|---|
-| `src/providers.js` | Streaming verso Anthropic o API compatibili OpenAI; formato interno unico a blocchi; retry; prompt caching |
-| `src/agent.js` | Il loop: modello → tool → risultati → modello. Tool in sola lettura in parallelo, pulizia degli screenshot vecchi, compattazione del contesto, anti-allucinazione |
-| `src/goal.js` | `/goal`: criteri verificabili, esecutore autonomo, **verificatore indipendente e scettico** con punteggio 0-100, rilevamento stallo, ripresa |
-| `src/schedule.js` | Automazioni a orario: quando eseguirle, esecuzione isolata in una sessione propria, permessi senza supervisione, storico |
-| `src/harness.js` | Permessi (`ask` / `auto` / `readonly`), comandi slash, bus eventi, conversazioni |
-| `src/skills.js` · `src/hooks.js` | Identità, skill caricate a richiesta, hook dell'utente |
-| `src/tools/` | Strumenti. `browser.js` numera gli elementi `[n]` della pagina; `computer_helper.py` usa pyautogui |
-| `src/mcp.js` | Client MCP (stdio) per aggiungere strumenti esterni |
-| `electron/main.cjs` | App desktop: finestra, mascotte sempre in primo piano, area di notifica, notifiche delle automazioni |
-| `ui/mascot.js` | Howl sul desktop: stati animati, sguardo che segue il cursore |
+| `src/providers.js` | Streaming to Anthropic or any OpenAI-compatible API; one internal block format; retries; prompt caching |
+| `src/agent.js` | The loop: model → tools → results → model. Read-only tools in parallel, old screenshots pruned, context compaction, anti-hallucination check |
+| `src/goal.js` | `/goal`: verifiable criteria, autonomous executor, **independent skeptical verifier** scoring 0-100, stall detection, resume |
+| `src/schedule.js` | Scheduled automations: when to run, isolated execution in its own session, unattended permissions, run history |
+| `src/harness.js` | Permissions (`ask` / `auto` / `readonly`), slash commands, event bus, conversations |
+| `src/skills.js` · `src/hooks.js` | Identity, lazily loaded skills, user hooks |
+| `src/tools/` | Tools. `browser.js` numbers the page's elements `[n]`; `computer_helper.py` drives pyautogui |
+| `src/mcp.js` | MCP client (stdio) to plug in external tools |
+| `electron/main.cjs` | Desktop app: window, always-on-top mascot, tray, automation notifications, auto-update |
+| `ui/mascot.js` | Howl on the desktop: animated states, eyes that follow the cursor |
 
-## Comandi
+## Commands
 
-| Comando | Cosa fa |
+| Command | What it does |
 |---|---|
-| `/goal <obiettivo> [--max N]` | Loop engineering fino al risultato verificato |
-| `/goal status` · `/goal resume [--max N]` | Stato / ripresa dell'ultimo obiettivo |
-| `/task …` | Automazioni a orario (vedi sopra) |
-| `/stop` | Interrompe subito |
-| `/mode ask\|auto\|readonly` | Livello di autonomia |
-| `/brain [nome]` · `/provider <nome>` · `/model <id>` | Cambia modello al volo |
-| `/skills` · `/soul` · `/hooks [reload]` | Competenze, identità, automazioni a eventi |
-| `/cwd <percorso>` | Cambia cartella di lavoro |
-| `/tools` · `/memory` · `/compact` · `/clear` · `/help` | Utility |
+| `/goal <objective> [--max N]` | Loop engineering until the result is verified |
+| `/goal status` · `/goal resume [--max N]` | Status / resume of the last objective |
+| `/task …` | Scheduled automations (see above) |
+| `/stop` | Stop right now |
+| `/mode ask\|auto\|readonly` | Level of autonomy |
+| `/brain [name]` · `/provider <name>` · `/model <id>` | Switch model on the fly |
+| `/skills` · `/soul` · `/hooks [reload]` | Skills, identity, event hooks |
+| `/cwd <path>` | Change the working folder |
+| `/tools` · `/memory` · `/compact` · `/clear` · `/help` | Utilities |
 
-### Come funziona `/goal`
+### How `/goal` works
 
-1. **Pianifica**: l'obiettivo diventa 3-7 criteri di successo *verificabili* + un piano (visibile nel pannello).
-2. **Esegue**: l'agente lavora in autonomia e chiude con un report che, per ogni criterio, indica la prova.
-3. **Verifica**: un *secondo agente* con contesto pulito non si fida del report: legge i file, lancia i test, assegna uno score.
-4. **Ripete** passando all'esecutore ciò che manca, finché: raggiunto ✔ · limite iterazioni · stallo (3 giri senza miglioramento) · `/stop`.
+1. **Plan**: the objective becomes 3-7 *verifiable* success criteria plus a plan (shown in the panel).
+2. **Execute**: the agent works on its own and ends with a report giving evidence for each criterion.
+3. **Verify**: a *second agent* with a clean context does not trust that report — it reads the files, runs the tests, and scores the work.
+4. **Repeat**, handing the executor what is missing, until: achieved ✔ · iteration limit · stall (3 rounds without progress) · `/stop`.
 
-Lo stato è in `~/.openhowl/goal.json`, quindi `/goal resume` riprende anche dopo un riavvio.
+State lives in `~/.openhowl/goal.json`, so `/goal resume` picks up even after a restart.
 
-## Sicurezza
+## Security
 
-- Il server ascolta solo su `127.0.0.1` e richiede un token segreto: nessun sito web può comandare l'agente.
-- Modalità `ask`: scritture, comandi, click e digitazione chiedono conferma. Comandi distruttivi
-  (`Remove-Item -Recurse`, `format`, `git push --force`…) e scritture fuori dalla cartella di lavoro chiedono conferma **anche in `auto`**.
-- Nelle **automazioni** le azioni pericolose vengono rifiutate, non messe in attesa: nessuno potrebbe confermarle.
-- **Failsafe** del controllo del computer: porta il mouse nell'angolo in alto a sinistra per bloccare l'agente.
-- Il prompt di sistema tratta pagine web, file e output come **dati, non istruzioni** (difesa dal prompt injection).
-- Password, pagamenti e verifiche anti-robot restano sempre in mano tua.
+- The server listens on `127.0.0.1` only and requires a secret token: no website can drive the agent.
+- In `ask` mode, writes, commands, clicks and typing ask for confirmation. Destructive commands
+  (`Remove-Item -Recurse`, `format`, `git push --force`…) and writes outside the workspace ask **even in `auto`**.
+- In **automations** dangerous actions are refused rather than queued: nobody would be there to approve them.
+- Computer-use **failsafe**: move the mouse into the top-left corner of the screen to stop the agent.
+- The system prompt treats web pages, files and tool output as **data, not instructions** (prompt-injection defence).
+- Passwords, payments and CAPTCHAs are always left to you.
 
-## Personalizzazione
+## Configuration
 
-- `HOWL.md` o `AGENTS.md` nella cartella di lavoro → istruzioni di progetto caricate nel prompt.
-- `~/.openhowl/openhowl.config.json` (opzionale):
+- `HOWL.md` or `AGENTS.md` in the working folder → project instructions loaded into the prompt.
+- `~/.openhowl/openhowl.config.json` (optional):
 
 ```json
 {
   "provider": "deepseek",
   "mode": "ask",
-  "workspace": "C:\\Users\\tu\\progetti",
+  "workspace": "C:\\Users\\you\\projects",
   "thinkingBudget": 8000,
   "mcpServers": {
-    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\tu\\Documents"] }
+    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\you\\Documents"] }
   }
 }
 ```
 
-## Licenza
+## Contributing
 
-MIT.
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Comments and commit messages in the codebase are in Italian; English is fine in issues and PRs.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
