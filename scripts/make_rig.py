@@ -173,6 +173,12 @@ def main():
         layers.sort(key=lambda l: l["z"])
         manifest[pose] = {"w": w, "h": h, "layers": layers, "lidsOn": "head" if "head" in spec["parts"] else "body"}
         print(f"{pose}: {', '.join(l['name'] for l in layers)} + palpebre")
+    # anche le pose senza rig (immagine unica): servono le dimensioni per tenere il lupo alla stessa scala
+    for f in sorted(SRC.glob("*.png")):
+        if f.stem in manifest or f.stem == "head":
+            continue
+        w, h = Image.open(f).size
+        manifest[f.stem] = {"w": w, "h": h}
     (OUT / "rig.json").write_text(json.dumps(manifest, indent=1))
 
 

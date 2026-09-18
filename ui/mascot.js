@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const bubble = $('bubble'), txt = $('txt'), wolf = $('wolf');
 
-  const POSE = { idle: 'idle', streaming: 'idle', success: 'success', thinking: 'thinking', tool: 'working', approval: 'approval', waiting: 'approval', error: 'approval' };
+  const howl = window.HowlWolf.mount($('howl'), { variant: 'shadow', sleepAfter: 3 * 60 * 1000 });
   const TOOL_SAY = {
     read_file: 'Leggo un file', write_file: 'Scrivo un file', edit_file: 'Modifico il codice', create_folder: 'Creo una cartella', run_command: 'Eseguo un comando',
     web_search: 'Cerco sul web', web_fetch: 'Leggo una pagina', browser: 'Navigo nel browser', computer: 'Uso il tuo PC',
@@ -22,14 +22,13 @@
     if (!stay) hideTimer = setTimeout(() => bubble.classList.remove('show'), 4500);
   }
 
-  function setState(next) {
+  function setState(next, opts = {}) {
     clearTimeout(resetTimer);
     state = next;
     document.body.dataset.state = next;
-    const pose = POSE[next] || 'idle';
-    document.querySelectorAll('.wolf img').forEach((img) => img.classList.toggle('on', img.dataset.pose === pose));
-    if (next === 'success') { sparks(); resetTimer = setTimeout(() => setState('idle'), 2200); }
-    if (next === 'error') resetTimer = setTimeout(() => setState('idle'), 4000);
+    howl.set(next, opts);
+    if (next === 'success' || next === 'goal') { sparks(); resetTimer = setTimeout(() => setState('idle'), next === 'goal' ? 3400 : 2600); }
+    if (next === 'error') resetTimer = setTimeout(() => setState('idle'), 4200);
   }
 
   function sparks() {
@@ -55,7 +54,7 @@
     switch (ev.type) {
       case 'snapshot':
         document.body.classList.toggle('busy', !!ev.busy);
-        if (!ev.busy) say('Ciao! Clicca su di me per parlarmi.');
+        if (!ev.busy) { say('Ciao! Clicca su di me per parlarmi.'); howl.hello(); }
         break;
       case 'busy':
         document.body.classList.toggle('busy', ev.busy);
@@ -69,7 +68,7 @@
         else if (ev.state === 'idle') { setState('idle'); bubble.classList.remove('show'); }
         break;
       case 'tool_start':
-        setState('tool');
+        setState('tool', { tool: ev.name });
         say(`${sub ? '🐺 ' : ''}${TOOL_SAY[ev.name] || `Uso ${ev.name}`}`, { stay: true, dots: true });
         break;
       case 'approval_request':
@@ -92,8 +91,16 @@
         setState('error');
         say(ev.text.slice(0, 120), { kind: 'error' });
         break;
+      case 'task_started':
+        if (state === 'idle') setState('tool', { tool: 'schedule_task' });
+        say(`🕗 ${ev.name}`, { stay: true, dots: true });
+        break;
+      case 'task_done':
+        setState(ev.ok ? 'success' : 'error');
+        say(`${ev.ok ? '✅' : '⚠️'} ${ev.name}: ${String(ev.report || '').replace(/[#*`>]/g, '').slice(0, 110)}`, { kind: ev.ok ? '' : 'error' });
+        break;
       case 'goal_phase':
-        if (ev.phase === 'achieved') { setState('success'); say('Obiettivo raggiunto! 🎯'); }
+        if (ev.phase === 'achieved') { setState('goal'); say('Obiettivo raggiunto! 🎯 Auuuuu!'); }
         else if (ev.phase === 'verifying') say(`Verifico il lavoro (giro ${ev.iteration})`, { stay: true, dots: true });
         break;
     }
@@ -126,6 +133,13 @@
     if (drag.moved) desk?.mascotMoved();
     else desk ? desk.openApp() : window.open('/', '_blank');
     drag = null;
+  });
+  let lastHover = 0;
+  wolf.addEventListener('pointerenter', () => {
+    if (drag || Date.now() - lastHover < 8000) return;
+    lastHover = Date.now();
+    if (howl.state === 'sleeping') { howl.wake(); say('Eh? Ero solo a occhi chiusi… 🐺'); }
+    else howl.wave();
   });
   wolf.addEventListener('contextmenu', (e) => { e.preventDefault(); desk?.mascotMenu(); });
 })();

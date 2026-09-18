@@ -45,8 +45,7 @@
     computer: 'Usa il computer', delegate: 'Chiama il branco', grep: 'Cerca nel codice', glob: 'Cerca file',
     todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro', schedule_task: 'Programma un\'automazione',
   };
-  const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', error: 'Errore' };
-  const POSE = { idle: 'idle', streaming: 'idle', success: 'success', thinking: 'thinking', tool: 'working', approval: 'approval', waiting: 'approval', error: 'approval' };
+  const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', goal: 'Obiettivo raggiunto', error: 'Errore' };
   const MODES = [
     ['readonly', 'Sola lettura', 'Può solo leggere e cercare. Non modifica nulla sul computer.', 'eye'],
     ['ask', 'Chiedi conferma', 'Chiede il permesso prima di scrivere file, eseguire comandi o usare mouse e tastiera.', 'hand'],
@@ -59,15 +58,15 @@
   let approvalQueue = [];
 
   /* ───────── stato del lupo ───────── */
-  function wolf(state, say) {
+  const howl = window.HowlWolf.mount($('wolfMini'), { variant: 'mini' });
+  function wolf(state, say, opts = {}) {
     if (replaying) return;
     clearTimeout(resetTimer);
     document.body.dataset.state = state;
-    $('wolfMini').dataset.state = state;
     $('stateLabel').textContent = say || STATE_LABEL[state] || state;
-    $('wolfMini').querySelectorAll('img').forEach((i) => i.classList.toggle('on', i.dataset.pose === POSE[state]));
-    if (state === 'success') confetti();
-    if (state === 'success' || state === 'error') resetTimer = setTimeout(() => wolf('idle'), state === 'success' ? 2600 : 4000);
+    howl.set(state, opts);
+    if (state === 'success' || state === 'goal') confetti();
+    if (['success', 'goal', 'error'].includes(state)) resetTimer = setTimeout(() => wolf('idle'), state === 'error' ? 4200 : 3000);
   }
   function confetti() {
     const r = $('wolfMini').getBoundingClientRect();
@@ -390,7 +389,7 @@
       case 'assistant_text': { const s = assistantEl(ev); s.raw = ev.text; s.el.classList.remove('live'); renderSeg(s); break; }
       case 'thinking_delta': { const s = thinkingEl(ev); s.raw += ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'thinking': { const s = thinkingEl(ev); s.raw = ev.text; s.el.lastElementChild.textContent = s.raw; break; }
-      case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name); break;
+      case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name, { tool: ev.name }); break;
       case 'tool_end': toolEnd(ev); break;
       case 'info': add(div('msg line', md(ev.text))); break;
       case 'error': add(div('msg line err', md(ev.text))); wolf('error'); break;
@@ -416,7 +415,7 @@
       case 'goal': renderGoal(ev.goal); break;
       case 'goal_phase':
         add(div(`msg goal-banner ${ev.phase}`, `<span>${inline(ev.text)}</span>`));
-        if (ev.phase === 'achieved') wolf('success', 'Obiettivo raggiunto');
+        if (ev.phase === 'achieved') wolf('goal', 'Obiettivo raggiunto');
         break;
       case 'goal_verdict':
         add(div(`msg verdict ${ev.done ? 'done' : ''}`,
@@ -486,7 +485,15 @@
     input.focus();
   }
   $('suggest').addEventListener('mousedown', (e) => { const d = e.target.closest('[data-i]'); if (d) { e.preventDefault(); applySuggest(+d.dataset.i); } });
-  input.addEventListener('input', () => { autosize(); sugIndex = 0; updateSuggest(); });
+  input.addEventListener('input', () => { autosize(); sugIndex = 0; updateSuggest(); listenWhileTyping(); });
+  let typingTimer = null;
+  // mentre scrivi, Howl (se è libero) si mette in ascolto
+  function listenWhileTyping() {
+    if (document.body.classList.contains('busy')) return;
+    howl.listen(!!input.value.trim());
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => howl.listen(false), 4000);
+  }
   input.addEventListener('keydown', (e) => {
     if (!$('suggest').hidden && sugItems.length) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sugIndex = (sugIndex + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length; updateSuggest(); return; }

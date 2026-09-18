@@ -10,6 +10,7 @@
   <link rel="preload" as="image" href="wolf/thinking.png">
   <link rel="preload" as="image" href="wolf/working.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="wolf.css">
 </head>
 <body>
   <div class="app">
@@ -45,13 +46,7 @@
         </section>
 
         <section class="howl-card">
-          <div class="wolf-mini" id="wolfMini" data-state="idle">
-            <img src="wolf/idle.png" data-pose="idle" class="on" alt="">
-            <img src="wolf/thinking.png" data-pose="thinking" alt="">
-            <img src="wolf/working.png" data-pose="working" alt="">
-            <img src="wolf/approval.png" data-pose="approval" alt="">
-            <img src="wolf/success.png" data-pose="success" alt="">
-          </div>
+          <div class="wolf-mini" id="wolfMini"></div>
           <div class="howl-info">
             <div class="howl-name">Howl <span class="state-dot"></span></div>
             <div class="howl-state" id="stateLabel">Inattivo</div>
@@ -111,7 +106,7 @@
 
       <div class="feed" id="feed">
         <div class="welcome" id="welcome">
-          <img class="welcome-wolf" src="wolf/idle.png" alt="">
+          <img class="welcome-wolf" src="wolf/hello.png" alt="">
           <h2>Come posso aiutarti?</h2>
           <p>Scrivo codice, cerco sul web, navigo i siti e uso le app del tuo computer.<br>Per i lavori lunghi usa <code>/goal</code>: procedo e verifico finché non è fatto.</p>
           <div class="examples">
@@ -252,6 +247,7 @@
     </div>
   </div>
 
+  <script src="wolf.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
