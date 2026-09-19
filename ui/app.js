@@ -1118,8 +1118,189 @@
   $('paNo').onclick = () => answerPair(false);
 
   /* ───────── laboratorio del branco ───────── */
-  const brancoApi = (action, body) => post(`/api/branco/${action}`, body).then((r) => r.json()).catch((e) => ({ error: e.message }));
+  const brancoApi = async (action, body) => {
+    const r = await post(`/api/branco/${action}`, body).then(x => x.json()).catch(e => ({ error: e.message }));
+    if (r.error) { alert(r.error); }
+    return r;
+  };
   let bcRunning = null;
+
+  // Tab switching
+  document.querySelectorAll('.bc-tab').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.bc-tab').forEach(b => b.classList.remove('on'));
+      document.querySelectorAll('.bc-panel').forEach(p => p.hidden = true);
+      btn.classList.add('on');
+      $(`bcTab-${btn.dataset.tab}`).hidden = false;
+      if (btn.dataset.tab === 'addestramento') $('bcNote').textContent = 'Il laboratorio usa solo modelli locali. Durante la corsa il modello è occupato: meglio non chattare con Howl, o i tempi misurati diventano falsi.';
+      if (btn.dataset.tab === 'corse') refreshBranco();
+      if (btn.dataset.tab === 'fondatori') loadFondatori();
+      if (btn.dataset.tab === 'dominio') loadMondo();
+    };
+  });
+
+  let mondoCorrente = null;
+
+  async function loadMondo() {
+    const r = await brancoApi('mondo:get', {});
+    mondoCorrente = r.mondo || null;
+    if (mondoCorrente) {
+      const f = $('mondoForm').elements;
+      f.nome.value = mondoCorrente.nome || '';
+      f.ruolo.value = mondoCorrente.ruolo || '';
+      f.contesto.value = mondoCorrente.contesto || '';
+      f.tipoRisposta.value = mondoCorrente.tipoRisposta || 'numero';
+      if (mondoCorrente.esame?.length) renderEsame(mondoCorrente.esame, mondoCorrente.segreto || []);
+    }
+  }
+
+  function renderEsame(esame, segreto) {
+    $('mondoEsame').hidden = false;
+    const renderList = (items, container) => {
+      container.innerHTML = items.map((q, i) => `
+        <div class="esame-item">
+          <div class="esame-q"><b>${q.id}</b> ${esc(q.domanda)}</div>
+          <div class="esame-a">
+            <strong>${esc(String(q.risposta))}</strong>
+            <button data-edit-q="${i}" data-edit-tipo="${container.id}" title="Modifica risposta">✎</button>
+          </div>
+          ${q.spiegazione ? `<div class="esame-spieg">${esc(q.spiegazione)}</div>` : ''}
+        </div>
+      `).join('');
+    };
+    renderList(esame, $('mondoEsameList'));
+    renderList(segreto, $('mondoSegretoList'));
+  }
+
+  $('mondoForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target.elements;
+    const btn = $('mondoGenBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generazione in corso…';
+    $('mondoNote').textContent = 'Il modello sta generando le domande d\'esame, ci vogliono ~20 secondi…';
+    try {
+      const mondo = { nome: f.nome.value, ruolo: f.ruolo.value, contesto: f.contesto.value, tipoRisposta: f.tipoRisposta.value };
+      const r = await brancoApi('mondo:genera', mondo);
+      if (r.esame) {
+        mondoCorrente = { ...mondo, esame: r.esame, segreto: r.segreto };
+        renderEsame(r.esame, r.segreto);
+        $('mondoNote').textContent = `✓ ${r.esame.length} domande d'esame + ${r.segreto.length} segrete generate. Rivedi e poi salva.`;
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Genera esame automaticamente';
+    }
+  };
+
+  $('mondoRigenBtn').onclick = () => $('mondoForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+  $('mondoSaveBtn').onclick = async () => {
+    if (!mondoCorrente?.esame?.length) return alert('Genera prima le domande d\'esame.');
+    const r = await brancoApi('mondo:save', mondoCorrente);
+    if (!r.error) {
+      $('mondoNote').textContent = '✓ Dominio salvato.';
+      document.querySelector('.bc-tab[data-tab="fondatori"]').click();
+    }
+  };
+
+  let fondatoriCustom = [];
+  let editingFndId = null;
+
+  async function loadFondatori() {
+    const r = await brancoApi('fondatori:list', {});
+    fondatoriCustom = r.fondatori || [];
+    renderFondatori();
+  }
+
+  function renderFondatori() {
+    const box = $('fndList');
+    if (!fondatoriCustom.length) {
+      box.innerHTML = '<div class="chats-empty">Nessun fondatore custom. Usa i predefiniti o creane uno.</div>';
+      return;
+    }
+    box.innerHTML = fondatoriCustom.map(f => `
+      <div class="br-item">
+        <div class="br-item-main">
+          <b>🐺 ${esc(f.nome)}</b> <span class="muted">· Fam. ${esc(f.famiglia || 'A')} · ragion: ${esc(f.ragionamento || 'low')} · temp: ${esc(String(f.temperatura ?? 0.3))}</span>
+          <small>${esc(f.persona || '')}</small>
+        </div>
+        <div class="br-item-acts">
+          <button data-fnd-test="${esc(f.id)}" title="Prova su una domanda">▶ Prova</button>
+          <button data-fnd-edit="${esc(f.id)}" title="Modifica">✎</button>
+          <button data-fnd-del="${esc(f.id)}" title="Elimina">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  $('fndNew').onclick = () => {
+    editingFndId = null;
+    $('fndForm').reset();
+    $('fndFormTitle').textContent = 'Crea fondatore';
+    $('fndTestOut').hidden = true;
+    $('fndForm').hidden = false;
+  };
+
+  $('fndCancel').onclick = () => { $('fndForm').hidden = true; };
+
+  $('fndList').onclick = async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.fndDel) {
+      if (!confirm('Eliminare questo fondatore?')) return;
+      const r = await brancoApi('fondatori:delete', { id: b.dataset.fndDel });
+      if (!r.error) { fondatoriCustom = r.fondatori || []; renderFondatori(); }
+    }
+    if (b.dataset.fndEdit) {
+      const f = fondatoriCustom.find(x => x.id === b.dataset.fndEdit);
+      if (!f) return;
+      editingFndId = f.id;
+      const el = $('fndForm').elements;
+      el.nome.value = f.nome || '';
+      el.famiglia.value = f.famiglia || 'A';
+      el.persona.value = f.persona || '';
+      el.ragionamento.value = f.ragionamento || 'low';
+      el.temperatura.value = f.temperatura ?? 0.3;
+      el.passiMax.value = f.passiMax || 10;
+      $('fndFormTitle').textContent = 'Modifica fondatore';
+      $('fndTestOut').hidden = true;
+      $('fndForm').hidden = false;
+    }
+    if (b.dataset.fndTest) {
+      const f = fondatoriCustom.find(x => x.id === b.dataset.fndTest);
+      if (!f) return;
+      runFndTest(f);
+    }
+  };
+
+  async function runFndTest(fondatore) {
+    const out = $('fndTestOut');
+    out.hidden = false;
+    out.textContent = '⏳ Test in corso (~30 secondi)…';
+    const r = await brancoApi('fondatori:test', { fondatore });
+    if (r.error) { out.textContent = '✗ Errore: ' + r.error; return; }
+    out.textContent = `${r.ok ? '✓' : '✗'} Risposta: ${r.risposta ?? 'nessuna'} · ${r.passi} passi · ${r.secondi}s\n${(r.trace || []).join('\n')}`;
+  }
+
+  $('fndTestBtn').onclick = async () => {
+    const f = $('fndForm').elements;
+    const fondatore = { nome: f.nome.value, persona: f.persona.value, ragionamento: f.ragionamento.value, temperatura: +f.temperatura.value, passiMax: +f.passiMax.value };
+    runFndTest(fondatore);
+  };
+
+  $('fndForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target.elements;
+    const body = { fondatore: { id: editingFndId, nome: f.nome.value, famiglia: f.famiglia.value, persona: f.persona.value, ragionamento: f.ragionamento.value, temperatura: +f.temperatura.value, passiMax: +f.passiMax.value } };
+    const r = await brancoApi('fondatori:save', body);
+    if (!r.error) {
+      fondatoriCustom = r.fondatori || [];
+      renderFondatori();
+      $('fndForm').hidden = true;
+    }
+  };
+
   async function refreshBranco() {
     const r = await brancoApi('list', {});
     if (r.error) return;
@@ -1137,8 +1318,11 @@
     $('branco').hidden = false;
     const f = $('bcForm').elements;
     f.modello.value = config.brain ? config.brain.name : config.model || '';
-    $('bcNote').textContent = 'Il laboratorio usa solo modelli locali. Durante la corsa il modello è occupato: meglio non chattare con Howl, o i tempi misurati diventano falsi.';
-    refreshBranco();
+    if (mondoCorrente) {
+      document.querySelector('.bc-tab[data-tab="corse"]').click();
+    } else {
+      document.querySelector('.bc-tab[data-tab="dominio"]').click();
+    }
   }
   $('bcClose').onclick = () => { $('branco').hidden = true; };
   $('branco').addEventListener('mousedown', (e) => { if (e.target.id === 'branco') $('branco').hidden = true; });
@@ -1146,8 +1330,16 @@
     e.preventDefault();
     const f = e.target.elements;
     $('bcLog').textContent = ''; $('bcLog').hidden = false;
-    const r = await brancoApi('start', { obiettivo: f.obiettivo.value, generazioni: +f.generazioni.value, figli: +f.figli.value, riprendi: f.riprendi.checked });
-    if (r.error) { $('bcLog').hidden = true; return alert(r.error); }
+    const r = await brancoApi('start', {
+      obiettivo: f.obiettivo.value,
+      generazioni: +f.generazioni.value,
+      figli: +f.figli.value,
+      riprendi: f.riprendi.checked,
+      famiglie: +f.famiglie.value || 1,
+      migrazione: +f.migrazione.value || 2,
+      crossbreed: f.crossbreed.checked
+    });
+    if (r.error) { $('bcLog').hidden = true; return; }
     refreshBranco();
     openGraph(r.id);
   };
