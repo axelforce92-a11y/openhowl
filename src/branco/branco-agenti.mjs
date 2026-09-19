@@ -309,26 +309,103 @@ function genStats(gen, arr) {
 state.storia.push(genStats(0, founders));
 save();
 
-for (let g = 1; g <= CFG.generations; g++) {
-  log(`\n— Generazione ${g} — genitori: ${parents.map((p) => `${p.nome} ${Math.round(p.voto * 100)}% ${Math.round(p.secondi)}s`).join(', ')}`);
+async function evolveFamily(fam, globalG) {
+  let p_founders = fam ? [...fam.nodi] : founders;
+  if (fam && fam.nodi.length === 0) {
+    for (const f of founders) {
+       const c = JSON.parse(JSON.stringify(f));
+       c.id = state.nodi.length;
+       state.nodi.push(c);
+       fam.nodi.push(c);
+    }
+    p_founders = fam.nodi;
+  }
+  let currentParents = select(p_founders, CFG.parents);
+  currentParents.forEach(p => p.scelto = true);
+  if (fam && globalG === 1) fam.storia.push(genStats(0, p_founders));
+  
+  log(`\
+— Generazione ${globalG}${fam ? ' ('+fam.nome+')' : ''} — genitori: ${currentParents.map((p) => `${p.nome} ${Math.round(p.voto * 100)}% ${Math.round(p.secondi)}s`).join(', ')}`);
   const couples = [];
-  for (let i = 0; i < parents.length; i++) for (let j = i + 1; j < parents.length; j++) couples.push([parents[i], parents[j]]);
+  for (let i = 0; i < currentParents.length; i++) for (let j = i + 1; j < currentParents.length; j++) couples.push([currentParents[i], currentParents[j]]);
   const kids = [];
   for (let k = 0; k < CFG.kidsPerGen; k++) {
     const [A, B] = couples[k % couples.length];
-    const child = add(await breed(A, B, g));
+    const child = add(await breed(A, B, globalG));
+    if (fam) fam.nodi.push(child);
     log(` ${child.nome} = ${A.nome} × ${B.nome}${child.mutazioni.length ? ` · ${child.mutazioni.join(', ')}` : ''}`);
     if (child.regole.at(-1)?.scopritore === child.nome) log(`   nuova regola: «${child.regole.at(-1).testo}»`);
     save();
     await evaluate(child);
     kids.push(child);
   }
-  parents = select([...kids, ...parents], CFG.parents);
-  parents.forEach((p) => (p.scelto = true));
-  state.storia.push(genStats(g, kids));
+  currentParents = select([...kids, ...currentParents], CFG.parents);
+  currentParents.forEach((p) => (p.scelto = true));
+  if (fam) fam.storia.push(genStats(globalG, kids));
+  else state.storia.push(genStats(globalG, kids));
   save();
+  return currentParents;
 }
 
+if (!state.famiglie) {
+  for (let g = 1; g <= CFG.generations; g++) {
+    parents = await evolveFamily(null, g);
+  }
+} else {
+  let allParents = state.famiglie.map(() => []);
+  for (let g = 1; g <= CFG.generations; g++) {
+    let active = 0;
+    const nexts = [];
+    for (let i=0; i<state.famiglie.length; i++) {
+        while(active >= 2) await new Promise(r => setTimeout(r, 100));
+        active++;
+        nexts.push(evolveFamily(state.famiglie[i], g).then(p => { active--; return p; }));
+    }
+    allParents = await Promise.all(nexts);
+    
+    if (g % CFG.migrazione === 0 && g < CFG.generations) {
+        log(`\
+— Migrazione Generazione ${g} —`);
+        for (let i=0; i<state.famiglie.length; i++) {
+            const best = rank(state.famiglie[i].nodi.filter(x => x.voto != null))[0];
+            if (!best) continue;
+            for (let j=0; j<state.famiglie.length; j++) {
+                if (i===j) continue;
+                const migr = JSON.parse(JSON.stringify(best));
+                migr.id = state.nodi.length;
+                migr.tipo = 'migrante';
+                migr.scelto = false;
+                state.nodi.push(migr);
+                state.famiglie[j].nodi.push(migr);
+                log(`   ${migr.nome} migra da ${state.famiglie[i].nome} a ${state.famiglie[j].nome}`);
+            }
+        }
+    }
+  }
+  
+  if (CFG.crossbreed) {
+     log(`\
+— Cross-breeding finale —`);
+     const champions = state.famiglie.map(f => rank(f.nodi.filter(x=>x.voto!=null)).slice(0, 2)).flat();
+     const crossCouples = [];
+     for(let i=0; i<champions.length; i++) {
+        for (let j=i+1; j<champions.length; j++) {
+            crossCouples.push([champions[i], champions[j]]);
+        }
+     }
+     const cbKids = [];
+     for (const [A, B] of crossCouples) {
+        const child = add(await breed(A, B, CFG.generations + 1));
+        child.tipo = 'crossbreed';
+        await evaluate(child);
+        cbKids.push(child);
+     }
+     if (cbKids.length) {
+         state.campione = rank(cbKids.filter(x=>x.voto!=null))[0]?.id;
+     }
+     save();
+  }
+}
 // esame segreto: alfa contro il miglior fondatore (le stesse domande nuove per entrambi)
 const alpha = rank(state.nodi.filter((n) => n.voto != null))[0];
 const bestFounder = rank(founders)[0];

@@ -84,3 +84,51 @@ export function runTool(name, args = {}) {
     default: return 'Strumento sconosciuto.';
   }
 }
+
+import fs from 'node:fs';
+
+export function loadMondo(file) {
+  if (!file) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch(e) {
+    return null;
+  }
+}
+
+export function buildTools(mondo) {
+  return [
+    { type: 'function', function: { name: 'leggi_contesto', description: 'Restituisce il documento o contesto di riferimento.', parameters: { type: 'object', properties: {} } } },
+    { type: 'function', function: { name: 'calcola', description: 'Calcolatrice: valuta un\'espressione aritmetica, es. "(12-5)*0.02*800".', parameters: { type: 'object', properties: { espressione: { type: 'string' } }, required: ['espressione'] } } }
+  ];
+}
+
+export function buildSystemPrompt(g, mondo) {
+  return `${mondo.ruolo}
+${g.persona}
+${g.regole?.length ? `\nRegole che hai imparato dall'esperienza:\n${g.regole.map((r) => `- ${r.testo}`).join('\n')}\n` : ''}
+Usa lo strumento leggi_contesto per leggere le informazioni necessarie. Non inventare dati non presenti nel contesto.
+Termina SEMPRE con una riga nel formato: RISPOSTA: <valore>`;
+}
+
+export function buildEsaminatore(mondo) {
+  return (n, attesa) => {
+    if (n === null || n === undefined) return false;
+    const type = mondo.tipoRisposta;
+    if (type === 'numero') {
+      const num = Number(String(n).replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+      return Number.isFinite(num) && Math.abs(num - attesa) < 0.51;
+    }
+    if (type === 'sinno') {
+      const resp = String(n).toLowerCase();
+      const ans = String(attesa).toLowerCase();
+      if (ans.includes('si') || ans.includes('sì')) return resp.includes('si') || resp.includes('sì');
+      if (ans.includes('no')) return resp.includes('no');
+      return false;
+    }
+    // 'testo'
+    const resp = String(n).toLowerCase().trim();
+    const ans = String(attesa).toLowerCase().trim();
+    return resp === ans || resp.includes(ans) || ans.includes(resp);
+  };
+}

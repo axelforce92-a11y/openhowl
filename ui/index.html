@@ -24,8 +24,7 @@
         </button>
       </div>
 
-      <div class="proj-bar"><span>Progetti</span><button class="link" id="newProject" title="Scegli una cartella e inizia a lavorarci">＋ Nuovo progetto</button></div>
-      <div class="proj-bar"><span>Progetti</span><button class="link" id="newProject" title="Scegli una cartella e inizia a lavorarci">＋ Nuovo progetto</button></div>
+
       <div class="chats" id="chats"></div>
 
       <div class="side-bottom">
@@ -230,31 +229,147 @@
   <!-- ───────── Laboratorio del branco ───────── -->
   <div class="modal" id="branco" hidden>
     <div class="modal-card wide">
-      <div class="modal-h"><h3>🐺 Laboratorio del branco</h3><button class="x" id="bcClose" title="Chiudi">✕</button></div>
-      <p class="muted">Tanti agenti con lo stesso modello locale ma un «DNA» diverso (personalità, quanto ragiona, regole imparate) sostengono un esame vero.
-        I migliori si accoppiano, i figli imparano dagli errori e dalla lentezza dei genitori, generazione dopo generazione. Tutto sul tuo PC.</p>
-      <form class="br-form bc-form" id="bcForm">
-        <div class="grid2">
-          <label>Obiettivo
-            <select name="obiettivo">
-              <option value="equilibrio">Più intelligenti e più veloci</option>
-              <option value="intelligenza">Solo più intelligenti</option>
-            </select>
-          </label>
-          <label>Modello<input name="modello" disabled></label>
-          <label>Generazioni<input name="generazioni" type="number" min="1" max="10" value="4"></label>
-          <label>Figli per generazione<input name="figli" type="number" min="2" max="10" value="6"></label>
-          <label class="check span2"><input type="checkbox" name="riprendi" checked> Riusa i fondatori dell'ultima corsa con questo modello (risparmia ~10 minuti)</label>
+      <div class="modal-h">
+        <h3>🐺 Laboratorio del branco</h3>
+        <button class="x" id="bcClose" title="Chiudi">✕</button>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="bc-tabs" role="tablist">
+        <button class="bc-tab on" data-tab="dominio" role="tab">🌍 Dominio</button>
+        <button class="bc-tab" data-tab="fondatori" role="tab">🧬 Fondatori</button>
+        <button class="bc-tab" data-tab="addestramento" role="tab">🚀 Addestramento</button>
+        <button class="bc-tab" data-tab="corse" role="tab">🏆 Corse</button>
+      </div>
+
+      <!-- TAB: Dominio -->
+      <div class="bc-panel" id="bcTab-dominio">
+        <p class="muted">Descrivi il tuo agente: chi è e cosa sa. Il sistema genera le domande d'esame automaticamente.</p>
+        <form class="br-form" id="mondoForm">
+          <div class="grid2">
+            <label class="span2">Nome del progetto<input name="nome" placeholder="es. Assistente affitti, Supporto clienti SaaS…" required></label>
+            <label class="span2">Ruolo dell'agente
+              <textarea name="ruolo" rows="3" placeholder="Sei un consulente che risponde a domande sugli affitti. Basati solo sul regolamento e sui dati del cliente. Non inventare mai numeri o regole."></textarea>
+            </label>
+            <label class="span2">Contesto (documenti, regole, FAQ che l'agente può consultare)
+              <textarea name="contesto" rows="6" placeholder="Incolla qui il testo: regolamento, listino prezzi, FAQ, contratto tipo…"></textarea>
+            </label>
+            <label>Tipo di risposta attesa
+              <select name="tipoRisposta">
+                <option value="numero">Numero (€, %, quantità)</option>
+                <option value="sinno">Sì / No</option>
+                <option value="testo">Parola o frase breve</option>
+              </select>
+            </label>
+            <label></label>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn primary" id="mondoGenBtn">Genera esame automaticamente</button>
+          </div>
+        </form>
+
+        <!-- Risultato generazione -->
+        <div id="mondoEsame" hidden>
+          <div class="sec-h">Domande d'esame <span class="muted" style="font-weight:400;font-size:12px">(rivedi e correggi se necessario)</span></div>
+          <div id="mondoEsameList" class="br-list"></div>
+          <div class="sec-h" style="margin-top:12px">Domande segrete <span class="muted" style="font-weight:400;font-size:12px">(usate solo per il test finale)</span></div>
+          <div id="mondoSegretoList" class="br-list"></div>
+          <div class="actions" style="margin-top:16px">
+            <button type="button" class="btn" id="mondoRigenBtn">↺ Rigenera esame</button>
+            <button type="button" class="btn primary" id="mondoSaveBtn">Salva e vai ai fondatori →</button>
+          </div>
         </div>
-        <div class="bc-note muted" id="bcNote"></div>
-        <div class="actions">
-          <button type="button" class="btn" id="bcStop" hidden>Ferma la corsa</button>
-          <button type="submit" class="btn primary" id="bcStart">Avvia l'addestramento</button>
+
+        <div class="bc-note muted" id="mondoNote"></div>
+      </div>
+
+      <!-- TAB: Fondatori -->
+      <div class="bc-panel" id="bcTab-fondatori" hidden>
+        <p class="muted">I fondatori sono gli agenti di partenza. Ogni fondatore ha un DNA diverso: stile di lavoro, quanto ragiona, temperatura. I migliori si accoppiano e generano figli più capaci.</p>
+
+        <div class="sec-h">Fondatori custom <button class="link" id="fndNew">＋ Crea fondatore</button></div>
+        <div id="fndList" class="br-list"></div>
+
+        <div class="sec-h" style="margin-top:8px">
+          <label class="check"><input type="checkbox" id="fndUsaDefault" checked> Usa anche i 6 fondatori predefiniti (stili diversi: Scrupoloso, Velocista, Pianificatore…)</label>
         </div>
-      </form>
-      <div class="sec-h">Le corse</div>
-      <div id="bcList" class="br-list"></div>
-      <div class="bc-log" id="bcLog" hidden></div>
+
+        <!-- Form crea/modifica fondatore -->
+        <form class="br-form" id="fndForm" hidden>
+          <div class="sec-h" id="fndFormTitle">Crea fondatore</div>
+          <div class="grid2">
+            <label>Nome<input name="nome" placeholder="es. Il Metodico" required></label>
+            <label>Famiglia
+              <select name="famiglia">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </label>
+            <label class="span2">Personalità (stile di lavoro)
+              <textarea name="persona" rows="3" placeholder="Prima leggi sempre il contesto per intero, poi rispondi passo passo con i calcoli espliciti." required></textarea>
+            </label>
+            <label>Ragionamento
+              <select name="ragionamento">
+                <option value="none">Nessuno (più veloce)</option>
+                <option value="low" selected>Leggero</option>
+                <option value="medium">Approfondito</option>
+              </select>
+            </label>
+            <label>Temperatura<input name="temperatura" type="number" min="0" max="1" step="0.1" value="0.3"></label>
+            <label>Passi massimi<input name="passiMax" type="number" min="4" max="20" value="10"></label>
+            <label></label>
+          </div>
+          <div class="fnd-test-out" id="fndTestOut" hidden></div>
+          <div class="actions">
+            <button type="button" class="btn" id="fndCancel">Annulla</button>
+            <button type="button" class="btn" id="fndTestBtn">▶ Prova su una domanda</button>
+            <button type="submit" class="btn primary">Salva fondatore</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB: Addestramento -->
+      <div class="bc-panel" id="bcTab-addestramento" hidden>
+        <p class="muted">Configura l'addestramento. Con più famiglie ogni pool evolve separato e i migliori si incrociano alla fine (Island Model): più diversità genetica, migliore campione finale.</p>
+        <form class="br-form bc-form" id="bcForm">
+          <div class="grid2">
+            <label>Obiettivo
+              <select name="obiettivo">
+                <option value="equilibrio">Più intelligenti e più veloci</option>
+                <option value="intelligenza">Solo più intelligenti</option>
+              </select>
+            </label>
+            <label>Modello<input name="modello" disabled></label>
+            <label>Generazioni<input name="generazioni" type="number" min="1" max="10" value="4"></label>
+            <label>Figli per generazione<input name="figli" type="number" min="2" max="10" value="6"></label>
+            <label>Famiglie separate
+              <select name="famiglie">
+                <option value="1">1 — classico</option>
+                <option value="2" selected>2 — due pool genetici</option>
+                <option value="3">3 — tre pool genetici</option>
+                <option value="4">4 — quattro pool genetici</option>
+              </select>
+            </label>
+            <label>Migrazione ogni (gen)<input name="migrazione" type="number" min="1" max="5" value="2"></label>
+            <label class="check"><input type="checkbox" name="crossbreed" checked> Cross-breeding finale tra le famiglie migliori</label>
+            <label class="check"><input type="checkbox" name="riprendi" checked> Riusa fondatori già valutati (risparmia ~10 min)</label>
+          </div>
+          <div class="bc-note muted" id="bcNote"></div>
+          <div class="actions">
+            <button type="button" class="btn" id="bcStop" hidden>Ferma la corsa</button>
+            <button type="submit" class="btn primary" id="bcStart">Avvia l'addestramento</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB: Corse -->
+      <div class="bc-panel" id="bcTab-corse" hidden>
+        <div class="sec-h">Le corse</div>
+        <div id="bcList" class="br-list"></div>
+        <div class="bc-log" id="bcLog" hidden></div>
+      </div>
     </div>
   </div>
   <div class="bc-graph" id="bcGraph" hidden>

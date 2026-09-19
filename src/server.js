@@ -124,6 +124,13 @@ export async function startServer({ port, safeStorage } = {}) {
       case 'list': return { corse: b.list(), inCorso: b.runId };
       case 'start': return { ...b.start(body), corse: b.list(), inCorso: b.runId };
       case 'stop': b.stop(); return { ok: true };
+      case 'mondo:get':      return b.mondoGet();
+      case 'mondo:save':     return b.mondoSave(body);
+      case 'mondo:genera':   return await b.mondoGenera(body, h.providerInfo());
+      case 'fondatori:list': return b.fondatoriList();
+      case 'fondatori:save': return b.fondatoriSave(body);
+      case 'fondatori:delete': return b.fondatoriDelete(body);
+      case 'fondatori:test': return await b.fondatoriTest(body, h.providerInfo());
       case 'data': {
         const id = body.id || b.runId || b.list()[0]?.id;
         const d = b.data(id);

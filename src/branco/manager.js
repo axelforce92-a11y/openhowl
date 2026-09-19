@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DATA_DIR } from '../config.js';
+import { loadMondo, saveMondo, generateExam, listFondatori, saveFondatore, deleteFondatore, testFondatore } from './agenti-custom.js';
 
 // Nell'app installata i file stanno in app.asar: lo script va eseguito dalla copia "unpacked".
 const HERE = path.dirname(fileURLToPath(import.meta.url)).replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
@@ -22,6 +23,15 @@ export class BrancoManager {
   }
 
   get running() { return !!this.child; }
+
+  mondoGet() { return { mondo: loadMondo() }; }
+  mondoSave(body) { return { mondo: saveMondo(body) }; }
+  async mondoGenera(body, providerInfo) { return await generateExam(body, providerInfo); }
+  fondatoriList() { return { fondatori: listFondatori() }; }
+  fondatoriSave(body) { return { fondatori: saveFondatore(body) }; }
+  fondatoriDelete(body) { return { fondatori: deleteFondatore(body.id) }; }
+  async fondatoriTest(body, providerInfo) { return await testFondatore(body.fondatore, body.domanda, body.mondo, providerInfo); }
+
 
   list() {
     fs.mkdirSync(BRANCO_DIR, { recursive: true });
@@ -47,7 +57,7 @@ export class BrancoManager {
     return d;
   }
 
-  start({ obiettivo = 'equilibrio', generazioni = 4, figli = 6, riprendi = true } = {}) {
+  start({ obiettivo = 'equilibrio', generazioni = 4, figli = 6, riprendi = true, famiglie = 1, migrazione = 2, crossbreed = false } = {}) {
     if (this.child) throw new Error('C\'è già una corsa in corso: fermala prima.');
     if (this.h.busy || this.h.remoteBusy) throw new Error('Howl sta lavorando: il branco userebbe lo stesso modello e falserebbe i tempi. Riprova quando ha finito.');
     const p = this.h.providerInfo();
@@ -59,6 +69,16 @@ export class BrancoManager {
     const args = ['--url', p.baseUrl, '--modello', p.model, '--obiettivo', obiettivo === 'intelligenza' ? 'intelligenza' : 'equilibrio',
       '--gen', String(Math.min(10, Math.max(1, Number(generazioni) || 4))), '--figli', String(Math.min(10, Math.max(2, Number(figli) || 6))), '--out', out];
     // riusa i fondatori dell'ultima corsa con lo stesso modello: fa risparmiare ~10 minuti
+    
+    args.push('--famiglie', String(famiglie));
+    args.push('--migrazione', String(migrazione));
+    if (crossbreed) args.push('--crossbreed');
+    
+    const m = loadMondo();
+    if (m) args.push('--mondo', path.join(BRANCO_DIR, 'mondo.json'));
+    const f = listFondatori();
+    if (f && f.length) args.push('--fondatori-file', path.join(BRANCO_DIR, 'fondatori.json'));
+
     if (riprendi) {
       const prev = this.list().find((r) => r.modello === p.model && r.esaminati >= 6);
       if (prev) args.push('--riprendi', path.join(BRANCO_DIR, prev.id, 'risultati.json'));

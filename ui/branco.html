@@ -23,6 +23,10 @@
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
+    --fam-A: #3987e5;
+    --fam-B: #d95926;
+    --fam-C: #199e70;
+    --fam-D: #9b59b6;
     --gen-lo: #184f95;
     --gen-hi: #cde2fb;
     --pending: #52514e;
@@ -100,7 +104,7 @@
   <h1>🐺 Il branco <span id="live"></span></h1>
   <p id="sub">Caricamento…</p>
   <div class="legend">
-    <span><span class="grad"></span>agente (dal fondatore → al più giovane)</span>
+    <span id="legendAgents"><span><span class="grad"></span>agente (dal fondatore → al più giovane)</span></span>
     <span><span class="dot" style="background:var(--series-2)"></span>regola di precisione</span>
     <span><span class="dot" style="background:var(--series-3)"></span>regola di velocità</span>
     <span><span class="dot" style="background:transparent;outline:2px solid var(--text-primary);outline-offset:-2px"></span>fronte dei migliori</span>
@@ -262,6 +266,7 @@
 
   function colorOf(n) {
     if (n.kind === 'regola') return n.rule.tipo === 'velocità' ? C['series-3'] : C['series-2'];
+    if (n.a.famiglia) return C[`fam-${n.a.famiglia}`] || genColor(n.a.gen);
     return n.a.voto == null ? C.pending : genColor(n.a.gen);
   }
 
@@ -305,9 +310,20 @@
       }
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fillStyle = colorOf(n); ctx.fill();
+      if (n.kind === 'agente' && n.a.migrante) {
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = C['text-primary'];
+        ctx.beginPath(); ctx.arc(x, y, r + 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
       if (n.kind === 'agente' && (n.a.pareto || n.id === alphaId)) {
         ctx.lineWidth = n.id === alphaId ? 2.5 : 1.6; ctx.strokeStyle = C['text-primary'];
         ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (n.kind === 'agente' && n.a.campione) {
+        ctx.beginPath(); ctx.arc(x, y, r + 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#fbbf24'; ctx.globalAlpha = 0.4;
+        ctx.fill(); ctx.globalAlpha = dim ? 0.18 : 1;
       }
       if (n.id === selected) { ctx.lineWidth = 2; ctx.strokeStyle = C['series-2']; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); }
       // etichette: sempre per gli agenti se richieste, per le regole solo vicino al fuoco o con zoom
@@ -497,6 +513,16 @@
     const fast = done.filter((a) => a.pareto).sort((a, b) => a.secondi - b.secondi)[0];
     $('sub').innerHTML = `Obiettivo <b>${esc(d.config?.obiettivo || 'intelligenza')}</b> · ${done.length} agenti esaminati · ${new Set(d.nodi.flatMap((a) => (a.regole || []).map((r) => r.testo))).size} regole scoperte<br>
       ${alpha ? `★ Alfa <b>${esc(alpha.nome)}</b> ${Math.round(alpha.voto * N)}/${N} in ${Math.round(alpha.secondi)}s` : ''}${fast && fast !== alpha ? ` · il più veloce del fronte <b>${esc(fast.nome)}</b> ${Math.round(fast.voto * N)}/${N} in ${Math.round(fast.secondi)}s` : ''}`;
+    
+    const families = [...new Set(d.nodi.map(a => a.famiglia).filter(Boolean))].sort();
+    if (families.length > 0) {
+      let l = families.map(f => `<span><span class="dot" style="background:var(--fam-${f})"></span>Famiglia ${f}</span>`).join(' ');
+      l += ` <span><span class="dot" style="background:transparent;outline:1px dashed var(--text-primary);outline-offset:-1px"></span>Migrante</span>`;
+      l += ` <span><span class="dot" style="background:#fbbf24;box-shadow:0 0 4px #fbbf24"></span>⭐ Campione</span>`;
+      $('legendAgents').innerHTML = l;
+    } else {
+      $('legendAgents').innerHTML = `<span><span class="grad"></span>agente (dal fondatore → al più giovane)</span>`;
+    }
   }
 
   /* ───────── aggiornamento dal vivo ───────── */
