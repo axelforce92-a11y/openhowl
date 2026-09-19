@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il Branco nano</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --seq-lo: #86b6ef;
+    --seq-hi: #0d366b;
+    --edge: #d6d4cc;
+    --edge-hot: #0b0b0b;
+    --wash: rgba(42, 120, 214, 0.08);
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --seq-lo: #184f95;
+      --seq-hi: #cde2fb;
+      --edge: #33332f;
+      --edge-hot: #ffffff;
+      --wash: rgba(57, 135, 229, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --seq-lo: #184f95;
+    --seq-hi: #cde2fb;
+    --edge: #33332f;
+    --edge-hot: #ffffff;
+    --wash: rgba(57, 135, 229, 0.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text-primary); font: 14px/1.5 var(--sans); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .lead { color: var(--text-secondary); margin: 4px 0 20px; max-width: 760px; }
+  .muted { color: var(--text-muted); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile .k { font-size: 12px; color: var(--text-secondary); }
+  .tile .v { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+  .tile .s { font-size: 12px; color: var(--text-muted); }
+
+  .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  button { font: inherit; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); border-radius: 9px; padding: 7px 12px; cursor: pointer; }
+  button:hover { background: var(--wash); }
+  button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  label.tg { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 13px; }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .treebox { overflow-x: auto; }
+  .treebox svg { margin-top: 8px; }
+  svg { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+  .legend .grad { width: 110px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--seq-lo), var(--seq-hi)); }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 4px; }
+
+  .node { cursor: pointer; }
+  .node circle { stroke: var(--surface-1); stroke-width: 2; transition: opacity .25s; }
+  .node.off circle { opacity: .28; }
+  .node.sel circle.ring { fill: none; stroke: var(--edge-hot); stroke-width: 2; }
+  .node text { fill: var(--text-secondary); font-size: 10.5px; pointer-events: none; paint-order: stroke; stroke: var(--surface-1); stroke-width: 4px; stroke-linejoin: round; }
+  .node.alpha text { fill: var(--text-primary); font-weight: 650; }
+  .edge { fill: none; stroke: var(--edge); stroke-width: 1; opacity: .7; transition: opacity .25s, stroke .15s; }
+  .edge.line, .edge.hot { opacity: 1; }
+  .edge.line { stroke: var(--edge-hot); stroke-width: 2; }
+  .edge.hot { stroke: var(--series-1); stroke-width: 2; }
+  .rowlab { fill: var(--text-muted); font-size: 11px; }
+  .hidden { opacity: 0 !important; pointer-events: none; }
+
+  .panel h2 { font-size: 18px; }
+  .panel .badge { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-secondary); margin-left: 6px; vertical-align: 2px; }
+  .panel .big { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; }
+  .sk { display: grid; grid-template-columns: 78px 1fr 40px; align-items: center; gap: 8px; font-size: 12.5px; margin: 5px 0; }
+  .sk .track { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+  .sk .fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--series-1); }
+  .sk .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  .panel .sec { margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+  .panel .sec b { color: var(--text-primary); font-weight: 600; }
+  .link { background: none; border: 0; padding: 0; color: var(--series-1); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+  .tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 9px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 6px 22px rgba(0,0,0,.14); z-index: 10; max-width: 240px; }
+  .tip b { font-weight: 650; }
+
+  .chartcard { margin-top: 16px; }
+  .chart-legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 4px; flex-wrap: wrap; }
+  .chart-legend i { display: inline-block; width: 14px; height: 2px; vertical-align: 4px; margin-right: 6px; }
+  .axis text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .note { margin-top: 16px; font-size: 13px; color: var(--text-secondary); }
+  details { margin-top: 16px; }
+  summary { cursor: pointer; color: var(--text-secondary); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 8px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { font-size: 12.5px; }
+
+  @media (max-width: 860px) {
+    .main { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐺 Il Branco <span class="muted">nano</span></h1>
+  <p class="lead" id="lead"></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="bar">
+    <button class="primary" id="play">▶ Guarda l'evoluzione</button>
+    <label class="tg"><input type="checkbox" id="showOff"> Mostra anche gli scartati</label>
+    <span class="muted" id="genNow"></span>
+  </div>
+
+  <div class="main">
+    <div class="card treebox">
+      <h2>Albero genealogico</h2>
+      <div class="muted" style="font-size:12.5px">Ogni cerchio è un modello. Le linee uniscono genitori e figli. Passa sopra per i dettagli, clicca per la scheda.</div>
+      <svg id="tree" role="img" aria-label="Albero genealogico del branco"></svg>
+      <div class="legend">
+        <span>Voto all'esame</span><span id="lgLo"></span><span class="grad"></span><span id="lgHi"></span>
+        <span><span class="dot" style="background:var(--series-1);outline:2px solid var(--edge-hot);outline-offset:1px"></span>scelto per riprodursi</span>
+        <span><span class="dot" style="background:var(--seq-lo);opacity:.35"></span>scartato</span>
+        <span><svg width="22" height="8" style="display:inline;vertical-align:0"><path d="M1 4h20" stroke="var(--edge-hot)" stroke-width="2"/></svg> antenati dell'alfa</span>
+      </div>
+    </div>
+    <div class="card panel" id="panel"></div>
+  </div>
+
+  <div class="card chartcard">
+    <h2>Come migliora il branco, generazione dopo generazione</h2>
+    <div class="chart-legend" id="chartLegend"></div>
+    <svg id="chart" role="img" aria-label="Voto migliore e medio per generazione"></svg>
+  </div>
+
+  <p class="note" id="note"></p>
+
+  <details>
+    <summary>Tabella di tutti i lupi</summary>
+    <table id="table"></table>
+  </details>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = /*DATI*/null;
+// i colori dei grafici si calcolano al caricamento: se cambia il tema chiaro/scuro, ridisegniamo
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
+
+(async () => {
+  const d = DATA || await fetch('risultati.json').then((r) => r.json());
+  const $ = (id) => document.getElementById(id);
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const pct1 = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    parent?.appendChild(e);
+    return e;
+  };
+
+  const nodes = d.nodi;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const alpha = byId.get(d.alfa);
+  const ref = d.riferimenti;
+  const maxGen = Math.max(...nodes.map((n) => n.gen));
+  const kids = new Map(nodes.map((n) => [n.id, []]));
+  for (const n of nodes) for (const p of n.genitori) kids.get(p).push(n.id);
+
+  /* ───── testi ───── */
+  $('lead').innerHTML = `${nodes.length} piccole reti neurali (${d.parametri.toLocaleString('it-IT')} parametri ciascuna) nate in ${String(d.secondi).replace('.', ',')} secondi sul processore.
+    Un <b>antenato</b> sa un po' di tutto; la <b>PCR</b> crea un fondatore esperto per ogni materia (${d.materie.join(', ')});
+    poi i migliori si accoppiano: ogni figlio nasce <b>fondendo i pesi</b> dei genitori, a volte con una piccola mutazione, e solo i migliori si riproducono ancora.`;
+
+  const tile = (k, v, s) => `<div class="card tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('tiles').innerHTML =
+    tile('Antenato', pct(ref.antenato), 'sa un po\' di tutto') +
+    tile('Miglior fondatore', pct(ref.miglior_fondatore), 'esperto di una sola materia') +
+    tile(`Alfa · ${esc(alpha.nome)}`, pct(alpha.voto), `nato alla generazione ${alpha.gen}`) +
+    tile('Alfa all\'esame segreto', pct(alpha.segreto), 'domande mai viste prima');
+
+  /* ───── colore per voto (sequenziale, una tinta) ───── */
+  const lo = Math.min(...nodes.map((n) => n.voto)), hi = 1;
+  $('lgLo').textContent = pct(lo);
+  $('lgHi').textContent = '100%';
+  const hex = (h) => h.match(/\w\w/g).map((x) => parseInt(x, 16));
+  const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
+  const colorOf = (v) => mix(hex(css('--seq-lo')), hex(css('--seq-hi')), Math.max(0, Math.min(1, (v - lo) / (hi - lo))));
+
+  /* ───── disposizione dell'albero ───── */
+  const ROW = 78, TOP = 30, LEFT = 96, R = 8;
+  const rows = [];
+  for (let g = -1; g <= maxGen; g++) rows.push(nodes.filter((n) => n.gen === g));
+  const widest = Math.max(...rows.map((r) => r.length));
+  const W = LEFT + Math.max(640, widest * 46) + 20;
+  const H = TOP + rows.length * ROW;
+  const pos = new Map();
+  rows.forEach((row, ri) => {
+    // i figli vicino ai loro genitori: ordina per posizione media dei genitori, poi per voto
+    const key = (n) => (n.genitori.length ? n.genitori.reduce((s, p) => s + (pos.get(p)?.x || 0), 0) / n.genitori.length : 0);
+    row.sort((a, b) => key(a) - key(b) || b.voto - a.voto);
+    const span = W - LEFT - 20;
+    row.forEach((n, i) => pos.set(n.id, { x: LEFT + span * (i + 0.5) / row.length, y: TOP + ri * ROW + 14 }));
+  });
+
+  const svg = $('tree');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.width = '100%';
+  svg.style.height = 'auto';
+  svg.style.minWidth = '560px';
+  const gEdges = el('g', {}, svg), gNodes = el('g', {}, svg), gLabels = el('g', {}, svg);
+  rows.forEach((row, ri) => {
+    const t = el('text', { x: 4, y: TOP + ri * ROW + 18, class: 'rowlab' }, gLabels);
+    t.textContent = ri === 0 ? 'antenato' : ri === 1 ? 'fondatori (PCR)' : `generazione ${ri - 1}`;
+  });
+
+  const edges = [];
+  for (const n of nodes) for (const p of n.genitori) {
+    const a = pos.get(p), b = pos.get(n.id);
+    const my = (a.y + b.y) / 2;
+    const path = el('path', { d: `M${a.x},${a.y + R} C${a.x},${my} ${b.x},${my} ${b.x},${b.y - R}`, class: `edge${n.stirpe && byId.get(p).stirpe ? ' line' : ''}` }, gEdges);
+    edges.push({ path, from: p, to: n.id, gen: n.gen });
+  }
+
+  const nodeEls = new Map();
+  for (const n of nodes) {
+    const { x, y } = pos.get(n.id);
+    const isAlpha = n.id === d.alfa;
+    const g = el('g', { class: `node${n.scelto ? ' sel' : ' off'}${isAlpha ? ' alpha' : ''}`, tabindex: 0, role: 'button', 'aria-label': `${n.nome}, voto ${pct(n.voto)}` }, gNodes);
+    el('circle', { cx: x, cy: y, r: 16, fill: 'transparent', stroke: 'none' }, g); // area di clic più grande del cerchio
+    el('circle', { cx: x, cy: y, r: isAlpha ? R + 3 : R, fill: colorOf(n.voto) }, g);
+    if (n.scelto) el('circle', { class: 'ring', cx: x, cy: y, r: (isAlpha ? R + 3 : R) + 3 }, g);
+    if (n.gen <= 0 || isAlpha) {
+      const t = el('text', { x, y: y + (isAlpha ? 30 : 24), 'text-anchor': 'middle' }, g);
+      t.textContent = isAlpha ? `★ ALFA ${n.nome}` : n.primer ? `${n.nome} · ${n.primer}` : n.nome;
+    }
+    g.addEventListener('mouseenter', (e) => { hover(n.id); showTip(e, n); });
+    g.addEventListener('mousemove', (e) => moveTip(e));
+    g.addEventListener('mouseleave', () => { hover(null); $('tip').hidden = true; });
+    g.addEventListener('click', () => select(n.id));
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(n.id); } });
+    nodeEls.set(n.id, g);
+  }
+
+  function hover(id) {
+    for (const e of edges) e.path.classList.toggle('hot', id != null && (e.from === id || e.to === id));
+  }
+
+  /* ───── tooltip ───── */
+  const tip = $('tip');
+  function showTip(e, n) {
+    tip.innerHTML = `<b>${esc(n.nome)}</b> · ${n.gen < 0 ? 'antenato' : n.gen === 0 ? 'fondatore' : `gen ${n.gen}`}<br>
+      Esame <b>${pct1(n.voto)}</b> · segreto ${pct1(n.segreto)}<br>
+      <span style="color:var(--text-muted)">${n.scelto ? 'scelto per riprodursi' : 'scartato'}${n.mutazione ? ` · mutazione: ${esc(n.mutazione)}` : ''}</span>`;
+    tip.hidden = false;
+    moveTip(e);
+  }
+  function moveTip(e) {
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+    if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    tip.style.left = `${x}px`;
+    tip.style.top = `${y}px`;
+  }
+
+  /* ───── scheda del lupo ───── */
+  const RECIPE = {
+    pcr: (r) => `Nato dalla <b>PCR</b>: addestrato sull'antenato con il primer «diventa esperto di ${esc(r.primer)}».`,
+    media: (r) => `Fusione a <b>media pesata</b>: per ogni strato un po' di un genitore e un po' dell'altro, esperienza amplificata ×${r.forza}.`,
+    somma: (r) => `Fusione a <b>somma</b>: le esperienze dei due genitori sommate, ×${r.forza}.`,
+    ties: (r) => `Fusione <b>TIES</b>: tiene solo il ${Math.round(r.densita * 100)}% dei cambiamenti più forti di ciascun genitore e, dove litigano, vince il segno più votato (×${r.forza}).`,
+    dare: (r) => `Fusione <b>DARE</b>: butta a caso il ${Math.round(r.drop * 100)}% dei cambiamenti di ogni genitore e ingrandisce il resto (×${r.forza}).`,
+  };
+  function select(id) {
+    const n = byId.get(id);
+    for (const [k, g] of nodeEls) g.querySelector('circle:nth-of-type(2)').setAttribute('stroke', k === id ? css('--series-2') : css('--surface-1'));
+    const par = n.genitori.map((p) => byId.get(p));
+    const ch = kids.get(id).map((k) => byId.get(k));
+    const bestKid = ch.sort((a, b) => b.voto - a.voto)[0];
+    $('panel').innerHTML = `
+      <h2>${esc(n.nome)}<span class="badge">${n.scelto ? 'scelto' : 'scartato'}</span></h2>
+      <div class="muted">${n.gen < 0 ? 'l\'antenato di tutti' : n.gen === 0 ? 'fondatore' : `generazione ${n.gen}`}${id === d.alfa ? ' · ★ alfa del branco' : ''}</div>
+      <div class="big">${pct1(n.voto)}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:-4px">voto all'esame · <b style="color:var(--text-primary)">${pct1(n.segreto)}</b> all'esame segreto</div>
+      <div style="margin-top:10px">${d.materie.map((m) => `
+        <div class="sk"><span>${esc(m)}</span><span class="track"><span class="fill" style="display:block;width:${n.voti[m] * 100}%"></span></span><span class="n">${pct(n.voti[m])}</span></div>`).join('')}
+      </div>
+      ${n.ricetta ? `<div class="sec">${(RECIPE[n.ricetta.tipo] || (() => ''))(n.ricetta)}</div>` : '<div class="sec">Addestrato poco, su un 6% dei fatti di tutte le materie.</div>'}
+      ${n.mutazione ? `<div class="sec">🧬 Mutazione: un breve ripasso di <b>${esc(n.mutazione)}</b>, la sua materia più debole.</div>` : ''}
+      ${par.length ? `<div class="sec">Genitori: ${par.map((p) => `<button class="link" data-go="${p.id}">${esc(p.nome)}</button> (${pct(p.voto)})`).join(' + ')}</div>` : ''}
+      <div class="sec">${ch.length ? `${ch.length} figli, il migliore <button class="link" data-go="${bestKid.id}">${esc(bestKid.nome)}</button> (${pct(bestKid.voto)})` : 'Nessun figlio.'}</div>`;
+  }
+  $('panel').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) select(+b.dataset.go); });
+  select(d.alfa);
+
+  /* ───── scartati sì/no, riproduzione animata ───── */
+  let visibleGen = maxGen;
+  function applyVisibility() {
+    const showOff = $('showOff').checked;
+    for (const n of nodes) {
+      const hide = n.gen > visibleGen || (!showOff && !n.scelto && !n.stirpe);
+      nodeEls.get(n.id).classList.toggle('hidden', hide);
+    }
+    for (const e of edges) {
+      const a = byId.get(e.from), b = byId.get(e.to);
+      const hide = e.gen > visibleGen || (!showOff && ((!a.scelto && !a.stirpe) || (!b.scelto && !b.stirpe)));
+      e.path.classList.toggle('hidden', hide);
+    }
+    $('genNow').textContent = visibleGen < maxGen ? (visibleGen < 0 ? 'l\'antenato…' : visibleGen === 0 ? 'la PCR crea i fondatori…' : `generazione ${visibleGen}…`) : '';
+  }
+  $('showOff').onchange = applyVisibility;
+  let timer = null;
+  $('play').onclick = () => {
+    clearInterval(timer);
+    visibleGen = -1;
+    applyVisibility();
+    timer = setInterval(() => {
+      visibleGen++;
+      applyVisibility();
+      if (visibleGen >= maxGen) { clearInterval(timer); select(d.alfa); }
+    }, 900);
+  };
+  applyVisibility();
+
+  /* ───── grafico: migliore e media per generazione ───── */
+  const hist = d.storia;
+  const CW = 760, CH = 260, M = { l: 44, r: 150, t: 12, b: 30 };
+  const cs = $('chart');
+  cs.setAttribute('viewBox', `0 0 ${CW} ${CH}`);
+  cs.style.width = '100%';
+  cs.style.maxWidth = `${CW}px`;
+  const yMin = Math.floor(Math.min(ref.antenato, ...hist.map((h) => h.media)) * 10) / 10;
+  const xs = (g) => M.l + (CW - M.l - M.r) * g / Math.max(1, hist.length - 1);
+  const ys = (v) => M.t + (CH - M.t - M.b) * (1 - (v - yMin) / (1 - yMin));
+  const ax = el('g', { class: 'axis' }, cs);
+  for (let v = yMin; v <= 1.0001; v += 0.1) {
+    el('line', { x1: M.l, x2: CW - M.r, y1: ys(v), y2: ys(v), stroke: css('--grid'), 'stroke-width': 1 }, ax);
+    const t = el('text', { x: M.l - 6, y: ys(v) + 4, 'text-anchor': 'end' }, ax);
+    t.textContent = pct(v);
+  }
+  hist.forEach((h) => {
+    const t = el('text', { x: xs(h.gen), y: CH - 10, 'text-anchor': 'middle' }, ax);
+    t.textContent = h.gen === 0 ? 'fondatori' : `gen ${h.gen}`;
+  });
+  el('line', { x1: M.l, x2: CW - M.r, y1: CH - M.b, y2: CH - M.b, stroke: css('--axis'), 'stroke-width': 1 }, ax);
+
+  // riferimenti orizzontali (etichetta a destra, in inchiostro neutro)
+  const refs = [['addestramento diretto', ref.addestramento_diretto], ['zuppa dei fondatori', ref.zuppa_fondatori]];
+  for (const [label, v] of refs) {
+    el('line', { x1: M.l, x2: CW - M.r, y1: ys(v), y2: ys(v), stroke: css('--text-muted'), 'stroke-width': 1, 'stroke-dasharray': '4 4' }, cs);
+    const t = el('text', { x: CW - M.r + 6, y: ys(v) + 4, fill: css('--text-muted'), 'font-size': 11 }, cs);
+    t.textContent = `${label} ${pct(v)}`;
+  }
+
+  const series = [['migliore', 'Migliore della generazione', '--series-1'], ['media', 'Media della generazione', '--series-2']];
+  $('chartLegend').innerHTML = series.map(([, l, c]) => `<span><i style="background:var(${c})"></i>${l}</span>`).join('') +
+    '<span><i style="background:none;border-top:1px dashed var(--text-muted)"></i>riferimenti</span>';
+  for (const [k, label, c] of series) {
+    el('path', { d: hist.map((h, i) => `${i ? 'L' : 'M'}${xs(h.gen)},${ys(h[k])}`).join(''), fill: 'none', stroke: css(c), 'stroke-width': 2, 'stroke-linejoin': 'round' }, cs);
+    for (const h of hist) el('circle', { cx: xs(h.gen), cy: ys(h[k]), r: 4, fill: css(c), stroke: css('--surface-1'), 'stroke-width': 2 }, cs);
+    const last = hist[hist.length - 1];
+    const t = el('text', { x: CW - M.r + 6, y: ys(last[k]) + 4, fill: css('--text-secondary'), 'font-size': 11 }, cs);
+    t.textContent = `${label.split(' ')[0].toLowerCase()} ${pct(last[k])}`;
+  }
+  // mirino + tooltip
+  const cross = el('line', { y1: M.t, y2: CH - M.b, stroke: css('--axis'), 'stroke-width': 1, visibility: 'hidden' }, cs);
+  const hit = el('rect', { x: M.l, y: M.t, width: CW - M.l - M.r, height: CH - M.t - M.b, fill: 'transparent' }, cs);
+  hit.addEventListener('mousemove', (e) => {
+    const r = cs.getBoundingClientRect();
+    const px = (e.clientX - r.left) * CW / r.width;
+    const i = Math.max(0, Math.min(hist.length - 1, Math.round((px - M.l) / ((CW - M.l - M.r) / Math.max(1, hist.length - 1)))));
+    const h = hist[i];
+    cross.setAttribute('x1', xs(h.gen)); cross.setAttribute('x2', xs(h.gen)); cross.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<b>${h.gen === 0 ? 'Fondatori' : `Generazione ${h.gen}`}</b><br>Migliore <b>${pct1(h.migliore)}</b><br>Media ${pct1(h.media)}<br><span style="color:var(--text-muted)">segreto (migliore) ${pct1(h.segreto)}</span>`;
+    tip.hidden = false;
+    moveTip(e);
+  });
+  hit.addEventListener('mouseleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+
+  $('note').innerHTML = `<b>Da sapere, con onestà:</b> un modello addestrato direttamente con <i>tutti</i> i dati insieme arriva al ${pct(ref.addestramento_diretto)}
+    (${pct(ref.addestramento_diretto_segreto)} all'esame segreto): se hai tutti i dati, l'addestramento classico vince ancora.
+    Il branco serve quando i dati non li hai tutti insieme: fondere i pesi di specialisti già addestrati (per esempio i tanti Qwen della comunità) costa quasi zero e,
+    qui, porta l'alfa dal ${pct(ref.miglior_fondatore)} del miglior fondatore al ${pct(alpha.voto)}, oltre la semplice «zuppa» di tutti i fondatori (${pct(ref.zuppa_fondatori)}).
+    <br><span class="muted">Rigenera con <code>python branco.py --seed ${d.seed} --gen ${maxGen}</code> · creato ${esc(d.creato)} · seed ${d.seed}</span>`;
+
+  /* ───── tabella ───── */
+  const sorted = [...nodes].sort((a, b) => b.voto - a.voto);
+  $('table').innerHTML = `<thead><tr><th>Nome</th><th>Gen.</th><th>Stato</th>${d.materie.map((m) => `<th class="num">${esc(m)}</th>`).join('')}<th class="num">Esame</th><th class="num">Segreto</th></tr></thead>
+    <tbody>${sorted.map((n) => `<tr><td>${n.id === d.alfa ? '★ ' : ''}${esc(n.nome)}</td><td>${n.gen < 0 ? 'antenato' : n.gen === 0 ? 'fondatore' : n.gen}</td><td>${n.scelto ? 'scelto' : 'scartato'}</td>${d.materie.map((m) => `<td class="num">${pct(n.voti[m])}</td>`).join('')}<td class="num">${pct1(n.voto)}</td><td class="num">${pct1(n.segreto)}</td></tr>`).join('')}</tbody>`;
+})();
+</script>
+</body>
+</html>

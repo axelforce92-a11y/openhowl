@@ -7,3 +7,4 @@ workspace/
 assets/raw/_*.jpg
 .tmp-home/
 *.log
+__pycache__/

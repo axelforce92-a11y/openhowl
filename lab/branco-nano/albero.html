@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il Branco nano</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --seq-lo: #86b6ef;
+    --seq-hi: #0d366b;
+    --edge: #d6d4cc;
+    --edge-hot: #0b0b0b;
+    --wash: rgba(42, 120, 214, 0.08);
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --seq-lo: #184f95;
+      --seq-hi: #cde2fb;
+      --edge: #33332f;
+      --edge-hot: #ffffff;
+      --wash: rgba(57, 135, 229, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --seq-lo: #184f95;
+    --seq-hi: #cde2fb;
+    --edge: #33332f;
+    --edge-hot: #ffffff;
+    --wash: rgba(57, 135, 229, 0.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text-primary); font: 14px/1.5 var(--sans); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .lead { color: var(--text-secondary); margin: 4px 0 20px; max-width: 760px; }
+  .muted { color: var(--text-muted); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile .k { font-size: 12px; color: var(--text-secondary); }
+  .tile .v { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+  .tile .s { font-size: 12px; color: var(--text-muted); }
+
+  .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  button { font: inherit; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); border-radius: 9px; padding: 7px 12px; cursor: pointer; }
+  button:hover { background: var(--wash); }
+  button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  label.tg { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 13px; }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .treebox { overflow-x: auto; }
+  .treebox svg { margin-top: 8px; }
+  svg { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+  .legend .grad { width: 110px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--seq-lo), var(--seq-hi)); }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 4px; }
+
+  .node { cursor: pointer; }
+  .node circle { stroke: var(--surface-1); stroke-width: 2; transition: opacity .25s; }
+  .node.off circle { opacity: .28; }
+  .node.sel circle.ring { fill: none; stroke: var(--edge-hot); stroke-width: 2; }
+  .node text { fill: var(--text-secondary); font-size: 10.5px; pointer-events: none; paint-order: stroke; stroke: var(--surface-1); stroke-width: 4px; stroke-linejoin: round; }
+  .node.alpha text { fill: var(--text-primary); font-weight: 650; }
+  .edge { fill: none; stroke: var(--edge); stroke-width: 1; opacity: .7; transition: opacity .25s, stroke .15s; }
+  .edge.line, .edge.hot { opacity: 1; }
+  .edge.line { stroke: var(--edge-hot); stroke-width: 2; }
+  .edge.hot { stroke: var(--series-1); stroke-width: 2; }
+  .rowlab { fill: var(--text-muted); font-size: 11px; }
+  .hidden { opacity: 0 !important; pointer-events: none; }
+
+  .panel h2 { font-size: 18px; }
+  .panel .badge { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-secondary); margin-left: 6px; vertical-align: 2px; }
+  .panel .big { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; }
+  .sk { display: grid; grid-template-columns: 78px 1fr 40px; align-items: center; gap: 8px; font-size: 12.5px; margin: 5px 0; }
+  .sk .track { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+  .sk .fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--series-1); }
+  .sk .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  .panel .sec { margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+  .panel .sec b { color: var(--text-primary); font-weight: 600; }
+  .link { background: none; border: 0; padding: 0; color: var(--series-1); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+  .tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 9px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 6px 22px rgba(0,0,0,.14); z-index: 10; max-width: 240px; }
+  .tip b { font-weight: 650; }
+
+  .chartcard { margin-top: 16px; }
+  .chart-legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-secondary); margin: 6px 0 4px; flex-wrap: wrap; }
+  .chart-legend i { display: inline-block; width: 14px; height: 2px; vertical-align: 4px; margin-right: 6px; }
+  .axis text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .note { margin-top: 16px; font-size: 13px; color: var(--text-secondary); }
+  details { margin-top: 16px; }
+  summary { cursor: pointer; color: var(--text-secondary); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 8px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { font-size: 12.5px; }
+
+  @media (max-width: 860px) {
+    .main { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐺 Il Branco <span class="muted">nano</span></h1>
+  <p class="lead" id="lead"></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="bar">
+    <button class="primary" id="play">▶ Guarda l'evoluzione</button>
+    <label class="tg"><input type="checkbox" id="showOff"> Mostra anche gli scartati</label>
+    <span class="muted" id="genNow"></span>
+  </div>
+
+  <div class="main">
+    <div class="card treebox">
+      <h2>Albero genealogico</h2>
+      <div class="muted" style="font-size:12.5px">Ogni cerchio è un modello. Le linee uniscono genitori e figli. Passa sopra per i dettagli, clicca per la scheda.</div>
+      <svg id="tree" role="img" aria-label="Albero genealogico del branco"></svg>
+      <div class="legend">
+        <span>Voto all'esame</span><span id="lgLo"></span><span class="grad"></span><span id="lgHi"></span>
+        <span><span class="dot" style="background:var(--series-1);outline:2px solid var(--edge-hot);outline-offset:1px"></span>scelto per riprodursi</span>
+        <span><span class="dot" style="background:var(--seq-lo);opacity:.35"></span>scartato</span>
+        <span><svg width="22" height="8" style="display:inline;vertical-align:0"><path d="M1 4h20" stroke="var(--edge-hot)" stroke-width="2"/></svg> antenati dell'alfa</span>
+      </div>
+    </div>
+    <div class="card panel" id="panel"></div>
+  </div>
+
+  <div class="card chartcard">
+    <h2>Come migliora il branco, generazione dopo generazione</h2>
+    <div class="chart-legend" id="chartLegend"></div>
+    <svg id="chart" role="img" aria-label="Voto migliore e medio per generazione"></svg>
+  </div>
+
+  <p class="note" id="note"></p>
+
+  <details>
+    <summary>Tabella di tutti i lupi</summary>
+    <table id="table"></table>
+  </details>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = {"creato": "2026-09-19 09:18", "secondi": 2.5, "seed": 3, "materie": ["massimo", "minimo", "confronto", "vicinanza"], "parametri": 17488, "alfa": 116, "riferimenti": {"miglior_fondatore": 0.7083, "zuppa_fondatori": 0.7243, "addestramento_diretto": 1.0, "addestramento_diretto_segreto": 0.8798, "antenato": 0.462}, "passi_addestramento": 3700, "storia": [{"gen": 0, "migliore": 0.7083, "media": 0.6482749999999999, "segreto": 0.6923}, {"gen": 1, "migliore": 0.6924, "media": 0.63839375, "segreto": 0.6827}, {"gen": 2, "migliore": 0.7218, "media": 0.6066875, "segreto": 0.6971}, {"gen": 3, "migliore": 0.7145, "media": 0.6057687500000001, "segreto": 0.7404}, {"gen": 4, "migliore": 0.777, "media": 0.57353125, "segreto": 0.7404}, {"gen": 5, "migliore": 0.7463, "media": 0.62530625, "segreto": 0.6923}, {"gen": 6, "migliore": 0.7512, "media": 0.6521125, "segreto": 0.6971}, {"gen": 7, "migliore": 0.7953, "media": 0.6377875, "segreto": 0.7115}, {"gen": 8, "migliore": 0.75, "media": 0.63701875, "segreto": 0.6971}], "nodi": [{"id": 0, "nome": "Antenato", "gen": -1, "tipo": "antenato", "genitori": [], "ricetta": null, "mutazione": null, "voti": {"massimo": 0.216, "minimo": 0.338, "confronto": 0.73, "vicinanza": 0.564}, "voto": 0.462, "segreto": 0.4471, "scelto": true, "stirpe": true}, {"id": 1, "nome": "Luna", "gen": 0, "tipo": "fondatore", "genitori": [0], "ricetta": {"tipo": "pcr", "primer": "massimo"}, "mutazione": null, "voti": {"massimo": 1.0, "minimo": 0.436, "confronto": 0.794, "vicinanza": 0.603}, "voto": 0.7083, "segreto": 0.6923, "scelto": true, "primer": "massimo", "stirpe": true}, {"id": 2, "nome": "Ombra", "gen": 0, "tipo": "fondatore", "genitori": [0], "ricetta": {"tipo": "pcr", "primer": "minimo"}, "mutazione": null, "voti": {"massimo": 0.245, "minimo": 1.0, "confronto": 0.828, "vicinanza": 0.711}, "voto": 0.6961, "segreto": 0.6346, "scelto": true, "primer": "minimo", "stirpe": true}, {"id": 3, "nome": "Zanna", "gen": 0, "tipo": "fondatore", "genitori": [0], "ricetta": {"tipo": "pcr", "primer": "confronto"}, "mutazione": null, "voti": {"massimo": 0.275, "minimo": 0.471, "confronto": 1.0, "vicinanza": 0.667}, "voto": 0.6029, "segreto": 0.524, "scelto": true, "primer": "confronto", "stirpe": true}, {"id": 4, "nome": "Neve", "gen": 0, "tipo": "fondatore", "genitori": [0], "ricetta": {"tipo": "pcr", "primer": "vicinanza"}, "mutazione": null, "voti": {"massimo": 0.324, "minimo": 0.338, "confronto": 0.681, "vicinanza": 1.0}, "voto": 0.5858, "segreto": 0.476, "scelto": true, "primer": "vicinanza", "stirpe": false}, {"id": 5, "nome": "Fumo", "gen": 1, "tipo": "figlio", "genitori": [1, 3], "ricetta": {"tipo": "somma", "forza": 0.86}, "mutazione": null, "voti": {"massimo": 0.554, "minimo": 0.426, "confronto": 0.824, "vicinanza": 0.613}, "voto": 0.6042, "segreto": 0.5144, "scelto": false, "stirpe": false}, {"id": 6, "nome": "Brace", "gen": 1, "tipo": "figlio", "genitori": [1, 3], "ricetta": {"tipo": "somma", "forza": 0.66}, "mutazione": "minimo", "voti": {"massimo": 0.299, "minimo": 0.892, "confronto": 0.917, "vicinanza": 0.662}, "voto": 0.6924, "segreto": 0.5769, "scelto": true, "stirpe": true}, {"id": 7, "nome": "Selva", "gen": 1, "tipo": "figlio", "genitori": [1, 3], "ricetta": {"tipo": "media", "forza": 1.25, "pesi": {"W1": 0.39, "b1": 0.78, "W2": 0.69, "b2": 0.58, "W3": 0.64, "b3": 0.26}}, "mutazione": "minimo", "voti": {"massimo": 0.289, "minimo": 0.887, "confronto": 0.907, "vicinanza": 0.652}, "voto": 0.6838, "segreto": 0.5913, "scelto": false, "stirpe": false}, {"id": 8, "nome": "Rupe", "gen": 1, "tipo": "figlio", "genitori": [1, 3], "ricetta": {"tipo": "media", "forza": 1.54, "pesi": {"W1": 0.28, "b1": 0.53, "W2": 0.23, "b2": 0.68, "W3": 0.47, "b3": 0.68}}, "mutazione": null, "voti": {"massimo": 0.377, "minimo": 0.495, "confronto": 0.975, "vicinanza": 0.618}, "voto": 0.6164, "segreto": 0.5481, "scelto": false, "stirpe": false}, {"id": 9, "nome": "Nebbia", "gen": 1, "tipo": "figlio", "genitori": [1, 4], "ricetta": {"tipo": "ties", "forza": 1.13, "densita": 0.46}, "mutazione": null, "voti": {"massimo": 0.696, "minimo": 0.314, "confronto": 0.794, "vicinanza": 0.868}, "voto": 0.6679, "segreto": 0.625, "scelto": false, "stirpe": false}, {"id": 10, "nome": "Lampo", "gen": 1, "tipo": "figlio", "genitori": [1, 4], "ricetta": {"tipo": "ties", "forza": 0.99, "densita": 0.43}, "mutazione": "minimo", "voti": {"massimo": 0.485, "minimo": 0.804, "confronto": 0.618, "vicinanza": 0.824}, "voto": 0.6826, "segreto": 0.5721, "scelto": false, "stirpe": false}, {"id": 11, "nome": "Quercia", "gen": 1, "tipo": "figlio", "genitori": [1, 4], "ricetta": {"tipo": "dare", "forza": 0.76, "drop": 0.56}, "mutazione": "minimo", "voti": {"massimo": 0.755, "minimo": 0.637, "confronto": 0.529, "vicinanza": 0.721}, "voto": 0.6605, "segreto": 0.6298, "scelto": false, "stirpe": false}, {"id": 12, "nome": "Artiglio", "gen": 1, "tipo": "figlio", "genitori": [1, 4], "ricetta": {"tipo": "media", "forza": 1.6, "pesi": {"W1": 0.32, "b1": 0.75, "W2": 0.41, "b2": 0.45, "W3": 0.52, "b3": 0.58}}, "mutazione": "minimo", "voti": {"massimo": 0.48, "minimo": 0.716, "confronto": 0.534, "vicinanza": 0.76}, "voto": 0.6225, "segreto": 0.625, "scelto": false, "stirpe": false}, {"id": 13, "nome": "Tuono", "gen": 1, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "ties", "forza": 1.59, "densita": 0.35}, "mutazione": null, "voti": {"massimo": 0.618, "minimo": 0.637, "confronto": 0.657, "vicinanza": 0.696}, "voto": 0.652, "segreto": 0.6683, "scelto": false, "stirpe": false}, {"id": 14, "nome": "Cenere", "gen": 1, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "ties", "forza": 0.98, "densita": 0.22}, "mutazione": null, "voti": {"massimo": 0.431, "minimo": 0.588, "confronto": 0.765, "vicinanza": 0.647}, "voto": 0.6078, "segreto": 0.5865, "scelto": false, "stirpe": false}, {"id": 15, "nome": "Vento", "gen": 1, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "media", "forza": 1.33, "pesi": {"W1": 0.29, "b1": 0.44, "W2": 0.41, "b2": 0.63, "W3": 0.71, "b3": 0.64}}, "mutazione": "vicinanza", "voti": {"massimo": 0.402, "minimo": 0.461, "confronto": 0.75, "vicinanza": 0.775}, "voto": 0.5968, "segreto": 0.5, "scelto": false, "stirpe": false}, {"id": 16, "nome": "Aurora", "gen": 1, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "dare", "forza": 0.72, "drop": 0.56}, "mutazione": "minimo", "voti": {"massimo": 0.451, "minimo": 0.99, "confronto": 0.623, "vicinanza": 0.691}, "voto": 0.6887, "segreto": 0.6827, "scelto": true, "stirpe": true}, {"id": 17, "nome": "Fiocco", "gen": 1, "tipo": "figlio", "genitori": [2, 4], "ricetta": {"tipo": "dare", "forza": 1.06, "drop": 0.31}, "mutazione": "massimo", "voti": {"massimo": 0.608, "minimo": 0.593, "confronto": 0.426, "vicinanza": 0.627}, "voto": 0.5637, "segreto": 0.5096, "scelto": false, "stirpe": false}, {"id": 18, "nome": "Sasso", "gen": 1, "tipo": "figlio", "genitori": [2, 4], "ricetta": {"tipo": "ties", "forza": 1.18, "densita": 0.42}, "mutazione": "massimo", "voti": {"massimo": 0.824, "minimo": 0.51, "confronto": 0.49, "vicinanza": 0.5}, "voto": 0.5809, "segreto": 0.5337, "scelto": false, "stirpe": false}, {"id": 19, "nome": "Lince", "gen": 1, "tipo": "figlio", "genitori": [2, 4], "ricetta": {"tipo": "ties", "forza": 1.2, "densita": 0.44}, "mutazione": null, "voti": {"massimo": 0.358, "minimo": 0.613, "confronto": 0.75, "vicinanza": 0.863}, "voto": 0.6458, "segreto": 0.5721, "scelto": false, "stirpe": false}, {"id": 20, "nome": "Brina", "gen": 1, "tipo": "figlio", "genitori": [2, 4], "ricetta": {"tipo": "somma", "forza": 0.6}, "mutazione": "massimo", "voti": {"massimo": 0.868, "minimo": 0.461, "confronto": 0.608, "vicinanza": 0.657}, "voto": 0.6483, "segreto": 0.5625, "scelto": false, "stirpe": false}, {"id": 21, "nome": "Notte", "gen": 2, "tipo": "figlio", "genitori": [2, 16], "ricetta": {"tipo": "media", "forza": 1.62, "pesi": {"W1": 0.62, "b1": 0.31, "W2": 0.37, "b2": 0.66, "W3": 0.46, "b3": 0.75}}, "mutazione": "massimo", "voti": {"massimo": 0.814, "minimo": 0.721, "confronto": 0.358, "vicinanza": 0.466}, "voto": 0.5895, "segreto": 0.524, "scelto": false, "stirpe": false}, {"id": 22, "nome": "Falco", "gen": 2, "tipo": "figlio", "genitori": [2, 16], "ricetta": {"tipo": "media", "forza": 1.78, "pesi": {"W1": 0.37, "b1": 0.78, "W2": 0.79, "b2": 0.8, "W3": 0.65, "b3": 0.58}}, "mutazione": null, "voti": {"massimo": 0.353, "minimo": 0.799, "confronto": 0.539, "vicinanza": 0.672}, "voto": 0.5907, "segreto": 0.5481, "scelto": false, "stirpe": false}, {"id": 23, "nome": "Rovo", "gen": 2, "tipo": "figlio", "genitori": [2, 16], "ricetta": {"tipo": "ties", "forza": 0.9, "densita": 0.38}, "mutazione": null, "voti": {"massimo": 0.5, "minimo": 1.0, "confronto": 0.701, "vicinanza": 0.686}, "voto": 0.7218, "segreto": 0.6827, "scelto": true, "stirpe": true}, {"id": 24, "nome": "Ghiaccio", "gen": 2, "tipo": "figlio", "genitori": [2, 16], "ricetta": {"tipo": "media", "forza": 1.45, "pesi": {"W1": 0.49, "b1": 0.42, "W2": 0.8, "b2": 0.27, "W3": 0.33, "b3": 0.76}}, "mutazione": "massimo", "voti": {"massimo": 0.848, "minimo": 0.642, "confronto": 0.368, "vicinanza": 0.49}, "voto": 0.587, "segreto": 0.5, "scelto": false, "stirpe": false}, {"id": 25, "nome": "Luna-2", "gen": 2, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "dare", "forza": 0.77, "drop": 0.66}, "mutazione": null, "voti": {"massimo": 0.49, "minimo": 0.48, "confronto": 0.559, "vicinanza": 0.627}, "voto": 0.5392, "segreto": 0.5288, "scelto": false, "stirpe": false}, {"id": 26, "nome": "Ombra-2", "gen": 2, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "ties", "forza": 1.45, "densita": 0.24}, "mutazione": null, "voti": {"massimo": 0.569, "minimo": 0.578, "confronto": 0.711, "vicinanza": 0.686}, "voto": 0.636, "segreto": 0.625, "scelto": false, "stirpe": false}, {"id": 27, "nome": "Zanna-2", "gen": 2, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "media", "forza": 1.63, "pesi": {"W1": 0.71, "b1": 0.45, "W2": 0.26, "b2": 0.41, "W3": 0.37, "b3": 0.8}}, "mutazione": null, "voti": {"massimo": 0.603, "minimo": 0.549, "confronto": 0.574, "vicinanza": 0.632}, "voto": 0.5895, "segreto": 0.601, "scelto": false, "stirpe": false}, {"id": 28, "nome": "Neve-2", "gen": 2, "tipo": "figlio", "genitori": [1, 2], "ricetta": {"tipo": "somma", "forza": 0.63}, "mutazione": null, "voti": {"massimo": 0.819, "minimo": 0.672, "confronto": 0.721, "vicinanza": 0.642}, "voto": 0.7132, "segreto": 0.6971, "scelto": true, "stirpe": true}, {"id": 29, "nome": "Fumo-2", "gen": 2, "tipo": "figlio", "genitori": [6, 16], "ricetta": {"tipo": "somma", "forza": 1.08}, "mutazione": "massimo", "voti": {"massimo": 0.897, "minimo": 0.525, "confronto": 0.461, "vicinanza": 0.608}, "voto": 0.6225, "segreto": 0.5865, "scelto": false, "stirpe": false}, {"id": 30, "nome": "Brace-2", "gen": 2, "tipo": "figlio", "genitori": [6, 16], "ricetta": {"tipo": "somma", "forza": 0.91}, "mutazione": null, "voti": {"massimo": 0.353, "minimo": 0.608, "confronto": 0.485, "vicinanza": 0.657}, "voto": 0.5257, "segreto": 0.5096, "scelto": false, "stirpe": false}, {"id": 31, "nome": "Selva-2", "gen": 2, "tipo": "figlio", "genitori": [6, 16], "ricetta": {"tipo": "somma", "forza": 0.73}, "mutazione": "massimo", "voti": {"massimo": 0.985, "minimo": 0.632, "confronto": 0.588, "vicinanza": 0.647}, "voto": 0.7132, "segreto": 0.649, "scelto": true, "stirpe": true}, {"id": 32, "nome": "Rupe-2", "gen": 2, "tipo": "figlio", "genitori": [6, 16], "ricetta": {"tipo": "media", "forza": 1.88, "pesi": {"W1": 0.42, "b1": 0.52, "W2": 0.4, "b2": 0.28, "W3": 0.29, "b3": 0.78}}, "mutazione": null, "voti": {"massimo": 0.373, "minimo": 0.603, "confronto": 0.466, "vicinanza": 0.657}, "voto": 0.5245, "segreto": 0.5096, "scelto": false, "stirpe": false}, {"id": 33, "nome": "Nebbia-2", "gen": 2, "tipo": "figlio", "genitori": [1, 16], "ricetta": {"tipo": "media", "forza": 1.83, "pesi": {"W1": 0.36, "b1": 0.38, "W2": 0.32, "b2": 0.29, "W3": 0.24, "b3": 0.22}}, "mutazione": null, "voti": {"massimo": 0.525, "minimo": 0.529, "confronto": 0.402, "vicinanza": 0.637}, "voto": 0.5233, "segreto": 0.5337, "scelto": false, "stirpe": false}, {"id": 34, "nome": "Lampo-2", "gen": 2, "tipo": "figlio", "genitori": [1, 16], "ricetta": {"tipo": "ties", "forza": 1.33, "densita": 0.29}, "mutazione": "confronto", "voti": {"massimo": 0.505, "minimo": 0.333, "confronto": 0.877, "vicinanza": 0.618}, "voto": 0.5833, "segreto": 0.5865, "scelto": false, "stirpe": false}, {"id": 35, "nome": "Quercia-2", "gen": 2, "tipo": "figlio", "genitori": [1, 16], "ricetta": {"tipo": "media", "forza": 1.57, "pesi": {"W1": 0.73, "b1": 0.74, "W2": 0.62, "b2": 0.56, "W3": 0.64, "b3": 0.21}}, "mutazione": "minimo", "voti": {"massimo": 0.564, "minimo": 0.853, "confronto": 0.495, "vicinanza": 0.681}, "voto": 0.6483, "segreto": 0.6106, "scelto": false, "stirpe": false}, {"id": 36, "nome": "Artiglio-2", "gen": 2, "tipo": "figlio", "genitori": [1, 16], "ricetta": {"tipo": "ties", "forza": 1.43, "densita": 0.42}, "mutazione": "confronto", "voti": {"massimo": 0.593, "minimo": 0.289, "confronto": 0.858, "vicinanza": 0.657}, "voto": 0.5993, "segreto": 0.5529, "scelto": false, "stirpe": false}, {"id": 37, "nome": "Tuono-2", "gen": 3, "tipo": "figlio", "genitori": [28, 1], "ricetta": {"tipo": "media", "forza": 1.6, "pesi": {"W1": 0.71, "b1": 0.35, "W2": 0.42, "b2": 0.27, "W3": 0.21, "b3": 0.26}}, "mutazione": null, "voti": {"massimo": 0.667, "minimo": 0.289, "confronto": 0.324, "vicinanza": 0.392}, "voto": 0.4179, "segreto": 0.4615, "scelto": false, "stirpe": false}, {"id": 38, "nome": "Cenere-2", "gen": 3, "tipo": "figlio", "genitori": [28, 1], "ricetta": {"tipo": "dare", "forza": 0.65, "drop": 0.39}, "mutazione": "minimo", "voti": {"massimo": 0.598, "minimo": 0.882, "confronto": 0.534, "vicinanza": 0.676}, "voto": 0.6728, "segreto": 0.625, "scelto": false, "stirpe": false}, {"id": 39, "nome": "Vento-2", "gen": 3, "tipo": "figlio", "genitori": [28, 1], "ricetta": {"tipo": "dare", "forza": 0.7, "drop": 0.76}, "mutazione": "vicinanza", "voti": {"massimo": 0.426, "minimo": 0.225, "confronto": 0.76, "vicinanza": 0.696}, "voto": 0.527, "segreto": 0.4471, "scelto": false, "stirpe": false}, {"id": 40, "nome": "Aurora-2", "gen": 3, "tipo": "figlio", "genitori": [28, 1], "ricetta": {"tipo": "ties", "forza": 1.32, "densita": 0.34}, "mutazione": null, "voti": {"massimo": 0.926, "minimo": 0.583, "confronto": 0.676, "vicinanza": 0.672}, "voto": 0.7145, "segreto": 0.7404, "scelto": true, "stirpe": false}, {"id": 41, "nome": "Fiocco-2", "gen": 3, "tipo": "figlio", "genitori": [31, 1], "ricetta": {"tipo": "media", "forza": 1.7, "pesi": {"W1": 0.32, "b1": 0.35, "W2": 0.33, "b2": 0.54, "W3": 0.64, "b3": 0.65}}, "mutazione": "minimo", "voti": {"massimo": 0.686, "minimo": 0.73, "confronto": 0.451, "vicinanza": 0.652}, "voto": 0.6299, "segreto": 0.5962, "scelto": false, "stirpe": false}, {"id": 42, "nome": "Sasso-2", "gen": 3, "tipo": "figlio", "genitori": [31, 1], "ricetta": {"tipo": "media", "forza": 1.44, "pesi": {"W1": 0.22, "b1": 0.71, "W2": 0.29, "b2": 0.46, "W3": 0.57, "b3": 0.44}}, "mutazione": null, "voti": {"massimo": 0.892, "minimo": 0.348, "confronto": 0.505, "vicinanza": 0.613}, "voto": 0.5895, "segreto": 0.5817, "scelto": false, "stirpe": false}, {"id": 43, "nome": "Lince-2", "gen": 3, "tipo": "figlio", "genitori": [31, 1], "ricetta": {"tipo": "ties", "forza": 1.07, "densita": 0.53}, "mutazione": "minimo", "voti": {"massimo": 0.574, "minimo": 0.961, "confronto": 0.559, "vicinanza": 0.681}, "voto": 0.6936, "segreto": 0.6202, "scelto": false, "stirpe": false}, {"id": 44, "nome": "Brina-2", "gen": 3, "tipo": "figlio", "genitori": [31, 1], "ricetta": {"tipo": "ties", "forza": 1.3, "densita": 0.6}, "mutazione": "minimo", "voti": {"massimo": 0.603, "minimo": 0.877, "confronto": 0.505, "vicinanza": 0.676}, "voto": 0.6654, "segreto": 0.6298, "scelto": false, "stirpe": false}, {"id": 45, "nome": "Notte-2", "gen": 3, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "somma", "forza": 0.84}, "mutazione": null, "voti": {"massimo": 0.657, "minimo": 0.603, "confronto": 0.51, "vicinanza": 0.676}, "voto": 0.6115, "segreto": 0.5769, "scelto": false, "stirpe": false}, {"id": 46, "nome": "Falco-2", "gen": 3, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "media", "forza": 1.57, "pesi": {"W1": 0.44, "b1": 0.35, "W2": 0.64, "b2": 0.73, "W3": 0.3, "b3": 0.59}}, "mutazione": null, "voti": {"massimo": 0.667, "minimo": 0.627, "confronto": 0.525, "vicinanza": 0.681}, "voto": 0.625, "segreto": 0.5962, "scelto": false, "stirpe": false}, {"id": 47, "nome": "Rovo-2", "gen": 3, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "ties", "forza": 1.41, "densita": 0.29}, "mutazione": null, "voti": {"massimo": 0.618, "minimo": 0.603, "confronto": 0.657, "vicinanza": 0.701}, "voto": 0.6446, "segreto": 0.5721, "scelto": false, "stirpe": false}, {"id": 48, "nome": "Ghiaccio-2", "gen": 3, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "dare", "forza": 1.06, "drop": 0.47}, "mutazione": null, "voti": {"massimo": 0.485, "minimo": 0.456, "confronto": 0.402, "vicinanza": 0.627}, "voto": 0.4926, "segreto": 0.4087, "scelto": false, "stirpe": false}, {"id": 49, "nome": "Luna-3", "gen": 3, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "ties", "forza": 1.5, "densita": 0.47}, "mutazione": null, "voti": {"massimo": 0.578, "minimo": 0.77, "confronto": 0.564, "vicinanza": 0.676}, "voto": 0.6471, "segreto": 0.625, "scelto": false, "stirpe": false}, {"id": 50, "nome": "Ombra-3", "gen": 3, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "media", "forza": 1.55, "pesi": {"W1": 0.73, "b1": 0.42, "W2": 0.58, "b2": 0.42, "W3": 0.43, "b3": 0.43}}, "mutazione": null, "voti": {"massimo": 0.529, "minimo": 0.75, "confronto": 0.5, "vicinanza": 0.652}, "voto": 0.6078, "segreto": 0.5865, "scelto": false, "stirpe": false}, {"id": 51, "nome": "Zanna-3", "gen": 3, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "dare", "forza": 0.98, "drop": 0.32}, "mutazione": "confronto", "voti": {"massimo": 0.358, "minimo": 0.338, "confronto": 0.858, "vicinanza": 0.686}, "voto": 0.56, "segreto": 0.5096, "scelto": false, "stirpe": false}, {"id": 52, "nome": "Neve-3", "gen": 3, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "dare", "forza": 1.02, "drop": 0.67}, "mutazione": "massimo", "voti": {"massimo": 0.74, "minimo": 0.49, "confronto": 0.49, "vicinanza": 0.652}, "voto": 0.5931, "segreto": 0.5577, "scelto": false, "stirpe": false}, {"id": 53, "nome": "Fumo-3", "gen": 4, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "ties", "forza": 1.3, "densita": 0.23}, "mutazione": null, "voti": {"massimo": 0.77, "minimo": 0.843, "confronto": 0.716, "vicinanza": 0.691}, "voto": 0.7549, "segreto": 0.726, "scelto": true, "stirpe": true}, {"id": 54, "nome": "Brace-3", "gen": 4, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "media", "forza": 1.42, "pesi": {"W1": 0.72, "b1": 0.28, "W2": 0.35, "b2": 0.32, "W3": 0.36, "b3": 0.2}}, "mutazione": "confronto", "voti": {"massimo": 0.426, "minimo": 0.412, "confronto": 0.902, "vicinanza": 0.662}, "voto": 0.6005, "segreto": 0.5481, "scelto": false, "stirpe": false}, {"id": 55, "nome": "Selva-3", "gen": 4, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "somma", "forza": 0.91}, "mutazione": null, "voti": {"massimo": 0.466, "minimo": 0.574, "confronto": 0.417, "vicinanza": 0.608}, "voto": 0.5159, "segreto": 0.5288, "scelto": false, "stirpe": false}, {"id": 56, "nome": "Rupe-3", "gen": 4, "tipo": "figlio", "genitori": [23, 28], "ricetta": {"tipo": "ties", "forza": 0.84, "densita": 0.44}, "mutazione": "massimo", "voti": {"massimo": 1.0, "minimo": 0.392, "confronto": 0.49, "vicinanza": 0.515}, "voto": 0.5993, "segreto": 0.5385, "scelto": false, "stirpe": false}, {"id": 57, "nome": "Nebbia-3", "gen": 4, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "media", "forza": 1.56, "pesi": {"W1": 0.32, "b1": 0.22, "W2": 0.29, "b2": 0.38, "W3": 0.63, "b3": 0.71}}, "mutazione": "confronto", "voti": {"massimo": 0.686, "minimo": 0.461, "confronto": 0.858, "vicinanza": 0.686}, "voto": 0.6728, "segreto": 0.5962, "scelto": false, "stirpe": false}, {"id": 58, "nome": "Lampo-3", "gen": 4, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "somma", "forza": 0.92}, "mutazione": null, "voti": {"massimo": 0.608, "minimo": 0.515, "confronto": 0.495, "vicinanza": 0.681}, "voto": 0.5748, "segreto": 0.5673, "scelto": false, "stirpe": false}, {"id": 59, "nome": "Quercia-3", "gen": 4, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "media", "forza": 1.67, "pesi": {"W1": 0.26, "b1": 0.64, "W2": 0.53, "b2": 0.69, "W3": 0.74, "b3": 0.37}}, "mutazione": null, "voti": {"massimo": 0.667, "minimo": 0.554, "confronto": 0.49, "vicinanza": 0.672}, "voto": 0.5956, "segreto": 0.5481, "scelto": false, "stirpe": false}, {"id": 60, "nome": "Artiglio-3", "gen": 4, "tipo": "figlio", "genitori": [23, 31], "ricetta": {"tipo": "dare", "forza": 1.04, "drop": 0.54}, "mutazione": "minimo", "voti": {"massimo": 0.402, "minimo": 0.784, "confronto": 0.328, "vicinanza": 0.529}, "voto": 0.511, "segreto": 0.4856, "scelto": false, "stirpe": false}, {"id": 61, "nome": "Tuono-3", "gen": 4, "tipo": "figlio", "genitori": [40, 28], "ricetta": {"tipo": "dare", "forza": 0.75, "drop": 0.55}, "mutazione": null, "voti": {"massimo": 0.632, "minimo": 0.402, "confronto": 0.495, "vicinanza": 0.613}, "voto": 0.5355, "segreto": 0.5577, "scelto": false, "stirpe": false}, {"id": 62, "nome": "Cenere-3", "gen": 4, "tipo": "figlio", "genitori": [40, 28], "ricetta": {"tipo": "somma", "forza": 1.09}, "mutazione": null, "voti": {"massimo": 0.368, "minimo": 0.27, "confronto": 0.24, "vicinanza": 0.368}, "voto": 0.3113, "segreto": 0.3413, "scelto": false, "stirpe": false}, {"id": 63, "nome": "Vento-3", "gen": 4, "tipo": "figlio", "genitori": [40, 28], "ricetta": {"tipo": "dare", "forza": 0.78, "drop": 0.51}, "mutazione": null, "voti": {"massimo": 0.397, "minimo": 0.299, "confronto": 0.216, "vicinanza": 0.382}, "voto": 0.3235, "segreto": 0.3365, "scelto": false, "stirpe": false}, {"id": 64, "nome": "Aurora-3", "gen": 4, "tipo": "figlio", "genitori": [40, 28], "ricetta": {"tipo": "dare", "forza": 0.69, "drop": 0.34}, "mutazione": null, "voti": {"massimo": 0.583, "minimo": 0.49, "confronto": 0.431, "vicinanza": 0.613}, "voto": 0.5294, "segreto": 0.5673, "scelto": false, "stirpe": false}, {"id": 65, "nome": "Fiocco-3", "gen": 4, "tipo": "figlio", "genitori": [28, 31], "ricetta": {"tipo": "media", "forza": 1.78, "pesi": {"W1": 0.67, "b1": 0.3, "W2": 0.27, "b2": 0.27, "W3": 0.28, "b3": 0.58}}, "mutazione": "confronto", "voti": {"massimo": 0.647, "minimo": 0.363, "confronto": 0.848, "vicinanza": 0.696}, "voto": 0.6385, "segreto": 0.5913, "scelto": false, "stirpe": false}, {"id": 66, "nome": "Sasso-3", "gen": 4, "tipo": "figlio", "genitori": [28, 31], "ricetta": {"tipo": "ties", "forza": 0.94, "densita": 0.47}, "mutazione": "vicinanza", "voti": {"massimo": 0.848, "minimo": 0.48, "confronto": 0.755, "vicinanza": 0.799}, "voto": 0.7206, "segreto": 0.6154, "scelto": true, "stirpe": true}, {"id": 67, "nome": "Lince-3", "gen": 4, "tipo": "figlio", "genitori": [28, 31], "ricetta": {"tipo": "dare", "forza": 0.77, "drop": 0.72}, "mutazione": "minimo", "voti": {"massimo": 0.529, "minimo": 0.789, "confronto": 0.373, "vicinanza": 0.373}, "voto": 0.5159, "segreto": 0.4423, "scelto": false, "stirpe": false}, {"id": 68, "nome": "Brina-3", "gen": 4, "tipo": "figlio", "genitori": [28, 31], "ricetta": {"tipo": "ties", "forza": 0.99, "densita": 0.56}, "mutazione": null, "voti": {"massimo": 0.966, "minimo": 0.755, "confronto": 0.701, "vicinanza": 0.686}, "voto": 0.777, "segreto": 0.7404, "scelto": true, "stirpe": false}, {"id": 69, "nome": "Notte-3", "gen": 5, "tipo": "figlio", "genitori": [68, 66], "ricetta": {"tipo": "dare", "forza": 0.64, "drop": 0.38}, "mutazione": "minimo", "voti": {"massimo": 0.637, "minimo": 0.907, "confronto": 0.588, "vicinanza": 0.691}, "voto": 0.7059, "segreto": 0.6923, "scelto": false, "stirpe": false}, {"id": 70, "nome": "Falco-3", "gen": 5, "tipo": "figlio", "genitori": [68, 66], "ricetta": {"tipo": "somma", "forza": 0.92}, "mutazione": "minimo", "voti": {"massimo": 0.716, "minimo": 0.848, "confronto": 0.52, "vicinanza": 0.667}, "voto": 0.6875, "segreto": 0.6635, "scelto": false, "stirpe": false}, {"id": 71, "nome": "Rovo-3", "gen": 5, "tipo": "figlio", "genitori": [68, 66], "ricetta": {"tipo": "ties", "forza": 0.97, "densita": 0.23}, "mutazione": "massimo", "voti": {"massimo": 0.995, "minimo": 0.564, "confronto": 0.784, "vicinanza": 0.569}, "voto": 0.7279, "segreto": 0.6587, "scelto": false, "stirpe": false}, {"id": 72, "nome": "Ghiaccio-3", "gen": 5, "tipo": "figlio", "genitori": [68, 66], "ricetta": {"tipo": "media", "forza": 1.45, "pesi": {"W1": 0.37, "b1": 0.32, "W2": 0.24, "b2": 0.78, "W3": 0.49, "b3": 0.59}}, "mutazione": null, "voti": {"massimo": 0.691, "minimo": 0.451, "confronto": 0.578, "vicinanza": 0.716}, "voto": 0.6091, "segreto": 0.601, "scelto": false, "stirpe": false}, {"id": 73, "nome": "Luna-4", "gen": 5, "tipo": "figlio", "genitori": [53, 23], "ricetta": {"tipo": "media", "forza": 1.73, "pesi": {"W1": 0.4, "b1": 0.36, "W2": 0.35, "b2": 0.53, "W3": 0.53, "b3": 0.3}}, "mutazione": null, "voti": {"massimo": 0.49, "minimo": 0.672, "confronto": 0.52, "vicinanza": 0.667}, "voto": 0.587, "segreto": 0.5673, "scelto": false, "stirpe": false}, {"id": 74, "nome": "Ombra-4", "gen": 5, "tipo": "figlio", "genitori": [53, 23], "ricetta": {"tipo": "media", "forza": 1.57, "pesi": {"W1": 0.45, "b1": 0.45, "W2": 0.22, "b2": 0.37, "W3": 0.64, "b3": 0.48}}, "mutazione": "massimo", "voti": {"massimo": 0.951, "minimo": 0.74, "confronto": 0.368, "vicinanza": 0.49}, "voto": 0.6373, "segreto": 0.5529, "scelto": false, "stirpe": false}, {"id": 75, "nome": "Zanna-4", "gen": 5, "tipo": "figlio", "genitori": [53, 23], "ricetta": {"tipo": "somma", "forza": 0.93}, "mutazione": "confronto", "voti": {"massimo": 0.363, "minimo": 0.397, "confronto": 0.833, "vicinanza": 0.701}, "voto": 0.5735, "segreto": 0.5337, "scelto": false, "stirpe": false}, {"id": 76, "nome": "Neve-4", "gen": 5, "tipo": "figlio", "genitori": [53, 23], "ricetta": {"tipo": "media", "forza": 1.82, "pesi": {"W1": 0.39, "b1": 0.42, "W2": 0.56, "b2": 0.27, "W3": 0.24, "b3": 0.57}}, "mutazione": "massimo", "voti": {"massimo": 0.868, "minimo": 0.706, "confronto": 0.368, "vicinanza": 0.525}, "voto": 0.6164, "segreto": 0.5673, "scelto": false, "stirpe": false}, {"id": 77, "nome": "Fumo-4", "gen": 5, "tipo": "figlio", "genitori": [53, 66], "ricetta": {"tipo": "ties", "forza": 1.46, "densita": 0.28}, "mutazione": "minimo", "voti": {"massimo": 0.662, "minimo": 0.975, "confronto": 0.642, "vicinanza": 0.706}, "voto": 0.7463, "segreto": 0.6731, "scelto": true, "stirpe": true}, {"id": 78, "nome": "Brace-4", "gen": 5, "tipo": "figlio", "genitori": [53, 66], "ricetta": {"tipo": "media", "forza": 1.84, "pesi": {"W1": 0.39, "b1": 0.4, "W2": 0.7, "b2": 0.49, "W3": 0.27, "b3": 0.42}}, "mutazione": null, "voti": {"massimo": 0.539, "minimo": 0.402, "confronto": 0.461, "vicinanza": 0.652}, "voto": 0.5135, "segreto": 0.5192, "scelto": false, "stirpe": false}, {"id": 79, "nome": "Selva-4", "gen": 5, "tipo": "figlio", "genitori": [53, 66], "ricetta": {"tipo": "ties", "forza": 1.42, "densita": 0.22}, "mutazione": "massimo", "voti": {"massimo": 1.0, "minimo": 0.681, "confronto": 0.662, "vicinanza": 0.618}, "voto": 0.7402, "segreto": 0.6635, "scelto": true, "stirpe": true}, {"id": 80, "nome": "Rupe-4", "gen": 5, "tipo": "figlio", "genitori": [53, 66], "ricetta": {"tipo": "dare", "forza": 0.71, "drop": 0.45}, "mutazione": null, "voti": {"massimo": 0.51, "minimo": 0.417, "confronto": 0.608, "vicinanza": 0.691}, "voto": 0.5564, "segreto": 0.524, "scelto": false, "stirpe": false}, {"id": 81, "nome": "Nebbia-4", "gen": 5, "tipo": "figlio", "genitori": [68, 23], "ricetta": {"tipo": "ties", "forza": 1.48, "densita": 0.35}, "mutazione": null, "voti": {"massimo": 0.598, "minimo": 0.73, "confronto": 0.647, "vicinanza": 0.691}, "voto": 0.6667, "segreto": 0.6058, "scelto": false, "stirpe": false}, {"id": 82, "nome": "Lampo-4", "gen": 5, "tipo": "figlio", "genitori": [68, 23], "ricetta": {"tipo": "somma", "forza": 0.98}, "mutazione": null, "voti": {"massimo": 0.505, "minimo": 0.539, "confronto": 0.471, "vicinanza": 0.667}, "voto": 0.5453, "segreto": 0.5288, "scelto": false, "stirpe": false}, {"id": 83, "nome": "Quercia-4", "gen": 5, "tipo": "figlio", "genitori": [68, 23], "ricetta": {"tipo": "somma", "forza": 1.02}, "mutazione": "confronto", "voti": {"massimo": 0.426, "minimo": 0.358, "confronto": 0.794, "vicinanza": 0.676}, "voto": 0.5637, "segreto": 0.5192, "scelto": false, "stirpe": false}, {"id": 84, "nome": "Artiglio-4", "gen": 5, "tipo": "figlio", "genitori": [68, 23], "ricetta": {"tipo": "somma", "forza": 1.03}, "mutazione": null, "voti": {"massimo": 0.48, "minimo": 0.51, "confronto": 0.456, "vicinanza": 0.667}, "voto": 0.5282, "segreto": 0.5288, "scelto": false, "stirpe": false}, {"id": 85, "nome": "Tuono-4", "gen": 6, "tipo": "figlio", "genitori": [53, 77], "ricetta": {"tipo": "media", "forza": 1.77, "pesi": {"W1": 0.21, "b1": 0.22, "W2": 0.57, "b2": 0.61, "W3": 0.36, "b3": 0.66}}, "mutazione": null, "voti": {"massimo": 0.569, "minimo": 0.681, "confronto": 0.485, "vicinanza": 0.647}, "voto": 0.5956, "segreto": 0.5529, "scelto": false, "stirpe": false}, {"id": 86, "nome": "Cenere-4", "gen": 6, "tipo": "figlio", "genitori": [53, 77], "ricetta": {"tipo": "somma", "forza": 0.67}, "mutazione": null, "voti": {"massimo": 0.681, "minimo": 0.858, "confronto": 0.574, "vicinanza": 0.691}, "voto": 0.701, "segreto": 0.649, "scelto": false, "stirpe": false}, {"id": 87, "nome": "Vento-4", "gen": 6, "tipo": "figlio", "genitori": [53, 77], "ricetta": {"tipo": "ties", "forza": 1.51, "densita": 0.42}, "mutazione": null, "voti": {"massimo": 0.613, "minimo": 0.618, "confronto": 0.569, "vicinanza": 0.681}, "voto": 0.6201, "segreto": 0.5721, "scelto": false, "stirpe": false}, {"id": 88, "nome": "Aurora-4", "gen": 6, "tipo": "figlio", "genitori": [53, 77], "ricetta": {"tipo": "somma", "forza": 0.96}, "mutazione": null, "voti": {"massimo": 0.559, "minimo": 0.613, "confronto": 0.485, "vicinanza": 0.637}, "voto": 0.5735, "segreto": 0.5481, "scelto": false, "stirpe": false}, {"id": 89, "nome": "Fiocco-4", "gen": 6, "tipo": "figlio", "genitori": [68, 77], "ricetta": {"tipo": "ties", "forza": 1.49, "densita": 0.22}, "mutazione": "confronto", "voti": {"massimo": 0.574, "minimo": 0.691, "confronto": 0.877, "vicinanza": 0.706}, "voto": 0.712, "segreto": 0.6154, "scelto": false, "stirpe": false}, {"id": 90, "nome": "Sasso-4", "gen": 6, "tipo": "figlio", "genitori": [68, 77], "ricetta": {"tipo": "dare", "forza": 1.08, "drop": 0.38}, "mutazione": null, "voti": {"massimo": 0.534, "minimo": 0.412, "confronto": 0.466, "vicinanza": 0.657}, "voto": 0.5172, "segreto": 0.4856, "scelto": false, "stirpe": false}, {"id": 91, "nome": "Lince-4", "gen": 6, "tipo": "figlio", "genitori": [68, 77], "ricetta": {"tipo": "media", "forza": 1.37, "pesi": {"W1": 0.31, "b1": 0.66, "W2": 0.62, "b2": 0.68, "W3": 0.71, "b3": 0.63}}, "mutazione": "confronto", "voti": {"massimo": 0.642, "minimo": 0.637, "confronto": 0.882, "vicinanza": 0.696}, "voto": 0.7145, "segreto": 0.6442, "scelto": false, "stirpe": false}, {"id": 92, "nome": "Brina-4", "gen": 6, "tipo": "figlio", "genitori": [68, 77], "ricetta": {"tipo": "somma", "forza": 0.81}, "mutazione": "confronto", "voti": {"massimo": 0.603, "minimo": 0.525, "confronto": 0.809, "vicinanza": 0.701}, "voto": 0.6593, "segreto": 0.6202, "scelto": false, "stirpe": false}, {"id": 93, "nome": "Notte-4", "gen": 6, "tipo": "figlio", "genitori": [77, 79], "ricetta": {"tipo": "somma", "forza": 0.62}, "mutazione": null, "voti": {"massimo": 0.868, "minimo": 0.858, "confronto": 0.529, "vicinanza": 0.667}, "voto": 0.7304, "segreto": 0.6971, "scelto": false, "stirpe": false}, {"id": 94, "nome": "Falco-4", "gen": 6, "tipo": "figlio", "genitori": [77, 79], "ricetta": {"tipo": "somma", "forza": 1.09}, "mutazione": "confronto", "voti": {"massimo": 0.539, "minimo": 0.466, "confronto": 0.804, "vicinanza": 0.696}, "voto": 0.6262, "segreto": 0.5865, "scelto": false, "stirpe": false}, {"id": 95, "nome": "Rovo-4", "gen": 6, "tipo": "figlio", "genitori": [77, 79], "ricetta": {"tipo": "somma", "forza": 0.61}, "mutazione": "confronto", "voti": {"massimo": 0.721, "minimo": 0.681, "confronto": 0.907, "vicinanza": 0.696}, "voto": 0.7512, "segreto": 0.6394, "scelto": true, "stirpe": true}, {"id": 96, "nome": "Ghiaccio-4", "gen": 6, "tipo": "figlio", "genitori": [77, 79], "ricetta": {"tipo": "media", "forza": 1.52, "pesi": {"W1": 0.62, "b1": 0.62, "W2": 0.34, "b2": 0.6, "W3": 0.79, "b3": 0.69}}, "mutazione": null, "voti": {"massimo": 0.77, "minimo": 0.789, "confronto": 0.456, "vicinanza": 0.588}, "voto": 0.6507, "segreto": 0.5913, "scelto": false, "stirpe": false}, {"id": 97, "nome": "Luna-5", "gen": 6, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "ties", "forza": 1.51, "densita": 0.56}, "mutazione": "confronto", "voti": {"massimo": 0.603, "minimo": 0.417, "confronto": 0.873, "vicinanza": 0.686}, "voto": 0.6446, "segreto": 0.5962, "scelto": false, "stirpe": false}, {"id": 98, "nome": "Ombra-5", "gen": 6, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "media", "forza": 1.42, "pesi": {"W1": 0.51, "b1": 0.74, "W2": 0.7, "b2": 0.26, "W3": 0.22, "b3": 0.27}}, "mutazione": null, "voti": {"massimo": 0.74, "minimo": 0.618, "confronto": 0.515, "vicinanza": 0.623}, "voto": 0.6238, "segreto": 0.601, "scelto": false, "stirpe": false}, {"id": 99, "nome": "Zanna-5", "gen": 6, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "ties", "forza": 1.38, "densita": 0.57}, "mutazione": "confronto", "voti": {"massimo": 0.603, "minimo": 0.412, "confronto": 0.897, "vicinanza": 0.667}, "voto": 0.6446, "segreto": 0.5913, "scelto": false, "stirpe": false}, {"id": 100, "nome": "Neve-5", "gen": 6, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "media", "forza": 1.34, "pesi": {"W1": 0.29, "b1": 0.73, "W2": 0.46, "b2": 0.78, "W3": 0.66, "b3": 0.26}}, "mutazione": null, "voti": {"massimo": 0.74, "minimo": 0.706, "confronto": 0.544, "vicinanza": 0.686}, "voto": 0.6691, "segreto": 0.6635, "scelto": false, "stirpe": false}, {"id": 101, "nome": "Fumo-5", "gen": 7, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "somma", "forza": 1.08}, "mutazione": null, "voti": {"massimo": 0.49, "minimo": 0.417, "confronto": 0.368, "vicinanza": 0.623}, "voto": 0.4743, "segreto": 0.4952, "scelto": false, "stirpe": false}, {"id": 102, "nome": "Brace-5", "gen": 7, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "media", "forza": 1.61, "pesi": {"W1": 0.29, "b1": 0.64, "W2": 0.73, "b2": 0.62, "W3": 0.79, "b3": 0.29}}, "mutazione": null, "voti": {"massimo": 0.696, "minimo": 0.539, "confronto": 0.461, "vicinanza": 0.676}, "voto": 0.5931, "segreto": 0.6058, "scelto": false, "stirpe": false}, {"id": 103, "nome": "Selva-5", "gen": 7, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "dare", "forza": 0.69, "drop": 0.65}, "mutazione": "minimo", "voti": {"massimo": 0.539, "minimo": 0.863, "confronto": 0.691, "vicinanza": 0.549}, "voto": 0.6605, "segreto": 0.5817, "scelto": false, "stirpe": false}, {"id": 104, "nome": "Rupe-5", "gen": 7, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "media", "forza": 1.66, "pesi": {"W1": 0.7, "b1": 0.62, "W2": 0.65, "b2": 0.8, "W3": 0.75, "b3": 0.26}}, "mutazione": "confronto", "voti": {"massimo": 0.598, "minimo": 0.397, "confronto": 0.868, "vicinanza": 0.672}, "voto": 0.6336, "segreto": 0.6058, "scelto": false, "stirpe": false}, {"id": 105, "nome": "Nebbia-5", "gen": 7, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "dare", "forza": 0.71, "drop": 0.62}, "mutazione": "minimo", "voti": {"massimo": 0.539, "minimo": 0.779, "confronto": 0.52, "vicinanza": 0.525}, "voto": 0.5907, "segreto": 0.5721, "scelto": false, "stirpe": false}, {"id": 106, "nome": "Lampo-5", "gen": 7, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "ties", "forza": 1.03, "densita": 0.32}, "mutazione": null, "voti": {"massimo": 0.711, "minimo": 0.745, "confronto": 0.77, "vicinanza": 0.706}, "voto": 0.7328, "segreto": 0.6731, "scelto": false, "stirpe": false}, {"id": 107, "nome": "Quercia-5", "gen": 7, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "ties", "forza": 1.0, "densita": 0.57}, "mutazione": "vicinanza", "voti": {"massimo": 0.725, "minimo": 0.466, "confronto": 0.794, "vicinanza": 0.779}, "voto": 0.6912, "segreto": 0.6298, "scelto": false, "stirpe": false}, {"id": 108, "nome": "Artiglio-5", "gen": 7, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "media", "forza": 1.84, "pesi": {"W1": 0.23, "b1": 0.63, "W2": 0.65, "b2": 0.25, "W3": 0.68, "b3": 0.66}}, "mutazione": "minimo", "voti": {"massimo": 0.735, "minimo": 0.887, "confronto": 0.667, "vicinanza": 0.672}, "voto": 0.7402, "segreto": 0.6587, "scelto": false, "stirpe": false}, {"id": 109, "nome": "Tuono-5", "gen": 7, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "media", "forza": 1.92, "pesi": {"W1": 0.44, "b1": 0.4, "W2": 0.72, "b2": 0.78, "W3": 0.53, "b3": 0.41}}, "mutazione": null, "voti": {"massimo": 0.544, "minimo": 0.505, "confronto": 0.603, "vicinanza": 0.676}, "voto": 0.5821, "segreto": 0.5769, "scelto": false, "stirpe": false}, {"id": 110, "nome": "Cenere-5", "gen": 7, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "somma", "forza": 0.74}, "mutazione": "massimo", "voti": {"massimo": 0.98, "minimo": 0.637, "confronto": 0.569, "vicinanza": 0.588}, "voto": 0.6936, "segreto": 0.6442, "scelto": false, "stirpe": false}, {"id": 111, "nome": "Vento-5", "gen": 7, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "somma", "forza": 0.64}, "mutazione": "massimo", "voti": {"massimo": 1.0, "minimo": 0.686, "confronto": 0.613, "vicinanza": 0.637}, "voto": 0.7341, "segreto": 0.6538, "scelto": false, "stirpe": false}, {"id": 112, "nome": "Aurora-5", "gen": 7, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "dare", "forza": 1.05, "drop": 0.74}, "mutazione": "massimo", "voti": {"massimo": 0.436, "minimo": 0.299, "confronto": 0.382, "vicinanza": 0.588}, "voto": 0.4265, "segreto": 0.399, "scelto": false, "stirpe": false}, {"id": 113, "nome": "Fiocco-5", "gen": 7, "tipo": "figlio", "genitori": [95, 77], "ricetta": {"tipo": "somma", "forza": 1.02}, "mutazione": null, "voti": {"massimo": 0.49, "minimo": 0.515, "confronto": 0.618, "vicinanza": 0.686}, "voto": 0.5772, "segreto": 0.5625, "scelto": false, "stirpe": false}, {"id": 114, "nome": "Sasso-5", "gen": 7, "tipo": "figlio", "genitori": [95, 77], "ricetta": {"tipo": "media", "forza": 1.8, "pesi": {"W1": 0.32, "b1": 0.21, "W2": 0.64, "b2": 0.41, "W3": 0.34, "b3": 0.31}}, "mutazione": null, "voti": {"massimo": 0.539, "minimo": 0.608, "confronto": 0.642, "vicinanza": 0.691}, "voto": 0.6201, "segreto": 0.5817, "scelto": false, "stirpe": false}, {"id": 115, "nome": "Lince-5", "gen": 7, "tipo": "figlio", "genitori": [95, 77], "ricetta": {"tipo": "media", "forza": 1.76, "pesi": {"W1": 0.42, "b1": 0.78, "W2": 0.45, "b2": 0.41, "W3": 0.6, "b3": 0.59}}, "mutazione": "massimo", "voti": {"massimo": 0.882, "minimo": 0.691, "confronto": 0.495, "vicinanza": 0.569}, "voto": 0.6593, "segreto": 0.6058, "scelto": false, "stirpe": false}, {"id": 116, "nome": "Brina-5", "gen": 7, "tipo": "figlio", "genitori": [95, 77], "ricetta": {"tipo": "ties", "forza": 1.11, "densita": 0.57}, "mutazione": null, "voti": {"massimo": 0.721, "minimo": 0.912, "confronto": 0.848, "vicinanza": 0.701}, "voto": 0.7953, "segreto": 0.7115, "scelto": true, "stirpe": true}, {"id": 117, "nome": "Notte-5", "gen": 8, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "ties", "forza": 0.98, "densita": 0.54}, "mutazione": "confronto", "voti": {"massimo": 0.706, "minimo": 0.539, "confronto": 0.961, "vicinanza": 0.632}, "voto": 0.7096, "segreto": 0.6394, "scelto": false, "stirpe": false}, {"id": 118, "nome": "Falco-5", "gen": 8, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "media", "forza": 1.35, "pesi": {"W1": 0.4, "b1": 0.68, "W2": 0.36, "b2": 0.58, "W3": 0.24, "b3": 0.7}}, "mutazione": null, "voti": {"massimo": 0.725, "minimo": 0.672, "confronto": 0.549, "vicinanza": 0.676}, "voto": 0.6556, "segreto": 0.6442, "scelto": false, "stirpe": false}, {"id": 119, "nome": "Rovo-5", "gen": 8, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "dare", "forza": 1.06, "drop": 0.59}, "mutazione": null, "voti": {"massimo": 0.475, "minimo": 0.368, "confronto": 0.441, "vicinanza": 0.471}, "voto": 0.4387, "segreto": 0.4423, "scelto": false, "stirpe": false}, {"id": 120, "nome": "Ghiaccio-5", "gen": 8, "tipo": "figlio", "genitori": [68, 53], "ricetta": {"tipo": "somma", "forza": 0.71}, "mutazione": null, "voti": {"massimo": 0.711, "minimo": 0.632, "confronto": 0.534, "vicinanza": 0.676}, "voto": 0.6385, "segreto": 0.6154, "scelto": false, "stirpe": false}, {"id": 121, "nome": "Luna-6", "gen": 8, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "ties", "forza": 1.48, "densita": 0.4}, "mutazione": "minimo", "voti": {"massimo": 0.706, "minimo": 0.936, "confronto": 0.696, "vicinanza": 0.662}, "voto": 0.75, "segreto": 0.6971, "scelto": false, "stirpe": false}, {"id": 122, "nome": "Ombra-6", "gen": 8, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "somma", "forza": 1.08}, "mutazione": "minimo", "voti": {"massimo": 0.672, "minimo": 0.814, "confronto": 0.515, "vicinanza": 0.637}, "voto": 0.6593, "segreto": 0.6106, "scelto": false, "stirpe": false}, {"id": 123, "nome": "Zanna-6", "gen": 8, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "somma", "forza": 1.03}, "mutazione": "minimo", "voti": {"massimo": 0.696, "minimo": 0.809, "confronto": 0.554, "vicinanza": 0.652}, "voto": 0.6777, "segreto": 0.6058, "scelto": false, "stirpe": false}, {"id": 124, "nome": "Neve-6", "gen": 8, "tipo": "figlio", "genitori": [68, 95], "ricetta": {"tipo": "somma", "forza": 0.88}, "mutazione": "minimo", "voti": {"massimo": 0.691, "minimo": 0.877, "confronto": 0.618, "vicinanza": 0.662}, "voto": 0.712, "segreto": 0.6587, "scelto": false, "stirpe": false}, {"id": 125, "nome": "Fumo-6", "gen": 8, "tipo": "figlio", "genitori": [116, 68], "ricetta": {"tipo": "media", "forza": 1.47, "pesi": {"W1": 0.31, "b1": 0.58, "W2": 0.45, "b2": 0.43, "W3": 0.36, "b3": 0.38}}, "mutazione": null, "voti": {"massimo": 0.706, "minimo": 0.681, "confronto": 0.559, "vicinanza": 0.686}, "voto": 0.6581, "segreto": 0.6202, "scelto": false, "stirpe": false}, {"id": 126, "nome": "Brace-6", "gen": 8, "tipo": "figlio", "genitori": [116, 68], "ricetta": {"tipo": "ties", "forza": 1.2, "densita": 0.26}, "mutazione": "massimo", "voti": {"massimo": 1.0, "minimo": 0.691, "confronto": 0.598, "vicinanza": 0.642}, "voto": 0.7328, "segreto": 0.6635, "scelto": false, "stirpe": false}, {"id": 127, "nome": "Selva-6", "gen": 8, "tipo": "figlio", "genitori": [116, 68], "ricetta": {"tipo": "somma", "forza": 0.87}, "mutazione": null, "voti": {"massimo": 0.657, "minimo": 0.623, "confronto": 0.554, "vicinanza": 0.691}, "voto": 0.6311, "segreto": 0.5962, "scelto": false, "stirpe": false}, {"id": 128, "nome": "Rupe-6", "gen": 8, "tipo": "figlio", "genitori": [116, 68], "ricetta": {"tipo": "somma", "forza": 0.95}, "mutazione": null, "voti": {"massimo": 0.618, "minimo": 0.574, "confronto": 0.534, "vicinanza": 0.691}, "voto": 0.6042, "segreto": 0.5625, "scelto": false, "stirpe": false}, {"id": 129, "nome": "Nebbia-6", "gen": 8, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "dare", "forza": 0.9, "drop": 0.62}, "mutazione": null, "voti": {"massimo": 0.245, "minimo": 0.24, "confronto": 0.529, "vicinanza": 0.701}, "voto": 0.4289, "segreto": 0.4615, "scelto": false, "stirpe": false}, {"id": 130, "nome": "Lampo-6", "gen": 8, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "somma", "forza": 0.66}, "mutazione": null, "voti": {"massimo": 0.662, "minimo": 0.691, "confronto": 0.794, "vicinanza": 0.706}, "voto": 0.7132, "segreto": 0.6538, "scelto": false, "stirpe": false}, {"id": 131, "nome": "Quercia-6", "gen": 8, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "somma", "forza": 0.76}, "mutazione": "minimo", "voti": {"massimo": 0.691, "minimo": 0.951, "confronto": 0.667, "vicinanza": 0.662}, "voto": 0.7426, "segreto": 0.6731, "scelto": false, "stirpe": false}, {"id": 132, "nome": "Artiglio-6", "gen": 8, "tipo": "figlio", "genitori": [53, 95], "ricetta": {"tipo": "dare", "forza": 0.84, "drop": 0.73}, "mutazione": "massimo", "voti": {"massimo": 0.505, "minimo": 0.358, "confronto": 0.314, "vicinanza": 0.583}, "voto": 0.44, "segreto": 0.3942, "scelto": false, "stirpe": false}]};
+// i colori dei grafici si calcolano al caricamento: se cambia il tema chiaro/scuro, ridisegniamo
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
+
+(async () => {
+  const d = DATA || await fetch('risultati.json').then((r) => r.json());
+  const $ = (id) => document.getElementById(id);
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const pct1 = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    parent?.appendChild(e);
+    return e;
+  };
+
+  const nodes = d.nodi;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const alpha = byId.get(d.alfa);
+  const ref = d.riferimenti;
+  const maxGen = Math.max(...nodes.map((n) => n.gen));
+  const kids = new Map(nodes.map((n) => [n.id, []]));
+  for (const n of nodes) for (const p of n.genitori) kids.get(p).push(n.id);
+
+  /* ───── testi ───── */
+  $('lead').innerHTML = `${nodes.length} piccole reti neurali (${d.parametri.toLocaleString('it-IT')} parametri ciascuna) nate in ${String(d.secondi).replace('.', ',')} secondi sul processore.
+    Un <b>antenato</b> sa un po' di tutto; la <b>PCR</b> crea un fondatore esperto per ogni materia (${d.materie.join(', ')});
+    poi i migliori si accoppiano: ogni figlio nasce <b>fondendo i pesi</b> dei genitori, a volte con una piccola mutazione, e solo i migliori si riproducono ancora.`;
+
+  const tile = (k, v, s) => `<div class="card tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('tiles').innerHTML =
+    tile('Antenato', pct(ref.antenato), 'sa un po\' di tutto') +
+    tile('Miglior fondatore', pct(ref.miglior_fondatore), 'esperto di una sola materia') +
+    tile(`Alfa · ${esc(alpha.nome)}`, pct(alpha.voto), `nato alla generazione ${alpha.gen}`) +
+    tile('Alfa all\'esame segreto', pct(alpha.segreto), 'domande mai viste prima');
+
+  /* ───── colore per voto (sequenziale, una tinta) ───── */
+  const lo = Math.min(...nodes.map((n) => n.voto)), hi = 1;
+  $('lgLo').textContent = pct(lo);
+  $('lgHi').textContent = '100%';
+  const hex = (h) => h.match(/\w\w/g).map((x) => parseInt(x, 16));
+  const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
+  const colorOf = (v) => mix(hex(css('--seq-lo')), hex(css('--seq-hi')), Math.max(0, Math.min(1, (v - lo) / (hi - lo))));
+
+  /* ───── disposizione dell'albero ───── */
+  const ROW = 78, TOP = 30, LEFT = 96, R = 8;
+  const rows = [];
+  for (let g = -1; g <= maxGen; g++) rows.push(nodes.filter((n) => n.gen === g));
+  const widest = Math.max(...rows.map((r) => r.length));
+  const W = LEFT + Math.max(640, widest * 46) + 20;
+  const H = TOP + rows.length * ROW;
+  const pos = new Map();
+  rows.forEach((row, ri) => {
+    // i figli vicino ai loro genitori: ordina per posizione media dei genitori, poi per voto
+    const key = (n) => (n.genitori.length ? n.genitori.reduce((s, p) => s + (pos.get(p)?.x || 0), 0) / n.genitori.length : 0);
+    row.sort((a, b) => key(a) - key(b) || b.voto - a.voto);
+    const span = W - LEFT - 20;
+    row.forEach((n, i) => pos.set(n.id, { x: LEFT + span * (i + 0.5) / row.length, y: TOP + ri * ROW + 14 }));
+  });
+
+  const svg = $('tree');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.width = '100%';
+  svg.style.height = 'auto';
+  svg.style.minWidth = '560px';
+  const gEdges = el('g', {}, svg), gNodes = el('g', {}, svg), gLabels = el('g', {}, svg);
+  rows.forEach((row, ri) => {
+    const t = el('text', { x: 4, y: TOP + ri * ROW + 18, class: 'rowlab' }, gLabels);
+    t.textContent = ri === 0 ? 'antenato' : ri === 1 ? 'fondatori (PCR)' : `generazione ${ri - 1}`;
+  });
+
+  const edges = [];
+  for (const n of nodes) for (const p of n.genitori) {
+    const a = pos.get(p), b = pos.get(n.id);
+    const my = (a.y + b.y) / 2;
+    const path = el('path', { d: `M${a.x},${a.y + R} C${a.x},${my} ${b.x},${my} ${b.x},${b.y - R}`, class: `edge${n.stirpe && byId.get(p).stirpe ? ' line' : ''}` }, gEdges);
+    edges.push({ path, from: p, to: n.id, gen: n.gen });
+  }
+
+  const nodeEls = new Map();
+  for (const n of nodes) {
+    const { x, y } = pos.get(n.id);
+    const isAlpha = n.id === d.alfa;
+    const g = el('g', { class: `node${n.scelto ? ' sel' : ' off'}${isAlpha ? ' alpha' : ''}`, tabindex: 0, role: 'button', 'aria-label': `${n.nome}, voto ${pct(n.voto)}` }, gNodes);
+    el('circle', { cx: x, cy: y, r: 16, fill: 'transparent', stroke: 'none' }, g); // area di clic più grande del cerchio
+    el('circle', { cx: x, cy: y, r: isAlpha ? R + 3 : R, fill: colorOf(n.voto) }, g);
+    if (n.scelto) el('circle', { class: 'ring', cx: x, cy: y, r: (isAlpha ? R + 3 : R) + 3 }, g);
+    if (n.gen <= 0 || isAlpha) {
+      const t = el('text', { x, y: y + (isAlpha ? 30 : 24), 'text-anchor': 'middle' }, g);
+      t.textContent = isAlpha ? `★ ALFA ${n.nome}` : n.primer ? `${n.nome} · ${n.primer}` : n.nome;
+    }
+    g.addEventListener('mouseenter', (e) => { hover(n.id); showTip(e, n); });
+    g.addEventListener('mousemove', (e) => moveTip(e));
+    g.addEventListener('mouseleave', () => { hover(null); $('tip').hidden = true; });
+    g.addEventListener('click', () => select(n.id));
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(n.id); } });
+    nodeEls.set(n.id, g);
+  }
+
+  function hover(id) {
+    for (const e of edges) e.path.classList.toggle('hot', id != null && (e.from === id || e.to === id));
+  }
+
+  /* ───── tooltip ───── */
+  const tip = $('tip');
+  function showTip(e, n) {
+    tip.innerHTML = `<b>${esc(n.nome)}</b> · ${n.gen < 0 ? 'antenato' : n.gen === 0 ? 'fondatore' : `gen ${n.gen}`}<br>
+      Esame <b>${pct1(n.voto)}</b> · segreto ${pct1(n.segreto)}<br>
+      <span style="color:var(--text-muted)">${n.scelto ? 'scelto per riprodursi' : 'scartato'}${n.mutazione ? ` · mutazione: ${esc(n.mutazione)}` : ''}</span>`;
+    tip.hidden = false;
+    moveTip(e);
+  }
+  function moveTip(e) {
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+    if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    tip.style.left = `${x}px`;
+    tip.style.top = `${y}px`;
+  }
+
+  /* ───── scheda del lupo ───── */
+  const RECIPE = {
+    pcr: (r) => `Nato dalla <b>PCR</b>: addestrato sull'antenato con il primer «diventa esperto di ${esc(r.primer)}».`,
+    media: (r) => `Fusione a <b>media pesata</b>: per ogni strato un po' di un genitore e un po' dell'altro, esperienza amplificata ×${r.forza}.`,
+    somma: (r) => `Fusione a <b>somma</b>: le esperienze dei due genitori sommate, ×${r.forza}.`,
+    ties: (r) => `Fusione <b>TIES</b>: tiene solo il ${Math.round(r.densita * 100)}% dei cambiamenti più forti di ciascun genitore e, dove litigano, vince il segno più votato (×${r.forza}).`,
+    dare: (r) => `Fusione <b>DARE</b>: butta a caso il ${Math.round(r.drop * 100)}% dei cambiamenti di ogni genitore e ingrandisce il resto (×${r.forza}).`,
+  };
+  function select(id) {
+    const n = byId.get(id);
+    for (const [k, g] of nodeEls) g.querySelector('circle:nth-of-type(2)').setAttribute('stroke', k === id ? css('--series-2') : css('--surface-1'));
+    const par = n.genitori.map((p) => byId.get(p));
+    const ch = kids.get(id).map((k) => byId.get(k));
+    const bestKid = ch.sort((a, b) => b.voto - a.voto)[0];
+    $('panel').innerHTML = `
+      <h2>${esc(n.nome)}<span class="badge">${n.scelto ? 'scelto' : 'scartato'}</span></h2>
+      <div class="muted">${n.gen < 0 ? 'l\'antenato di tutti' : n.gen === 0 ? 'fondatore' : `generazione ${n.gen}`}${id === d.alfa ? ' · ★ alfa del branco' : ''}</div>
+      <div class="big">${pct1(n.voto)}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:-4px">voto all'esame · <b style="color:var(--text-primary)">${pct1(n.segreto)}</b> all'esame segreto</div>
+      <div style="margin-top:10px">${d.materie.map((m) => `
+        <div class="sk"><span>${esc(m)}</span><span class="track"><span class="fill" style="display:block;width:${n.voti[m] * 100}%"></span></span><span class="n">${pct(n.voti[m])}</span></div>`).join('')}
+      </div>
+      ${n.ricetta ? `<div class="sec">${(RECIPE[n.ricetta.tipo] || (() => ''))(n.ricetta)}</div>` : '<div class="sec">Addestrato poco, su un 6% dei fatti di tutte le materie.</div>'}
+      ${n.mutazione ? `<div class="sec">🧬 Mutazione: un breve ripasso di <b>${esc(n.mutazione)}</b>, la sua materia più debole.</div>` : ''}
+      ${par.length ? `<div class="sec">Genitori: ${par.map((p) => `<button class="link" data-go="${p.id}">${esc(p.nome)}</button> (${pct(p.voto)})`).join(' + ')}</div>` : ''}
+      <div class="sec">${ch.length ? `${ch.length} figli, il migliore <button class="link" data-go="${bestKid.id}">${esc(bestKid.nome)}</button> (${pct(bestKid.voto)})` : 'Nessun figlio.'}</div>`;
+  }
+  $('panel').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) select(+b.dataset.go); });
+  select(d.alfa);
+
+  /* ───── scartati sì/no, riproduzione animata ───── */
+  let visibleGen = maxGen;
+  function applyVisibility() {
+    const showOff = $('showOff').checked;
+    for (const n of nodes) {
+      const hide = n.gen > visibleGen || (!showOff && !n.scelto && !n.stirpe);
+      nodeEls.get(n.id).classList.toggle('hidden', hide);
+    }
+    for (const e of edges) {
+      const a = byId.get(e.from), b = byId.get(e.to);
+      const hide = e.gen > visibleGen || (!showOff && ((!a.scelto && !a.stirpe) || (!b.scelto && !b.stirpe)));
+      e.path.classList.toggle('hidden', hide);
+    }
+    $('genNow').textContent = visibleGen < maxGen ? (visibleGen < 0 ? 'l\'antenato…' : visibleGen === 0 ? 'la PCR crea i fondatori…' : `generazione ${visibleGen}…`) : '';
+  }
+  $('showOff').onchange = applyVisibility;
+  let timer = null;
+  $('play').onclick = () => {
+    clearInterval(timer);
+    visibleGen = -1;
+    applyVisibility();
+    timer = setInterval(() => {
+      visibleGen++;
+      applyVisibility();
+      if (visibleGen >= maxGen) { clearInterval(timer); select(d.alfa); }
+    }, 900);
+  };
+  applyVisibility();
+
+  /* ───── grafico: migliore e media per generazione ───── */
+  const hist = d.storia;
+  const CW = 760, CH = 260, M = { l: 44, r: 150, t: 12, b: 30 };
+  const cs = $('chart');
+  cs.setAttribute('viewBox', `0 0 ${CW} ${CH}`);
+  cs.style.width = '100%';
+  cs.style.maxWidth = `${CW}px`;
+  const yMin = Math.floor(Math.min(ref.antenato, ...hist.map((h) => h.media)) * 10) / 10;
+  const xs = (g) => M.l + (CW - M.l - M.r) * g / Math.max(1, hist.length - 1);
+  const ys = (v) => M.t + (CH - M.t - M.b) * (1 - (v - yMin) / (1 - yMin));
+  const ax = el('g', { class: 'axis' }, cs);
+  for (let v = yMin; v <= 1.0001; v += 0.1) {
+    el('line', { x1: M.l, x2: CW - M.r, y1: ys(v), y2: ys(v), stroke: css('--grid'), 'stroke-width': 1 }, ax);
+    const t = el('text', { x: M.l - 6, y: ys(v) + 4, 'text-anchor': 'end' }, ax);
+    t.textContent = pct(v);
+  }
+  hist.forEach((h) => {
+    const t = el('text', { x: xs(h.gen), y: CH - 10, 'text-anchor': 'middle' }, ax);
+    t.textContent = h.gen === 0 ? 'fondatori' : `gen ${h.gen}`;
+  });
+  el('line', { x1: M.l, x2: CW - M.r, y1: CH - M.b, y2: CH - M.b, stroke: css('--axis'), 'stroke-width': 1 }, ax);
+
+  // riferimenti orizzontali (etichetta a destra, in inchiostro neutro)
+  const refs = [['addestramento diretto', ref.addestramento_diretto], ['zuppa dei fondatori', ref.zuppa_fondatori]];
+  for (const [label, v] of refs) {
+    el('line', { x1: M.l, x2: CW - M.r, y1: ys(v), y2: ys(v), stroke: css('--text-muted'), 'stroke-width': 1, 'stroke-dasharray': '4 4' }, cs);
+    const t = el('text', { x: CW - M.r + 6, y: ys(v) + 4, fill: css('--text-muted'), 'font-size': 11 }, cs);
+    t.textContent = `${label} ${pct(v)}`;
+  }
+
+  const series = [['migliore', 'Migliore della generazione', '--series-1'], ['media', 'Media della generazione', '--series-2']];
+  $('chartLegend').innerHTML = series.map(([, l, c]) => `<span><i style="background:var(${c})"></i>${l}</span>`).join('') +
+    '<span><i style="background:none;border-top:1px dashed var(--text-muted)"></i>riferimenti</span>';
+  for (const [k, label, c] of series) {
+    el('path', { d: hist.map((h, i) => `${i ? 'L' : 'M'}${xs(h.gen)},${ys(h[k])}`).join(''), fill: 'none', stroke: css(c), 'stroke-width': 2, 'stroke-linejoin': 'round' }, cs);
+    for (const h of hist) el('circle', { cx: xs(h.gen), cy: ys(h[k]), r: 4, fill: css(c), stroke: css('--surface-1'), 'stroke-width': 2 }, cs);
+    const last = hist[hist.length - 1];
+    const t = el('text', { x: CW - M.r + 6, y: ys(last[k]) + 4, fill: css('--text-secondary'), 'font-size': 11 }, cs);
+    t.textContent = `${label.split(' ')[0].toLowerCase()} ${pct(last[k])}`;
+  }
+  // mirino + tooltip
+  const cross = el('line', { y1: M.t, y2: CH - M.b, stroke: css('--axis'), 'stroke-width': 1, visibility: 'hidden' }, cs);
+  const hit = el('rect', { x: M.l, y: M.t, width: CW - M.l - M.r, height: CH - M.t - M.b, fill: 'transparent' }, cs);
+  hit.addEventListener('mousemove', (e) => {
+    const r = cs.getBoundingClientRect();
+    const px = (e.clientX - r.left) * CW / r.width;
+    const i = Math.max(0, Math.min(hist.length - 1, Math.round((px - M.l) / ((CW - M.l - M.r) / Math.max(1, hist.length - 1)))));
+    const h = hist[i];
+    cross.setAttribute('x1', xs(h.gen)); cross.setAttribute('x2', xs(h.gen)); cross.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<b>${h.gen === 0 ? 'Fondatori' : `Generazione ${h.gen}`}</b><br>Migliore <b>${pct1(h.migliore)}</b><br>Media ${pct1(h.media)}<br><span style="color:var(--text-muted)">segreto (migliore) ${pct1(h.segreto)}</span>`;
+    tip.hidden = false;
+    moveTip(e);
+  });
+  hit.addEventListener('mouseleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+
+  $('note').innerHTML = `<b>Da sapere, con onestà:</b> un modello addestrato direttamente con <i>tutti</i> i dati insieme arriva al ${pct(ref.addestramento_diretto)}
+    (${pct(ref.addestramento_diretto_segreto)} all'esame segreto): se hai tutti i dati, l'addestramento classico vince ancora.
+    Il branco serve quando i dati non li hai tutti insieme: fondere i pesi di specialisti già addestrati (per esempio i tanti Qwen della comunità) costa quasi zero e,
+    qui, porta l'alfa dal ${pct(ref.miglior_fondatore)} del miglior fondatore al ${pct(alpha.voto)}, oltre la semplice «zuppa» di tutti i fondatori (${pct(ref.zuppa_fondatori)}).
+    <br><span class="muted">Rigenera con <code>python branco.py --seed ${d.seed} --gen ${maxGen}</code> · creato ${esc(d.creato)} · seed ${d.seed}</span>`;
+
+  /* ───── tabella ───── */
+  const sorted = [...nodes].sort((a, b) => b.voto - a.voto);
+  $('table').innerHTML = `<thead><tr><th>Nome</th><th>Gen.</th><th>Stato</th>${d.materie.map((m) => `<th class="num">${esc(m)}</th>`).join('')}<th class="num">Esame</th><th class="num">Segreto</th></tr></thead>
+    <tbody>${sorted.map((n) => `<tr><td>${n.id === d.alfa ? '★ ' : ''}${esc(n.nome)}</td><td>${n.gen < 0 ? 'antenato' : n.gen === 0 ? 'fondatore' : n.gen}</td><td>${n.scelto ? 'scelto' : 'scartato'}</td>${d.materie.map((m) => `<td class="num">${pct(n.voti[m])}</td>`).join('')}<td class="num">${pct1(n.voto)}</td><td class="num">${pct1(n.segreto)}</td></tr>`).join('')}</tbody>`;
+})();
+</script>
+</body>
+</html>

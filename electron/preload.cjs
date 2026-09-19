@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('howlDesktop', {
   openApp: () => ipcRenderer.send('app:open'),
+  pickFolder: (current) => ipcRenderer.invoke('workspace:pick', current),
   getMascot: () => ipcRenderer.invoke('mascot:get'),
   setMascot: (on) => ipcRenderer.send('mascot:set', !!on),
   onMascot: (cb) => ipcRenderer.on('mascot:state', (_e, on) => cb(on)),

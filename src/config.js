@@ -53,7 +53,10 @@ export function loadConfig() {
   const provider = env.OPENHOWL_PROVIDER || file.provider ||
     (env.ANTHROPIC_API_KEY ? 'anthropic' : env.DEEPSEEK_API_KEY ? 'deepseek' : env.OPENAI_API_KEY ? 'openai' : env.OPENROUTER_API_KEY ? 'openrouter' : 'anthropic');
   if (!PRESETS[provider]) throw new Error(`Provider sconosciuto: ${provider}`);
-  const workspace = resolveUserPath(process.cwd(), env.OPENHOWL_WORKSPACE || file.workspace || path.join(os.homedir(), 'OpenHowl'));
+  let chosen = null;
+  try { chosen = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'workspace.json'), 'utf8')).corrente; } catch {}
+  if (chosen && !fs.existsSync(chosen)) chosen = null;
+  const workspace = resolveUserPath(process.cwd(), env.OPENHOWL_WORKSPACE || chosen || file.workspace || path.join(os.homedir(), 'OpenHowl'));
   fs.mkdirSync(workspace, { recursive: true });
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const brains = loadBrains();
@@ -63,6 +66,7 @@ export function loadConfig() {
     model: env.OPENHOWL_MODEL || file.model || PRESETS[provider].model,
     baseUrl: env.OPENHOWL_BASE_URL || file.baseUrl || null,
     mode: env.OPENHOWL_MODE || file.mode || 'ask',
+    sandbox: file.sandbox !== false, // cartella di lavoro protetta (predefinita)
     workspace,
     port: Number(env.OPENHOWL_PORT || file.port || 7777),
     maxSteps: Number(file.maxSteps || 80),

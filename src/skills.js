@@ -40,7 +40,17 @@ export function ensureDefaults() {
   if (!fs.existsSync(BUNDLED)) return;
   for (const name of fs.readdirSync(BUNDLED)) {
     const dst = path.join(SKILLS_DIR, name);
-    if (!fs.existsSync(dst)) fs.cpSync(path.join(BUNDLED, name), dst, { recursive: true });
+    if (!fs.existsSync(dst)) copyDir(path.join(BUNDLED, name), dst);
+  }
+}
+
+// Copia a mano: fs.cpSync non sa leggere le cartelle dentro app.asar (l'app installata si bloccava al primo avvio).
+function copyDir(src, dst) {
+  fs.mkdirSync(dst, { recursive: true });
+  for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+    const s = path.join(src, e.name), d = path.join(dst, e.name);
+    if (e.isDirectory()) copyDir(s, d);
+    else fs.writeFileSync(d, fs.readFileSync(s));
   }
 }
 

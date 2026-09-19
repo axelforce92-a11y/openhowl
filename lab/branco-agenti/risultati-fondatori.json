@@ -1,0 +1,1045 @@
+{
+ "creato": "2026-09-19 07:14",
+ "modello": "qwen/qwen3.5-9b",
+ "config": {
+  "url": "http://127.0.0.1:1234/v1",
+  "model": "qwen/qwen3.5-9b",
+  "generations": 4,
+  "kidsPerGen": 6,
+  "parents": 3,
+  "maxSteps": 10,
+  "seed": 7
+ },
+ "stato": "in corso",
+ "nodi": [
+  {
+   "primer": "Scrupoloso",
+   "persona": "Leggi sempre l'indice e TUTTI gli articoli che potrebbero riguardare il caso prima di rispondere.",
+   "ragionamento": "low",
+   "temperatura": 0.2,
+   "nome": "Luna",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 0,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 5,
+     "secondi": 21.6,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "calcola({\"espressione\":\"(9-5)*0.02*800\"}) → 64"
+     ],
+     "finale": "ne mensile per ogni giorno di ritardo, ma i primi 5 giorni sono di tolleranza e non si contano.\n\nMario Rossi ha pagato con 9 giorni di ritardo, quindi i giorni da penalizzare sono 4 (9 - 5 = 4). Il suo canone mensile è di 800 euro.\n\nCalcolo: 4 giorni × 2% × 800 euro = 64 euro.\n\nLa penale non supera il tetto del 30% del canone mensile (800 × 30% = 240 euro), quindi l'importo è valido.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 5,
+     "secondi": 21.9,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"650*0.02*15\"}) → 195"
+     ],
+     "finale": " giorni di ritardo effettivo (20 - 5 = 15).\n\nLa penale è calcolata al 2% del canone mensile per ogni giorno di ritardo:\n- Canone mensile: 650 euro\n- Penale giornaliera: 650 × 0.02 = 13 euro\n- Penale totale: 13 × 15 = 195 euro\n\nSecondo l'Art. 3, la penale non può superare il 30% del canone mensile (650 × 0.30 = 195 euro). La penale calcolata coincide esattamente con il tetto massimo.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 18.2,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "calcola({\"espressione\":\"(1200*2)-150\"}) → 2250"
+     ],
+     "finale": "Il deposito cauzionale è pari a 2 mensilità del canone. Per Paolo Verdi, il canone mensile è di 1200 euro, quindi il deposito totale ammonta a 2400 euro. Alla fine del contratto, viene restituito al netto dei danni documentati (150 euro).\n\nRISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 4,
+     "secondi": 16.8,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso",
+      "calcola({\"espressione\":\"(3-1)*650\"}) → 1300"
+     ],
+     "finale": "Lucia Bianchi ha un contratto in corso da 20 mesi con un canone mensile di 650 euro. Secondo l'Articolo 7 del regolamento, il preavviso richiesto per il recesso è di 3 mesi. Poiché Lucia intende dare solo 1 mese di preavviso, deve pagare il canone per i 2 mesi mancanti (3 - 1 = 2).\n\nCalcolo: 2 mesi × 650 euro/mese = 1.300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 3,
+     "secondi": 8.3,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali"
+     ],
+     "finale": "Mario Rossi ha un cane di taglia grande. Secondo l'articolo 8, i cani di taglia grande contano come due animali e il supplemento è di 15 euro al mese per ogni animale. Quindi, il supplemento mensile totale è di 30 euro (2 animali * 15 euro).\n\nPer calcolare quanto paga in un anno, moltiplico il supplemento mensile per 12 mesi:\n30 euro/mese * 12 mesi = 360 euro.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 450,
+     "passi": 4,
+     "secondi": 14.1,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "calcola({\"espressione\":\"900*0.02*(30-5)\"}) → 450"
+     ],
+     "finale": "Anna Neri ha pagato il canone con 30 giorni di ritardo. Secondo l'Articolo 2 del regolamento, la penale è del 2% del canone mensile per ogni giorno di ritardo, ma i primi 5 giorni sono di tolleranza e non si contano.\n\nQuindi, i giorni su cui calcolare la penale sono 30 - 5 = 25 giorni.\nIl canone mensile è di 900 euro.\nLa penale sarà: 900 * 0.02 * 25 = 450 euro.\n\nRISPOSTA: 450"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 100.9
+  },
+  {
+   "primer": "Contabile",
+   "persona": "Fai ogni calcolo con lo strumento calcola, mai a mente.",
+   "ragionamento": "none",
+   "temperatura": 0.2,
+   "nome": "Ombra",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 1,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 4,
+     "secondi": 10.8,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "calcola({\"espressione\":\"800*0.02*4\"}) → 64"
+     ],
+     "finale": "La penale calcolata è di 64 euro.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 5,
+     "secondi": 6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(20-5)*0.02*650\"}) → 195"
+     ],
+     "finale": "RISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 11.3,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"2*1200-150\"}) → 2250"
+     ],
+     "finale": "RISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 4,
+     "secondi": 10.9,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso",
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "calcola({\"espressione\":\"650*2\"}) → 1300"
+     ],
+     "finale": "Il calcolo conferma che il costo per i 2 mesi di preavviso mancante è di 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 4,
+     "secondi": 4.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"(2 * 15) * 12\"}) → 360"
+     ],
+     "finale": "RISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 450,
+     "passi": 4,
+     "secondi": 12.5,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "calcola({\"espressione\":\"900*0.02*25\"}) → 450"
+     ],
+     "finale": "La penale calcolata è di 450 euro.\n\nRISPOSTA: 450"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 56.2
+  },
+  {
+   "primer": "Velocista",
+   "persona": "Rispondi in fretta, con il minor numero di passi possibile.",
+   "ragionamento": "none",
+   "temperatura": 0.5,
+   "nome": "Zanna",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 2,
+   "scelto": true,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 4,
+     "secondi": 4.8,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "leggi_articolo({\"numero\":1}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "calcola({\"espressione\":\"(9-5)*0.02*800\"}) → 64"
+     ],
+     "finale": "RISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 5,
+     "secondi": 5.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(650 * 0.02) * (20 - 5)\"}) → 195"
+     ],
+     "finale": "RISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 4.8,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"(1200 * 2) - 150\"}) → 2250"
+     ],
+     "finale": "RISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 5,
+     "secondi": 9.2,
+     "trace": [
+      "leggi_articolo({\"numero\":6}) → Art. 6 — Contratti brevi",
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "leggi_articolo({\"numero\":19}) → Articolo inesistente.",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso"
+     ],
+     "finale": "ti brevi\" (Art. 6), che si applicano solo a contratti con durata inferiore a 12 mesi. Pertanto, la regola per il preavviso è quella dell'Articolo 7.\n\nIl cliente deve pagare il canone per ciascun mese di preavviso mancante.\nPreavviso richiesto: 1 mese.\nPreavviso obbligatorio: 3 mesi.\nMesi di preavviso mancanti: 3 - 1 = 2 mesi.\nCanone mensile: 650 euro.\n\nCalcolo: 650 * 2 = 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 3,
+     "secondi": 5.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali"
+     ],
+     "finale": "Mario Rossi ha un cane di taglia grande, che secondo l'articolo 8 conta come due animali. Il supplemento è di 15 euro al mese per ogni animale. Quindi il totale mensile è 15 * 2 = 30 euro. In un anno (12 mesi) pagherà 30 * 12 = 360 euro.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 450,
+     "passi": 6,
+     "secondi": 6.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "leggi_articolo({\"numero\":16}) → Articolo inesistente.",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(30-5)*0.02*900\"}) → 450"
+     ],
+     "finale": "RISPOSTA: 450"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 36.3
+  },
+  {
+   "primer": "Cacciatore di eccezioni",
+   "persona": "Cerca sempre eccezioni, tetti massimi e casi speciali nel regolamento.",
+   "ragionamento": "low",
+   "temperatura": 0.3,
+   "nome": "Neve",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 3,
+   "scelto": true,
+   "stirpe": true,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 4,
+     "secondi": 11.6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": ". Quindi si calcola la penale solo per i giorni successivi alla tolleranza: 9 - 5 = 4 giorni.\nLa penale è del 2% del canone mensile per ogni giorno di ritardo.\nCalcolo: (800 * 0.02) * 4 = 16 * 4 = 64 euro.\n\nDevo verificare il tetto massimo dell'Art. 3, che non può superare il 30% del canone mensile.\n30% di 800 è 240 euro.\n64 euro è inferiore a 240 euro, quindi la penale è di 64 euro.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 4,
+     "secondi": 20.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": "RISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 17.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"1200*2-150\"}) → 2250"
+     ],
+     "finale": "RISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 5,
+     "secondi": 26.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "leggi_articolo({\"numero\":4}) → Art. 4 — Inquilini storici"
+     ],
+     "finale": "ome \"il canone per ciascun mese di preavviso mancante\".\nQuindi: 650 euro * 2 mesi = 1300 euro.\n\nDevo verificare se ci sono altri limiti o eccezioni. L'articolo 3 parla del \"tetto alla penale\" ma si riferisce specificamente alla \"penale per ritardo\", non al preavviso di recesso. Quindi il tetto del 30% del canone (195 euro) non si applica qui.\n\nQuindi la somma da pagare è 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 5,
+     "secondi": 14.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "leggi_articolo({\"numero\":15}) → Articolo inesistente.",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"(2 * 15) * 12\"}) → 360"
+     ],
+     "finale": "RISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": true,
+     "risposta": 135,
+     "passi": 6,
+     "secondi": 38.8,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "leggi_articolo({\"numero\":4}) → Art. 4 — Inquilini storici",
+      "calcola({\"espressione\":\"0.02*900*25\"}) → 450"
+     ],
+     "finale": "vo: 30 giorni - 5 giorni di tolleranza = 25 giorni\n- Penale base (2% del canone per giorno): 0,02 × 900 × 25 = 450 euro\n- **Tetto massimo (art. 3)**: il 30% del canone = 0,30 × 900 = 270 euro\n\nPoiché la penale base supera il tetto, si applica il limite di 270 euro.\n\nAnna ha un'anzianità di 5 anni (art. 4 - inquilino storico), quindi la penale viene **dimezzata**: 270 ÷ 2 = 135 euro.\n\nRISPOSTA: 135"
+    }
+   ],
+   "voto": 0.6666666666666666,
+   "secondi": 129.6
+  },
+  {
+   "primer": "Pianificatore",
+   "persona": "Prima scrivi un piano in 3 passi, poi eseguilo con gli strumenti.",
+   "ragionamento": "medium",
+   "temperatura": 0.2,
+   "nome": "Fumo",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 4,
+   "scelto": true,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": true,
+     "risposta": 32,
+     "passi": 6,
+     "secondi": 43.1,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":4}) → Art. 4 — Inquilini storici",
+      "calcola({\"espressione\":\"(9-5)*0.02*800/2\"}) → 32",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": "anone per ogni giorno di ritardo, ma i primi 5 giorni sono di tolleranza. Quindi si calcola solo per i 4 giorni effettivi:\n- 4 giorni × 2% × 800 euro = 64 euro\n\nSecondo l'Art. 4, agli inquilini storici (anzianità ≥ 5 anni) la penale è dimezzata:\n- 64 euro / 2 = 32 euro\n\nVerifico il tetto dell'Art. 3: il 30% del canone mensile è 240 euro. La penale di 32 euro non supera questo limite.\n\nRISPOSTA: 32"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 4,
+     "secondi": 16.1,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": "ata supera il tetto massimo del 30% del canone e, in tal caso, applicare il limite.\n\nEsecuzione:\n1. Giorni di ritardo effettivi = 20 - 5 = 15 giorni.\n2. Penale giornaliera = 650 * 0.02 = 13 euro.\n   Totale penale = 13 * 15 = 195 euro.\n3. Tetto massimo = 650 * 0.30 = 195 euro.\n   La penale calcolata (195 euro) è uguale al tetto massimo (195 euro), quindi non va ridotta ulteriormente.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 22.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"(1200*2)-150\"}) → 2250"
+     ],
+     "finale": "RISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 4,
+     "secondi": 14.7,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso",
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "calcola({\"espressione\":\"650*2\"}) → 1300"
+     ],
+     "finale": "Lucia Bianchi deve pagare 1300 euro per il preavviso mancante.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 3,
+     "secondi": 12.6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali"
+     ],
+     "finale": "enti per Mario Rossi (cane di taglia grande).\n2. Calcolare il supplemento mensile (15 euro x numero di animali equivalenti).\n3. Moltiplicare il supplemento mensile per 12 mesi per ottenere l'importo annuale.\n\nEsecuzione:\n- Mario Rossi ha un cane di taglia grande, che conta come due animali.\n- Supplemento mensile: 15 euro x 2 = 30 euro.\n- Supplemento annuale: 30 euro x 12 = 360 euro.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 270,
+     "passi": 6,
+     "secondi": 32.9,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(30-5)*0.02*900\"}) → 450",
+      "calcola({\"espressione\":\"900*0.30\"}) → 270"
+     ],
+     "finale": "ili sono 25 (30 - 5).\n\nCalcolo della penale:\n- Giorni da penalizzare: 30 - 5 = 25 giorni\n- Penale calcolata: 25 × 0,02 × 900 = 450 euro\n\nTuttavia, l'articolo 3 stabilisce che la penale non può superare il 30% del canone mensile.\n\nCalcolo del tetto massimo:\n- 30% di 900 = 270 euro\n\nPoiché la penale calcolata (450 euro) supera il tetto massimo (270 euro), si applica il limite massimo.\n\nRISPOSTA: 270"
+    }
+   ],
+   "voto": 0.6666666666666666,
+   "secondi": 142.1
+  },
+  {
+   "primer": "Intuitivo",
+   "persona": "Fidati del buon senso e dell'esperienza.",
+   "ragionamento": "none",
+   "temperatura": 0.8,
+   "nome": "Brace",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [],
+   "regole": [],
+   "mutazioni": [],
+   "id": 5,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 4,
+     "secondi": 13.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "calcola({\"espressione\":\"800*0.02*4\"}) → 64"
+     ],
+     "finale": "La penale è di 64 euro.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 4,
+     "secondi": 12,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "calcola({\"espressione\":\"(650 * 0.02) * 15\"}) → 195"
+     ],
+     "finale": "Lucia Bianchi deve pagare una penale di **195 euro**.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 14.2,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "calcola({\"espressione\":\"2*1200-150\"}) → 2250"
+     ],
+     "finale": "Il calcolo conferma che a Paolo Verdi verranno restituiti 2.250 euro.\n\nRISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 4,
+     "secondi": 11.8,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso",
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "calcola({\"espressione\":\"650*2\"}) → 1300"
+     ],
+     "finale": "Lucia deve pagare l'importo corrispondente a 2 mesi di canone per il preavviso mancante. Il calcolo dà 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 4,
+     "secondi": 12.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"(1+1)*15*12\"}) → 360"
+     ],
+     "finale": "Il calcolo conferma che Mario Rossi paga 360 euro di supplemento per gli animali in un anno.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 270,
+     "passi": 5,
+     "secondi": 14.3,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "calcola({\"espressione\":\"900*0.02*25\"}) → 450",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": "Il tetto massimo è il 30% del canone mensile. Calcoliamo qual è questo limite: 900 * 30% = 270 euro.\n\nLa penale calcolata sarebbe di 450 euro, ma poiché supera il tetto massimo del 30% (270 euro), la penale da pagare sarà limitata a 270 euro.\n\nRISPOSTA: 270"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 78.5
+  },
+  {
+   "nome": "Selva",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    3,
+    4
+   ],
+   "persona": "Cerca sempre eccezioni, tetti massimi e casi speciali nel regolamento.",
+   "ragionamento": "medium",
+   "temperatura": 0.27,
+   "regole": [],
+   "mutazioni": [],
+   "id": 6,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 6,
+     "secondi": 21.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"4*0.02*800\"}) → 64",
+      "calcola({\"espressione\":\"0.3*800\"}) → 240"
+     ],
+     "finale": "i ha pagato con 9 giorni di ritardo. Secondo l'Art. 2 del regolamento, i primi 5 giorni sono di tolleranza e non si contano. Quindi ci sono 4 giorni effettivi di penalità. La penale è del 2% del canone mensile (800 euro) per ogni giorno: 4 × 2% × 800 = 64 euro.\n\nVerifico il tetto massimo dell'Art. 3: il 30% del canone mensile è 240 euro. La penale di 64 euro non supera questo limite.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 5,
+     "secondi": 24.8,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"650*0.02*15\"}) → 195"
+     ],
+     "finale": "La penalità per Lucia Bianchi si calcola così:\n\n- Canone mensile: 650 euro\n- Giorni di ritardo effettivi da penalizzare: 20 - 5 (giorni di tolleranza) = 15 giorni\n- Penale base: 650 × 0,02 × 15 = 195 euro\n\nVerifico il tetto massimo dell'Art. 3: 30% del canone mensile = 650 × 0,30 = 195 euro\n\nLa penale calcolata (195 euro) non supera il tetto massimo (195 euro), quindi è valida.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 5,
+     "secondi": 22.6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"1200*2-150\"}) → 2250",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali"
+     ],
+     "finale": "Il deposito cauzionale è pari a 2 mensilità di canone, quindi 1200 × 2 = 2400 euro. Dalla scheda del cliente vedo che Paolo Verdi ha un gatto, ma il supplemento per gli animali (15 euro al mese) è un costo aggiuntivo mensile e non fa parte del deposito cauzionale.\n\nAl netto dei danni documentati (150 euro), la restituzione sarà: 2400 - 150 = 2250 euro.\n\nRISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 3,
+     "secondi": 11.9,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso"
+     ],
+     "finale": "condo l'Articolo 7 del regolamento LupoCasa, l'inquilino può recedere con un preavviso di 3 mesi. Se il preavviso è più breve, deve pagare il canone per ciascun mese di preavviso mancante.\n\nLucia Bianchi vuole dare solo 1 mese di preavviso. Il preavviso richiesto è di 3 mesi, quindi sta manco 2 mesi.\nIl canone mensile di Lucia Bianchi è di 650 euro.\n\nDevo calcolare: 650 * 2 = 1300.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 4,
+     "secondi": 9.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"15*2*12\"}) → 360"
+     ],
+     "finale": "Mario Rossi paga un supplemento di 360 euro all'anno per i suoi animali.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 225,
+     "passi": 6,
+     "secondi": 21.2,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "leggi_articolo({\"numero\":4}) → Art. 4 — Inquilini storici",
+      "calcola({\"espressione\":\"(30-5)*0.02*900\"}) → 450"
+     ],
+     "finale": " risultato è 450 euro.\n\nOra applico le eccezioni:\n- Art. 4: Anna Neri ha un'anzianità di 5 anni, quindi è un'inquilina storica e la penale è dimezzata.\n- Art. 3: La penale non può superare il 30% del canone mensile (270 euro).\n\nCalcolo la penale dimezzata: 450 / 2 = 225 euro.\nVerifico il tetto massimo: 30% di 900 = 270 euro.\nPoiché 225 è inferiore a 270, la penale finale è 225 euro.\n\nRISPOSTA: 225"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 111.7
+  },
+  {
+   "nome": "Rupe",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    3,
+    2
+   ],
+   "persona": "Cerca sempre eccezioni, tetti massimi e casi speciali nel regolamento.",
+   "ragionamento": "low",
+   "temperatura": 0.5,
+   "regole": [],
+   "mutazioni": [],
+   "id": 7,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 5,
+     "secondi": 16.6,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(9-5)*0.02*800\"}) → 64"
+     ],
+     "finale": " mensile di 800 euro e ha pagato con 9 giorni di ritardo.\n\nSecondo l'Articolo 2, la penale è del 2% per ogni giorno di ritardo, ma i primi 5 giorni sono di tolleranza. Quindi si calcolano solo 4 giorni di penalità.\nPenale = (9 - 5) * 0.02 * 800 = 64 euro.\n\nSecondo l'Articolo 3, il tetto massimo alla penale è il 30% del canone mensile, cioè 240 euro. 64 euro è ben sotto questo limite.\n\nRISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 6,
+     "secondi": 27.4,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(20-5)*0.02*650\"}) → 195",
+      "calcola({\"espressione\":\"0.30*650\"}) → 195"
+     ],
+     "finale": " si contano. Quindi consideriamo solo 15 giorni effettivi (20 - 5 = 15).\n\nCalcolo della penale:\n- Canone mensile: 650 euro\n- Giorni penalizzabili: 15 giorni\n- Penale: 15 × 0,02 × 650 = 195 euro\n\nSecondo l'articolo 3 (tetto alla penale), la penale non può superare il 30% del canone mensile:\n- 30% di 650 = 195 euro\n\nLa penale calcolata (195€) coincide esattamente con il tetto massimo.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 9.6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"(1200 * 2) - 150\"}) → 2250"
+     ],
+     "finale": "Il deposito cauzionale è pari a 2 mensilità di canone, quindi 2 x 1200 = 2400 euro. Dalla somma del deposito vengono detratti i danni documentati, che sono 150 euro. Pertanto, l'importo restituito sarà di 2400 - 150 = 2250 euro.\n\nRISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 3,
+     "secondi": 10.6,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso"
+     ],
+     "finale": "uilino può recedere con un preavviso di 3 mesi. Se il preavviso è più breve, deve pagare il canone per ciascun mese di preavviso mancante.\n\nLucia Bianchi vuole dare solo 1 mese di preavviso. Quindi manca 2 mesi di preavviso (3 - 1 = 2).\n\nIl canone mensile di Lucia Bianchi è di 650 euro (dalla scheda cliente).\n\nDeve pagare quindi il canone per i 2 mesi mancanti:\n2 * 650 = 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 4,
+     "secondi": 10.2,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"30*12\"}) → 360"
+     ],
+     "finale": "Mario Rossi paga un supplemento di 360 euro in un anno per gli animali.\n\nRISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 270,
+     "passi": 6,
+     "secondi": 23.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(30-5)*0.02*900\"}) → 450",
+      "calcola({\"espressione\":\"0.3*900\"}) → 270"
+     ],
+     "finale": "La penale calcolata per 25 giorni di ritardo (30-5 giorni di tolleranza) è del 2% del canone mensile (900 €) = 450 €. Tuttavia, secondo l'Art. 3, la penale non può superare il 30% del canone mensile, che corrisponde a 270 €. Pertanto, la penale effettiva è limitata al tetto massimo.\n\nRISPOSTA: 270"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 97.9
+  },
+  {
+   "nome": "Nebbia",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    4,
+    2
+   ],
+   "persona": "Rispondi in fretta, con il minor numero di passi possibile.",
+   "ragionamento": "none",
+   "temperatura": 0.41,
+   "regole": [],
+   "mutazioni": [],
+   "id": 8,
+   "scelto": false,
+   "stirpe": false,
+   "risultati": [
+    {
+     "id": "E1",
+     "ok": false,
+     "risposta": 64,
+     "passi": 5,
+     "secondi": 9.5,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale",
+      "calcola({\"espressione\":\"(9-5)*0.02*800\"}) → 64"
+     ],
+     "finale": "RISPOSTA: 64"
+    },
+    {
+     "id": "E2",
+     "ok": true,
+     "risposta": 195,
+     "passi": 4,
+     "secondi": 11.3,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "leggi_articolo({\"numero\":3}) → Art. 3 — Tetto alla penale"
+     ],
+     "finale": "orni di ritardo. I primi 5 giorni sono di tolleranza, quindi i giorni effettivi di penalità sono 15 (20 - 5).\n\nLa penale è del 2% per ogni giorno di ritardo.\nCalcolo: 650 * 0.02 * 15 = 195 euro.\n\nVerifico il tetto massimo della penale, che non può superare il 30% del canone mensile (650 * 0.30 = 195 euro). Il calcolo di 195 euro è uguale al tetto, quindi la penale totale è 195 euro.\n\nRISPOSTA: 195"
+    },
+    {
+     "id": "E3",
+     "ok": false,
+     "risposta": 2250,
+     "passi": 4,
+     "secondi": 14.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Verdi\"}) → Cliente: Paolo Verdi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":5}) → Art. 5 — Deposito cauzionale",
+      "calcola({\"espressione\":\"(2*1200)-150\"}) → 2250"
+     ],
+     "finale": "RISPOSTA: 2250"
+    },
+    {
+     "id": "E4",
+     "ok": true,
+     "risposta": 1300,
+     "passi": 4,
+     "secondi": 6.7,
+     "trace": [
+      "leggi_articolo({\"numero\":24}) → Articolo inesistente.",
+      "scheda_cliente({\"cognome\":\"Bianchi\"}) → Cliente: Lucia Bianchi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":7}) → Art. 7 — Recesso"
+     ],
+     "finale": "Il regolamento stabilisce che il preavviso richiesto è di 3 mesi. Lucia vuole recedere con solo 1 mese, quindi manca un preavviso di 2 mesi. Il canone mensile è di 650 euro.\n\nCalcolo: 2 mesi * 650 euro/mese = 1300 euro.\n\nRISPOSTA: 1300"
+    },
+    {
+     "id": "E5",
+     "ok": true,
+     "risposta": 360,
+     "passi": 4,
+     "secondi": 5.7,
+     "trace": [
+      "scheda_cliente({\"cognome\":\"Rossi\"}) → Cliente: Mario Rossi",
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":8}) → Art. 8 — Animali",
+      "calcola({\"espressione\":\"(2 * 15) * 12\"}) → 360"
+     ],
+     "finale": "RISPOSTA: 360"
+    },
+    {
+     "id": "E6",
+     "ok": false,
+     "risposta": 450,
+     "passi": 4,
+     "secondi": 14,
+     "trace": [
+      "indice({}) → Art. 1 — Canone",
+      "leggi_articolo({\"numero\":2}) → Art. 2 — Ritardo nei pagamenti",
+      "scheda_cliente({\"cognome\":\"Neri\"}) → Cliente: Anna Neri",
+      "calcola({\"espressione\":\"900*0.02*25\"}) → 450"
+     ],
+     "finale": "La penale è di 450 euro.\n\nRISPOSTA: 450"
+    }
+   ],
+   "voto": 0.5,
+   "secondi": 61.9
+  },
+  {
+   "nome": "Lampo",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    3,
+    4
+   ],
+   "persona": "Prima scrivi un piano in 3 passi, poi eseguilo con gli strumenti.",
+   "ragionamento": "low",
+   "temperatura": 0.3,
+   "regole": [],
+   "mutazioni": [],
+   "id": 9,
+   "scelto": false,
+   "stirpe": false
+  }
+ ],
+ "storia": [
+  {
+   "gen": 0,
+   "migliore": 0.6666666666666666,
+   "media": 0.5555555555555555
+  }
+ ],
+ "esame": [
+  {
+   "id": "E1",
+   "domanda": "Mario Rossi ha pagato il canone con 9 giorni di ritardo. Quanto deve di penale?"
+  },
+  {
+   "id": "E2",
+   "domanda": "Lucia Bianchi ha pagato il canone con 20 giorni di ritardo. Quanto deve di penale?"
+  },
+  {
+   "id": "E3",
+   "domanda": "Paolo Verdi lascia l'appartamento adesso, con 150 euro di danni documentati. Quanto gli viene restituito del deposito?"
+  },
+  {
+   "id": "E4",
+   "domanda": "Lucia Bianchi vuole recedere dal contratto dando solo 1 mese di preavviso. Quanto deve pagare per il preavviso mancante?"
+  },
+  {
+   "id": "E5",
+   "domanda": "Quanto paga Mario Rossi di supplemento animali in un anno?"
+  },
+  {
+   "id": "E6",
+   "domanda": "Anna Neri ha pagato il canone con 30 giorni di ritardo. Quanto deve di penale?"
+  }
+ ],
+ "segreto": [
+  {
+   "id": "S1",
+   "domanda": "Sara Gallo vuole pagare in anticipo tutto l'anno, canone e supplemento animali compresi. Quanto paga in totale?"
+  },
+  {
+   "id": "S2",
+   "domanda": "Paolo Verdi ha pagato il canone con 7 giorni di ritardo. Quanto deve di penale?"
+  },
+  {
+   "id": "S3",
+   "domanda": "Mario Rossi lascia l'appartamento senza danni. Quanto gli viene restituito del deposito?"
+  },
+  {
+   "id": "S4",
+   "domanda": "Sara Gallo ha pagato il canone con 25 giorni di ritardo. Quanto deve di penale?"
+  }
+ ],
+ "stats": {
+  "chiamate": 258,
+  "token": 31647
+ },
+ "alfa": 3
+}

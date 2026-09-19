@@ -55,6 +55,34 @@ Come funziona:
 
 I compiti sono salvati in `~/.openhowl/tasks.json`.
 
+## 📱 Howl dal telefono: Telegram e WhatsApp
+
+> Sei fuori casa: «controlla se il backup di stanotte è andato a buon fine e dimmi quanto spazio resta sul disco».
+
+Apri **Impostazioni → Howl dal telefono**, scegli un **PIN** e collega uno dei due (o tutti e due):
+
+- **Telegram** — crei il *tuo* bot con @BotFather, incolli il token, poi abbini il tuo account con un codice
+  (o un QR) che compare sullo schermo del PC. L'abbinamento si **conferma con un clic sul PC**.
+- **WhatsApp** — inquadri un QR dal telefono (*Dispositivi collegati*). Howl ascolta **solo** la chat
+  «Messaggio a te stesso»; le altre chat vengono scartate appena arrivano, senza leggerle né segnarle come lette.
+  Usa una libreria non ufficiale (Baileys): WhatsApp in rari casi può limitare l'account.
+
+Dal telefono: `/sblocca <PIN>`, poi scrivi normalmente. Altri comandi: `/stato`, `/stop`, `/nuova`,
+`/modo lettura|conferma`, `/blocca`.
+
+Come è protetto — solo chi ha **il tuo telefono e il tuo PIN** può usarlo:
+
+| Livello | Cosa fa |
+|---|---|
+| Nessuna porta aperta | Il PC fa solo connessioni *in uscita* (long polling). Da Internet non c'è niente a cui collegarsi. |
+| Un solo proprietario | Telegram accetta un solo id numerico, solo in chat privata; niente gruppi né messaggi inoltrati. Agli sconosciuti il bot non risponde nemmeno. |
+| Abbinamento sul PC | Codice monouso da 10 caratteri, valido 10 minuti, 5 tentativi, più conferma sullo schermo del PC. |
+| PIN obbligatorio | 6-12 cifre, salvato come hash scrypt. Il messaggio col PIN viene cancellato dalla chat. Howl si ri-blocca dopo qualche minuto di silenzio. 5 PIN sbagliati bloccano il canale finché non lo riattivi dal PC. |
+| Permessi | Predefinito: ogni azione chiede conferma sul telefono. Le azioni pericolose da remoto sono **sempre** rifiutate. «Autonomo» si attiva solo dal PC. |
+| Segreti | Token e credenziali WhatsApp cifrati con l'account Windows (DPAPI). Nessuno strumento dell'agente può leggere `~/.openhowl/remote`, e i token vengono oscurati da ogni risposta. |
+| Visibilità | Ogni richiesta dal telefono fa comparire una notifica sul PC e finisce in `remote/audit.log`. Il pulsante **Blocca subito tutto** (anche nell'area di notifica) spegne tutto all'istante. |
+| Niente arretrati | I messaggi arrivati a PC spento vengono scartati: un comando vecchio non parte da solo ore dopo. |
+
 ## 🧠 Cervelli: usa il modello che vuoi
 
 Clicca **Modello** in basso a sinistra:

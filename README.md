@@ -55,6 +55,34 @@ How it works:
 
 Tasks live in `~/.openhowl/tasks.json`.
 
+## 📱 Howl from your phone: Telegram and WhatsApp
+
+> You're out: "check whether last night's backup succeeded and tell me how much disk space is left."
+
+Open **Settings → Howl from your phone** (*Howl dal telefono*), choose a **PIN**, then connect one or both:
+
+- **Telegram** — create *your own* bot with @BotFather, paste the token, then pair your account with a code
+  (or QR) shown on the PC screen. Pairing is **confirmed with a click on the PC**.
+- **WhatsApp** — scan a QR from your phone (*Linked devices*). Howl listens **only** to your "Message yourself"
+  chat; every other chat is dropped on arrival, never read, stored or marked as read.
+  It uses an unofficial library (Baileys): in rare cases WhatsApp may restrict the account.
+
+From the phone: `/sblocca <PIN>`, then write normally. Other commands: `/stato`, `/stop`, `/nuova`,
+`/modo lettura|conferma`, `/blocca`.
+
+How it's protected — only someone with **your phone and your PIN** can use it:
+
+| Layer | What it does |
+|---|---|
+| No open ports | The PC only makes *outbound* connections (long polling). There's nothing to connect to from the Internet. |
+| Single owner | Telegram accepts one numeric user id, private chat only; no groups or forwarded messages. Strangers get no reply at all. |
+| Pairing on the PC | One-time 10-character code, valid 10 minutes, 5 attempts, plus confirmation on the PC screen. |
+| Mandatory PIN | 6-12 digits, stored as a scrypt hash. The PIN message is deleted from the chat. Howl re-locks after a few idle minutes. 5 wrong PINs lock the channel until you re-enable it on the PC. |
+| Permissions | Default: every action asks for confirmation on the phone. Dangerous actions are **always** refused remotely. "Autonomous" can only be enabled on the PC. |
+| Secrets | Bot token and WhatsApp credentials encrypted with your Windows account (DPAPI). No agent tool can read `~/.openhowl/remote`, and tokens are redacted from every reply. |
+| Visibility | Every phone request shows a notification on the PC and is written to `remote/audit.log`. **Lock everything now** (also in the tray menu) shuts it all down instantly. |
+| No backlog | Messages sent while the PC was off are discarded: an old command never fires hours later. |
+
 ## 🧠 Brains: run any model
 
 Click **Modello** at the bottom left:

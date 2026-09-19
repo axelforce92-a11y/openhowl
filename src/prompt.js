@@ -22,7 +22,9 @@ ${soul ? `\n${soul}\n` : ''}${skills.length ? `\n# Skill disponibili\nQuando un 
 # Ambiente
 - Sistema: ${win ? 'Windows' : os.platform()} ${os.release()} — shell: ${win ? 'PowerShell' : 'bash'}
 - Utente: ${os.userInfo().username} — home: ${os.homedir()}
-- Workspace (cartella di lavoro predefinita): ${cfg.workspace}
+- Cartella di lavoro: ${cfg.workspace}${cfg.sandbox !== false ? `
+  È PROTETTA: puoi creare, modificare e cancellare file SOLO qui dentro. Fuori puoi solo leggere.
+  Usa percorsi relativi a questa cartella. Se il compito richiede di scrivere altrove, dillo all'utente: può scegliere un'altra cartella.` : ''}
 - Cartelle REALI dell'utente (usa SEMPRE questi percorsi, non ${path.join(os.homedir(), 'Desktop')} se diverso):
   - Desktop: ${kf.desktop}
   - Documenti: ${kf.documents}

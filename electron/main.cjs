@@ -1,6 +1,6 @@
 // OpenHowl desktop: avvia l'agente in-process (nessun terminale), apre la finestra principale,
 // gestisce la mascotte sempre in primo piano, l'icona nell'area di notifica e le scorciatoie.
-const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, screen, nativeImage, shell, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, screen, nativeImage, shell, Notification, safeStorage, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -26,6 +26,8 @@ let mascotWin = null;
 let tray = null;
 let quitting = false;
 let busy = false;
+let remoteBusy = false;
+let remoteOn = false;
 
 /* ── preferenze desktop ── */
 const PREFS_FILE = path.join(process.env.OPENHOWL_HOME, 'desktop.json');
@@ -182,7 +184,8 @@ function refreshTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Apri OpenHowl', accelerator: SHORTCUT_OPEN, click: openMain },
     { label: 'Mascotte sul desktop', type: 'checkbox', checked: prefs.mascot, accelerator: SHORTCUT_MASCOT, click: (i) => setMascot(i.checked) },
-    { label: 'Interrompi', enabled: busy, click: () => server.harness.stop() },
+    { label: 'Interrompi', enabled: busy || remoteBusy, click: () => { server.harness.stop(); server.harness.remote?.stopAll('fermato dal PC'); } },
+    { label: "Blocca subito l'accesso dal telefono", enabled: remoteOn, click: () => server.harness.remote?.lockAll() },
     { type: 'separator' },
     { label: 'Avvia con Windows', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (i) => app.setLoginItemSettings({ openAtLogin: i.checked, args: ['--hidden'] }) },
     { label: 'Apri cartella dati', click: () => shell.openPath(process.env.OPENHOWL_HOME) },
@@ -200,6 +203,14 @@ function createTray() {
 
 /* ── IPC dalle pagine ── */
 ipcMain.on('app:open', (e) => { if (trusted(e)) openMain(); });
+ipcMain.handle('workspace:pick', async (e, current) => {
+  if (!trusted(e)) return null;
+  const r = await dialog.showOpenDialog(mainWin, {
+    title: 'Scegli la cartella di lavoro di Howl', defaultPath: current || undefined,
+    properties: ['openDirectory', 'createDirectory'], buttonLabel: 'Lavora qui',
+  });
+  return r.canceled ? null : r.filePaths[0];
+});
 ipcMain.on('mascot:set', (e, on) => { if (trusted(e)) setMascot(on); });
 ipcMain.handle('mascot:get', (e) => (trusted(e) ? prefs.mascot : false));
 ipcMain.on('mascot:move', (e, x, y) => {
@@ -227,7 +238,19 @@ app.on('second-instance', openMain);
 
 app.whenReady().then(async () => {
   const { startServer } = await import(pathToFileURL(path.join(ROOT, 'src', 'server.js')).href);
-  server = await startServer({ port: 47823 });
+  // I segreti (token del bot, credenziali WhatsApp) si cifrano con l'account Windows tramite DPAPI.
+  const box = safeStorage.isEncryptionAvailable()
+    ? { encrypt: (s) => safeStorage.encryptString(s).toString('base64'), decrypt: (b) => safeStorage.decryptString(Buffer.from(b, 'base64')) }
+    : null;
+  server = await startServer({ port: 47823, safeStorage: box });
+  const rs = server.harness.remote?.publicState();
+  remoteOn = !!(rs?.telegram?.enabled || rs?.whatsapp?.enabled);
+  const notify = (title, body) => {
+    if (!Notification.isSupported()) return;
+    const n = new Notification({ title, body, icon: ICON });
+    n.on('click', openMain);
+    n.show();
+  };
 
   server.harness.on((ev) => {
     if (ev.type === 'busy') { busy = ev.busy; refreshTray(); }
@@ -248,6 +271,21 @@ app.whenReady().then(async () => {
         n.show();
       }
     }
+    // accesso dal telefono: chi è al PC vede SEMPRE quando qualcuno comanda Howl da remoto
+    if (ev.type === 'remote') {
+      const on = !!(ev.remote?.telegram?.enabled || ev.remote?.whatsapp?.enabled);
+      if (on !== remoteOn) { remoteOn = on; refreshTray(); }
+    }
+    if (ev.type === 'remote_activity' && ev.phase === 'start') {
+      remoteBusy = true; refreshTray();
+      notify(`📱 Howl lavora per te da ${ev.channel === 'whatsapp' ? 'WhatsApp' : 'Telegram'}`, String(ev.text || '').slice(0, 200));
+    }
+    if (ev.type === 'remote_activity' && ev.phase === 'done') { remoteBusy = false; refreshTray(); }
+    if (ev.type === 'remote_pair_request') {
+      openMain();
+      notify('📱 Richiesta di abbinamento', `${ev.who?.name || ''}${ev.who?.username ? ` (@${ev.who.username})` : ''} vuole collegare Telegram a OpenHowl. Conferma solo se sei tu.`);
+    }
+    if (ev.type === 'remote_alert' && !ev.quiet) notify('OpenHowl — sicurezza', ev.text);
     if (ev.type === 'user_action_request' && Notification.isSupported()) {
       const n = new Notification({ title: `OpenHowl — ${ev.title}`, body: ev.message, icon: ICON });
       n.on('click', openMain);
