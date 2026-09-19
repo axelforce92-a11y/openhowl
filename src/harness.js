@@ -9,7 +9,8 @@ const maskBrain = (b) => ({ ...b, apiKey: b.apiKey ? MASK : '' });
 import { Agent } from './agent.js';
 import { GoalRunner } from './goal.js';
 import { builtinTools, MEMORY_FILE } from './tools/index.js';
-import { isDangerousCommand } from './tools/shell.js';
+import { isDangerousCommand, resetShellCwd } from './tools/shell.js';
+import { DATA_DIR } from './config.js';
 import { buildSystemPrompt } from './prompt.js';
 import { McpClient } from './mcp.js';
 import { resolveUserPath } from './paths.js';
@@ -17,6 +18,8 @@ import { newSession, saveSession, loadSession, deleteSession, listSessions, titl
 import { ensureDefaults, listSkills, matchSkills, SOUL_FILE, SKILLS_DIR } from './skills.js';
 import { loadHooks, runHook, HOOKS_DIR } from './hooks.js';
 import { Scheduler, describe as describeSchedule, parseWhen } from './schedule.js';
+import { RemoteHub, touchesSecrets } from './remote/hub.js';
+import { BrancoManager } from './branco/manager.js';
 
 export const COMMANDS = [
   ['/goal <obiettivo> [--max N]', 'Loop engineering: pianifica → esegue → verifica → ripete fino al risultato'],
@@ -57,6 +60,7 @@ export class Harness {
     this.goal = new GoalRunner(this);
     this.agent = this.newMainAgent();
     this.session = newSession();
+    this.session.workspace = cfg.workspace; // ogni conversazione appartiene a un progetto (la sua cartella)
     this.context = { tokens: 0, limit: this.limits.contextLimit };
     this.saveTimer = null;
   }
@@ -80,7 +84,7 @@ export class Harness {
 
   sendSessions() {
     const list = listSessions();
-    if (!list.some((s) => s.id === this.session.id)) list.unshift({ id: this.session.id, title: this.session.title, updatedAt: Date.now(), messages: this.agent.messages.length });
+    if (!list.some((s) => s.id === this.session.id)) list.unshift({ id: this.session.id, title: this.session.title, updatedAt: Date.now(), messages: this.agent.messages.length, workspace: this.session.workspace || null });
     // l'elenco delle conversazioni è già nello snapshot: non serve tenerlo anche nel log della chat
     this.broadcast('sessions', { sessions: list, current: this.session.id });
   }
@@ -91,6 +95,7 @@ export class Harness {
     clearTimeout(this.saveTimer);
     if (this.agent.messages.length) { this.session.messages = this.agent.messages; this.session.log = this.log; saveSession(this.session); }
     this.session = newSession();
+    this.session.workspace = this.cfg.workspace;
     this.agent = this.newMainAgent();
     this.log = [];
     this.todos = [];
@@ -119,6 +124,10 @@ export class Harness {
     this.context = s.context || { tokens: 0, limit: this.limits.contextLimit };
     this.goal.state = s.goal || null;
     this.alwaysAllow.clear();
+    // aprendo una conversazione di un altro progetto, Howl passa alla sua cartella
+    if (s.workspace && path.resolve(s.workspace).toLowerCase() !== path.resolve(this.cfg.workspace).toLowerCase() && fs.existsSync(s.workspace)) {
+      try { this.setWorkspace(s.workspace, { silent: true }); } catch {}
+    }
     for (const fn of this.listeners) { try { fn({ type: 'snapshot', ...this.snapshot() }); } catch {} }
     this.sendSessions();
   }
@@ -162,6 +171,9 @@ export class Harness {
     this.scheduler.start();
     const next = this.scheduler.publicTasks().filter((t) => t.nextRun).sort((a, b) => a.nextRun - b.nextRun)[0];
     if (next) this.send('info', { text: `🕗 Automazioni attive: ${this.scheduler.tasks.filter((t) => t.enabled).length}. Prossima: **${next.name}** ${new Date(next.nextRun).toLocaleString('it-IT')}` });
+    this.branco = new BrancoManager(this);
+    this.remote = new RemoteHub(this);
+    this.remote.start().catch((e) => this.send('error', { text: `Accesso dal telefono non avviato: ${e.message}` }));
   }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -203,6 +215,7 @@ export class Harness {
     const brains = loadBrains();
     return {
       provider: this.cfg.provider, model: p.model, mode: this.cfg.mode, workspace: this.cfg.workspace,
+      sandbox: this.cfg.sandbox !== false, recentWorkspaces: this.recentWorkspaces(),
       hasKey: !!p.apiKey, keyEnv: p.keyEnv, providers: Object.keys(PRESETS), vision: p.vision,
       brain: this.cfg.brain ? { id: this.cfg.brain.id, name: this.cfg.brain.name } : null,
       brains: brains.list.map(maskBrain),
@@ -265,6 +278,7 @@ export class Harness {
       usage: this.usage, context: this.context, busy: this.busy, commands: COMMANDS,
       sessions: listSessions(), session: { id: this.session.id, title: this.session.title },
       tasks: this.scheduler?.publicTasks() || [], taskRunning: this.scheduler?.running?.taskId || null,
+      remote: this.remote?.publicState() || null,
     };
   }
 
@@ -281,13 +295,69 @@ export class Harness {
 
   /* ── Permessi ── */
 
+  /* ── Cartella di lavoro protetta ── */
+
+  insideWorkspace(p) {
+    const rel = path.relative(this.cfg.workspace, resolveUserPath(this.cfg.workspace, p || '.'));
+    return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  }
+
+  // Percorsi scritti dentro un comando (C:\..., ~/..., ..\...) che puntano fuori dalla cartella di lavoro.
+  commandLeavesWorkspace(cmd = '') {
+    // (?<![A-Za-z]) e (?![\\/]): "https://" non è il disco S:
+    const found = String(cmd).match(/(?<![A-Za-z])[A-Za-z]:[\\/](?![\\/])[^\s"'|;,)]*|(?:~|\$HOME|\$env:USERPROFILE|%USERPROFILE%)[\\/]?[^\s"'|;,)]*|(?:^|[\s"'=])\.\.(?:[\\/][^\s"'|;,)]*)?/gi) || [];
+    return found.map((x) => x.trim().replace(/^["'=]/, '')).some((p) => !this.insideWorkspace(p));
+  }
+
+  // Blocco duro (vale per chat, automazioni, telefono): nessuno scrive fuori dalla cartella scelta.
+  guardWorkspace(name, input = {}) {
+    if (this.cfg.sandbox === false) return null;
+    const ws = this.cfg.workspace;
+    if (['write_file', 'edit_file', 'create_folder'].includes(name) && !this.insideWorkspace(input.path)) {
+      return `«${input.path}» è fuori dalla cartella di lavoro (${ws}): lì non si può scrivere. Lavora dentro la cartella, oppure chiedi all'utente di sceglierne un'altra.`;
+    }
+    if (name === 'run_command' && input.cwd && !this.insideWorkspace(input.cwd)) {
+      return `I comandi girano solo dentro la cartella di lavoro (${ws}).`;
+    }
+    return null;
+  }
+
+  setWorkspace(dir, { silent = false, newChat = false } = {}) {
+    const abs = resolveUserPath(this.cfg.workspace, String(dir || '').trim() || '.');
+    if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) throw new Error(`Cartella inesistente: ${abs}`);
+    const root = path.parse(abs).root;
+    if (abs === root) throw new Error('Non puoi usare un intero disco come cartella di lavoro: scegli una cartella.');
+    this.cfg.workspace = abs;
+    resetShellCwd();
+    let recent = [];
+    try { recent = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'workspace.json'), 'utf8')).recenti || []; } catch {}
+    recent = [abs, ...recent.filter((x) => x.toLowerCase() !== abs.toLowerCase())].slice(0, 8);
+    try { fs.writeFileSync(path.join(DATA_DIR, 'workspace.json'), JSON.stringify({ corrente: abs, recenti: recent }, null, 2)); } catch {}
+    // una conversazione già iniziata resta nel suo progetto: nel nuovo si apre una chat nuova
+    if (newChat && this.agent.messages.length && path.resolve(this.session.workspace || '').toLowerCase() !== abs.toLowerCase()) this.newChat();
+    else if (!this.agent.messages.length) this.session.workspace = abs;
+    this.send('config', { config: this.publicConfig() });
+    if (!silent) this.send('info', { text: `📁 Progetto: \`${abs}\`${this.cfg.sandbox === false ? '' : ' — Howl crea e modifica file solo qui dentro.'}` });
+    this.sendSessions();
+    return abs;
+  }
+
+  recentWorkspaces() {
+    try { return (JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'workspace.json'), 'utf8')).recenti || []).filter((d) => fs.existsSync(d)); } catch { return []; }
+  }
+
   isDangerous(name, input) {
-    if (name === 'run_command') return isDangerousCommand(input.command);
+    if (name === 'run_command') return isDangerousCommand(input.command) || (this.cfg.sandbox !== false && this.commandLeavesWorkspace(input.command));
     if (name === 'write_file' || name === 'edit_file') {
       const rel = path.relative(this.cfg.workspace, resolveUserPath(this.cfg.workspace, input.path || ''));
       return rel.startsWith('..') || path.isAbsolute(rel);
     }
     return false;
+  }
+
+  // Token dei bot, credenziali di WhatsApp e chiavi dei modelli: nessuno strumento li può toccare.
+  guardSecrets(name, input) {
+    return touchesSecrets(input, (p) => resolveUserPath(this.cfg.workspace, p));
   }
 
   async approve({ name, input, risk, agent }) {
@@ -355,6 +425,7 @@ export class Harness {
     if (!text) return;
     if (text.startsWith('/')) return this.command(text);
     if (this.busy) return this.send('info', { text: 'Sto già lavorando: premi Interrompi prima di inviare altro.' });
+    if (this.remoteBusy) return this.send('info', { text: `📱 Sto lavorando a una richiesta arrivata dal telefono: aspetta che finisca oppure fermala dal riquadro "Telefono".` });
     if (!this.agent.messages.length) { this.session.title = titleFrom(text); this.sendSessions(); }
     this.send('user', { text });
     const hooked = await runHook(this, 'onUserMessage', { text });
@@ -369,6 +440,7 @@ export class Harness {
   }
 
   async runTask(fn) {
+    if (this.remoteBusy) return this.send('info', { text: '📱 Sto lavorando a una richiesta arrivata dal telefono: riprova tra poco.' });
     this.busy = true;
     this.abort = new AbortController();
     this.send('busy', { busy: true });
@@ -475,11 +547,10 @@ export class Harness {
         return info(`Modello: \`${arg}\``);
 
       case 'cwd': {
-        const dir = resolveUserPath(this.cfg.workspace, arg || '.');
-        if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return info(`Cartella inesistente: ${dir}`);
-        this.cfg.workspace = dir;
-        this.send('config', { config: this.publicConfig() });
-        return info(`Workspace: \`${dir}\``);
+        if (!arg) return info(`Cartella di lavoro: \`${this.cfg.workspace}\``);
+        if (this.busy) return info('Sto lavorando: aspetta prima di cambiare cartella.');
+        try { this.setWorkspace(arg); } catch (e) { info(e.message); }
+        return;
       }
 
       case 'tools':

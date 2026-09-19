@@ -10,6 +10,7 @@
   <link rel="preload" as="image" href="wolf/thinking.png">
   <link rel="preload" as="image" href="wolf/working.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="wolf.css">
 </head>
 <body>
   <div class="app">
@@ -23,6 +24,8 @@
         </button>
       </div>
 
+      <div class="proj-bar"><span>Progetti</span><button class="link" id="newProject" title="Scegli una cartella e inizia a lavorarci">＋ Nuovo progetto</button></div>
+      <div class="proj-bar"><span>Progetti</span><button class="link" id="newProject" title="Scegli una cartella e inizia a lavorarci">＋ Nuovo progetto</button></div>
       <div class="chats" id="chats"></div>
 
       <div class="side-bottom">
@@ -39,19 +42,18 @@
           <div class="task-next" id="taskNext"></div>
         </section>
 
+        <section class="card task-card" id="phonePanel" hidden>
+          <div class="card-h"><span>Telefono</span><span class="pill" id="phonePill"></span></div>
+          <div class="task-next" id="phoneNext"></div>
+        </section>
+
         <section class="card" id="todoPanel" hidden>
           <div class="card-h"><span>Piano</span><span class="muted" id="todoCount"></span></div>
           <ul class="todos" id="todos"></ul>
         </section>
 
         <section class="howl-card">
-          <div class="wolf-mini" id="wolfMini" data-state="idle">
-            <img src="wolf/idle.png" data-pose="idle" class="on" alt="">
-            <img src="wolf/thinking.png" data-pose="thinking" alt="">
-            <img src="wolf/working.png" data-pose="working" alt="">
-            <img src="wolf/approval.png" data-pose="approval" alt="">
-            <img src="wolf/success.png" data-pose="success" alt="">
-          </div>
+          <div class="wolf-mini" id="wolfMini"></div>
           <div class="howl-info">
             <div class="howl-name">Howl <span class="state-dot"></span></div>
             <div class="howl-state" id="stateLabel">Inattivo</div>
@@ -94,8 +96,11 @@
               <button data-act="cwd"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span><b>Cartella di lavoro</b><small id="wsPath"></small></span></button>
               <button data-act="compact"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16M9 4l3 3 3-3M9 20l3-3 3 3"/></svg><span><b>Compatta il contesto</b><small>Riassume la conversazione per liberare spazio</small></span></button>
               <button data-act="tasks"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/></svg><span><b>Automazioni</b><small>Compiti che Howl svolge a orario</small></span></button>
+              <button data-act="branco"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7.5 16 7M7.5 8l3.5 8M16.5 9l-3.5 7"/></svg><span><b>Laboratorio del branco</b><small>Addestra e migliora gli agenti in locale</small></span></button>
+              <button data-act="phone"><svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span><b>Howl dal telefono</b><small>Telegram e WhatsApp, solo per te</small></span></button>
               <button data-act="memory"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/></svg><span><b>Memoria</b><small>Cosa Howl ricorda di te</small></span></button>
               <button data-act="tools"><svg viewBox="0 0 24 24"><path d="m14 7 3-3 3 3-3 3M4 20l7-7M10 6 6 10l-3-3 4-4z"/></svg><span><b>Strumenti</b><small id="toolCount"></small></span></button>
+              <button data-act="update" id="updItem" hidden><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span><b id="updItemTitle">Aggiornamenti</b><small id="updItemSub"></small></span></button>
               <button data-act="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.2M12 17h.01"/></svg><span><b>Comandi disponibili</b><small>Elenco dei comandi con /</small></span></button>
             </div>
           </div>
@@ -107,11 +112,21 @@
     <main class="main">
       <header class="topbar drag">
         <h1 class="chat-title nodrag" id="chatTitle" title="Doppio clic per rinominare"></h1>
+        <div class="dd ws-dd nodrag" id="wsDd">
+          <button class="ws-btn" id="wsBtn" aria-haspopup="true" title="Cartella di lavoro">
+            <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span id="wsName">—</span>
+            <i class="ws-lock" id="wsLock" title="Cartella protetta: Howl crea e modifica file solo qui dentro">🔒</i>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu ws-menu" id="wsMenu" hidden></div>
+        </div>
+        <button class="upd-btn nodrag" id="updBtn" hidden></button>
       </header>
 
       <div class="feed" id="feed">
         <div class="welcome" id="welcome">
-          <img class="welcome-wolf" src="wolf/idle.png" alt="">
+          <img class="welcome-wolf" src="wolf/hello.png" alt="">
           <h2>Come posso aiutarti?</h2>
           <p>Scrivo codice, cerco sul web, navigo i siti e uso le app del tuo computer.<br>Per i lavori lunghi usa <code>/goal</code>: procedo e verifico finché non è fatto.</p>
           <div class="examples">
@@ -212,6 +227,93 @@
     </div>
   </div>
 
+  <!-- ───────── Laboratorio del branco ───────── -->
+  <div class="modal" id="branco" hidden>
+    <div class="modal-card wide">
+      <div class="modal-h"><h3>🐺 Laboratorio del branco</h3><button class="x" id="bcClose" title="Chiudi">✕</button></div>
+      <p class="muted">Tanti agenti con lo stesso modello locale ma un «DNA» diverso (personalità, quanto ragiona, regole imparate) sostengono un esame vero.
+        I migliori si accoppiano, i figli imparano dagli errori e dalla lentezza dei genitori, generazione dopo generazione. Tutto sul tuo PC.</p>
+      <form class="br-form bc-form" id="bcForm">
+        <div class="grid2">
+          <label>Obiettivo
+            <select name="obiettivo">
+              <option value="equilibrio">Più intelligenti e più veloci</option>
+              <option value="intelligenza">Solo più intelligenti</option>
+            </select>
+          </label>
+          <label>Modello<input name="modello" disabled></label>
+          <label>Generazioni<input name="generazioni" type="number" min="1" max="10" value="4"></label>
+          <label>Figli per generazione<input name="figli" type="number" min="2" max="10" value="6"></label>
+          <label class="check span2"><input type="checkbox" name="riprendi" checked> Riusa i fondatori dell'ultima corsa con questo modello (risparmia ~10 minuti)</label>
+        </div>
+        <div class="bc-note muted" id="bcNote"></div>
+        <div class="actions">
+          <button type="button" class="btn" id="bcStop" hidden>Ferma la corsa</button>
+          <button type="submit" class="btn primary" id="bcStart">Avvia l'addestramento</button>
+        </div>
+      </form>
+      <div class="sec-h">Le corse</div>
+      <div id="bcList" class="br-list"></div>
+      <div class="bc-log" id="bcLog" hidden></div>
+    </div>
+  </div>
+  <div class="bc-graph" id="bcGraph" hidden>
+    <button class="bc-graph-x" id="bcGraphClose" title="Chiudi il grafo">✕ Chiudi</button>
+    <iframe id="bcFrame" title="Grafo del branco"></iframe>
+  </div>
+
+  <!-- ───────── Howl dal telefono ───────── -->
+  <div class="modal" id="phone" hidden>
+    <div class="modal-card wide">
+      <div class="modal-h"><h3>Howl dal telefono</h3><button class="x" id="phClose" title="Chiudi">✕</button></div>
+      <p class="muted">Scrivi a Howl da Telegram o WhatsApp quando non sei al PC. Può farlo solo chi ha il tuo telefono <b>e</b> il tuo PIN.</p>
+      <ul class="ph-shield">
+        <li><b>Nessuna porta aperta.</b> Il PC chiama Telegram/WhatsApp, mai il contrario: da Internet non si entra.</li>
+        <li><b>Solo tu.</b> Telegram si abbina con un codice monouso e una conferma su questo schermo. WhatsApp legge solo la chat «Messaggio a te stesso». Gli altri non ricevono nemmeno una risposta.</li>
+        <li><b>PIN.</b> Obbligatorio. Howl si ri-blocca da solo dopo qualche minuto di silenzio; 5 PIN sbagliati bloccano tutto finché non lo riattivi da qui.</li>
+        <li><b>Azioni.</b> Da remoto quelle pericolose sono sempre vietate; «Autonomo» si sceglie solo dal PC.</li>
+        <li><b>Segreti.</b> <span id="phSeal">Cifrati</span> e invisibili a Howl stesso. Ogni richiesta finisce nel registro e ti arriva come notifica.</li>
+      </ul>
+
+      <div class="sec-h">1 · PIN di sicurezza <span class="pill" id="phPinPill"></span></div>
+      <form class="ph-row" id="phPinForm" autocomplete="off">
+        <input name="pin" type="password" inputmode="numeric" pattern="\d{6,12}" maxlength="12" placeholder="PIN (6-12 cifre)" required>
+        <input name="pin2" type="password" inputmode="numeric" maxlength="12" placeholder="Ripeti il PIN" required>
+        <button class="btn" type="submit" id="phPinBtn">Salva PIN</button>
+      </form>
+      <label class="ph-inline">Si ri-blocca dopo <input id="phIdle" type="number" min="1" max="240" step="1"> minuti di silenzio</label>
+
+      <div class="sec-h">2 · Telegram <span class="pill" id="tgPill"></span></div>
+      <div id="tgBox" class="ph-box"></div>
+
+      <div class="sec-h">3 · WhatsApp <span class="pill" id="waPill"></span></div>
+      <div id="waBox" class="ph-box"></div>
+
+      <div class="sec-h">Registro <span class="muted ph-str" id="phStrangers"></span></div>
+      <div class="ph-audit" id="phAudit"></div>
+
+      <div class="actions">
+        <button class="btn danger" id="phPanic" title="Spegne subito Telegram e WhatsApp e ferma ogni lavoro partito dal telefono">Blocca subito tutto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Conferma abbinamento Telegram (solo da questo schermo) ───────── -->
+  <div class="modal" id="pairAsk" hidden>
+    <div class="modal-card">
+      <div class="ap-head">
+        <img src="wolf/approval.png" alt="">
+        <div><h3>Collegare questo account Telegram?</h3><p class="muted">Qualcuno ha appena inserito il codice di abbinamento.</p></div>
+      </div>
+      <div class="ap-tool" id="paWho"></div>
+      <p>Conferma solo se sei tu, adesso, con il tuo telefono in mano. Questo account potrà comandare Howl (dopo aver inserito il PIN).</p>
+      <div class="actions">
+        <button class="btn" id="paNo">Non sono io</button>
+        <button class="btn primary" id="paYes">Sì, sono io</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ───────── Modelli ───────── -->
   <div class="modal" id="brains" hidden>
     <div class="modal-card wide">
@@ -252,6 +354,7 @@
     </div>
   </div>
 
+  <script src="wolf.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

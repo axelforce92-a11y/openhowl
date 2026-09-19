@@ -54,7 +54,7 @@ export function listSessions(limit = 200) {
     try {
       const s = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
       if (!s.messages?.length && !s.log?.length) continue; // chat vuote: non le mostriamo
-      out.push({ id: s.id, title: s.title, updatedAt: s.updatedAt || 0, messages: s.messages?.length || 0 });
+      out.push({ id: s.id, title: s.title, updatedAt: s.updatedAt || 0, messages: s.messages?.length || 0, workspace: s.workspace || null });
     } catch {}
   }
   return out.sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit);

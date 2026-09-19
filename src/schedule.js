@@ -279,7 +279,7 @@ export class Scheduler {
   /* ── ciclo ── */
 
   async tick() {
-    if (this.running || this.h.busy) return; // un compito alla volta, e mai mentre stai lavorando con Howl
+    if (this.running || this.h.busy || this.h.remoteBusy) return; // un compito alla volta, e mai mentre stai lavorando con Howl (anche dal telefono)
     const now = Date.now();
     const due = this.tasks.filter((t) => t.enabled && t.nextRun && t.nextRun <= now).sort((a, b) => a.nextRun - b.nextRun)[0];
     if (due) await this.execute(due, 'schedule');

@@ -146,6 +146,19 @@ export class Agent {
     if (!tool) return fail(`Strumento sconosciuto: ${tu.name}`);
     const risk = typeof tool.risk === 'function' ? tool.risk(input) : tool.risk;
 
+    // i segreti di OpenHowl (token dei bot, credenziali WhatsApp, chiavi dei modelli) sono off-limits, sempre
+    if (this.h.guardSecrets?.(tu.name, input)) {
+      this.emit('info', { text: `🔐 Bloccato: \`${tu.name}\` voleva toccare i file segreti di OpenHowl.` });
+      return fail('Accesso negato: quei file contengono le credenziali di OpenHowl e nessuno strumento può leggerli o modificarli. Non riprovare per altre vie.');
+    }
+
+    // cartella di lavoro protetta: fuori non si scrive
+    const outside = this.h.guardWorkspace?.(tu.name, input);
+    if (outside) {
+      this.emit('info', { text: `📁 Bloccato \`${tu.name}\`: ${outside.split(':')[0]}.` });
+      return fail(`Azione bloccata: ${outside}`);
+    }
+
     // hooks: possono bloccare, modificare i parametri o approvare automaticamente
     const pre = await runHook(this.h, 'beforeTool', { name: tu.name, input });
     if (pre.deny) {

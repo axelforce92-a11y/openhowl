@@ -154,7 +154,10 @@ export const shellTools = [
     },
     risk: 'exec',
     async run({ command, cwd, timeout_ms = 120000, background: bg }, ctx) {
-      const dir = cwd ? path.resolve(shell.cwd || ctx.workspace, cwd) : (shell.cwd ? null : ctx.workspace);
+      let dir = cwd ? path.resolve(shell.cwd || ctx.workspace, cwd) : (shell.cwd ? null : ctx.workspace);
+      // cartella protetta: se un comando precedente è uscito (cd ..), si riparte dalla cartella di lavoro
+      const inside = (p) => { const rel = path.relative(ctx.workspace, p); return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel)); };
+      if (ctx.h?.cfg?.sandbox !== false && !dir && shell.cwd && !inside(shell.cwd)) dir = ctx.workspace;
       if (bg) return startBackground(command, dir || shell.cwd || ctx.workspace);
       const r = await shell.run(command, { cwd: dir, timeout: timeout_ms, signal: ctx.signal });
       const out = r.out.replace(/\s+$/, '');
@@ -214,3 +217,6 @@ const DANGER = [
   /\bnpm\s+publish\b/i, /\bClear-RecycleBin\b/i, /\bDisable-/i, /\bnet\s+user\b/i,
 ];
 export const isDangerousCommand = (cmd = '') => DANGER.some((re) => re.test(cmd));
+
+// Cambiando cartella di lavoro la shell riparte da lì.
+export function resetShellCwd() { shell.cwd = null; }

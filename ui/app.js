@@ -45,8 +45,7 @@
     computer: 'Usa il computer', delegate: 'Chiama il branco', grep: 'Cerca nel codice', glob: 'Cerca file',
     todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro', schedule_task: 'Programma un\'automazione',
   };
-  const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', error: 'Errore' };
-  const POSE = { idle: 'idle', streaming: 'idle', success: 'success', thinking: 'thinking', tool: 'working', approval: 'approval', waiting: 'approval', error: 'approval' };
+  const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', goal: 'Obiettivo raggiunto', error: 'Errore' };
   const MODES = [
     ['readonly', 'Sola lettura', 'Può solo leggere e cercare. Non modifica nulla sul computer.', 'eye'],
     ['ask', 'Chiedi conferma', 'Chiede il permesso prima di scrivere file, eseguire comandi o usare mouse e tastiera.', 'hand'],
@@ -55,19 +54,20 @@
 
   let commands = [], config = {}, replaying = false, resetTimer = null, sessions = [], currentId = null;
   let tasks = [], taskRunning = null, taskTool = null;
+  let remote = null;
   const segs = new Map(), tools = new Map();
   let approvalQueue = [];
 
   /* ───────── stato del lupo ───────── */
-  function wolf(state, say) {
+  const howl = window.HowlWolf.mount($('wolfMini'), { variant: 'mini' });
+  function wolf(state, say, opts = {}) {
     if (replaying) return;
     clearTimeout(resetTimer);
     document.body.dataset.state = state;
-    $('wolfMini').dataset.state = state;
     $('stateLabel').textContent = say || STATE_LABEL[state] || state;
-    $('wolfMini').querySelectorAll('img').forEach((i) => i.classList.toggle('on', i.dataset.pose === POSE[state]));
-    if (state === 'success') confetti();
-    if (state === 'success' || state === 'error') resetTimer = setTimeout(() => wolf('idle'), state === 'success' ? 2600 : 4000);
+    howl.set(state, opts);
+    if (state === 'success' || state === 'goal') confetti();
+    if (['success', 'goal', 'error'].includes(state)) resetTimer = setTimeout(() => wolf('idle'), state === 'error' ? 4200 : 3000);
   }
   function confetti() {
     const r = $('wolfMini').getBoundingClientRect();
@@ -208,22 +208,57 @@
     if (now - ts < 7 * 864e5) return 'Ultimi 7 giorni';
     return 'Precedenti';
   };
-  function renderChats() {
-    const box = $('chats');
-    if (!sessions.length) { box.innerHTML = '<div class="chats-empty">Le tue conversazioni appariranno qui.</div>'; return; }
-    let html = '', group = '';
-    for (const s of sessions) {
-      const g = dayGroup(s.updatedAt);
-      if (g !== group) { group = g; html += `<div class="chats-day">${g}</div>`; }
-      html += `<div class="chat-item ${s.id === currentId ? 'on' : ''}" data-id="${esc(s.id)}" title="${esc(s.title)}">
+  // Progetti: le conversazioni raggruppate per cartella di lavoro. Il progetto attivo è sempre aperto e in cima.
+  const openProjects = new Set((() => { try { return JSON.parse(localStorage.getItem('howl-proj-open') || '[]'); } catch { return []; } })());
+  const saveOpen = () => { try { localStorage.setItem('howl-proj-open', JSON.stringify([...openProjects])); } catch {} };
+  const pkey = (p) => String(p || '').replace(/[\\/]+/g, '/').replace(/\/$/, '').toLowerCase(); // stesso percorso, scritto in modi diversi
+  const baseName = (p) => String(p || '').split(/[\\/]/).filter(Boolean).at(-1) || p;
+  function chatRow(s) {
+    return `<div class="chat-item ${s.id === currentId ? 'on' : ''}" data-id="${esc(s.id)}" title="${esc(s.title)}">
         <span class="t">${esc(s.title)}</span>
         <span class="when">${when(s.updatedAt)}</span>
         <span class="row-acts"><button data-ren="${esc(s.id)}" title="Rinomina">${svg('edit')}</button><button data-del="${esc(s.id)}" title="Elimina">${svg('trash')}</button></span>
       </div>`;
+  }
+  function renderChats() {
+    const box = $('chats');
+    const cur = pkey(config.workspace);
+    const groups = new Map([[cur, []]]);
+    const label = new Map([[cur, config.workspace || '']]);
+    for (const s of sessions) {
+      const k = pkey(s.workspace);
+      if (!label.has(k)) label.set(k, s.workspace || '');
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(s);
+    }
+    const order = [...groups.keys()].sort((a, b) => (a === cur ? -1 : b === cur ? 1 : a === '' ? 1 : b === '' ? -1 : (groups.get(b)[0]?.updatedAt || 0) - (groups.get(a)[0]?.updatedAt || 0)));
+    let html = '';
+    for (const k of order) {
+      const list = groups.get(k);
+      if (!list.length && k !== cur) continue;
+      const isCur = k === cur, open = isCur || openProjects.has(k);
+      const dir = label.get(k);
+      html += `<div class="proj-h ${isCur ? 'on' : ''} ${open ? 'open' : ''}" data-proj="${esc(k)}" title="${esc(dir || 'Conversazioni senza progetto (automazioni, telefono, chat vecchie)')}">
+        <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+        <span class="pn">${k ? `${svg('folder')} ${esc(baseName(dir))}` : 'Altre conversazioni'}</span>
+        <small>${list.length}</small>
+        ${k ? `<button data-proj-new="${esc(dir)}" title="Nuova chat in questo progetto">＋</button>` : '<span></span>'}
+      </div>`;
+      if (open) html += `<div class="proj-chats">${list.length ? list.map(chatRow).join('') : '<div class="chats-empty">Ancora nessuna conversazione in questo progetto.</div>'}</div>`;
     }
     box.innerHTML = html;
   }
   $('chats').addEventListener('click', (e) => {
+    const pn = e.target.closest('[data-proj-new]');
+    if (pn) { e.stopPropagation(); return startInProject(pn.dataset.projNew); }
+    const ph = e.target.closest('.proj-h');
+    if (ph) {
+      const k = ph.dataset.proj;
+      if (k === pkey(config.workspace)) return;
+      if (openProjects.has(k)) openProjects.delete(k); else openProjects.add(k);
+      saveOpen(); renderChats();
+      return;
+    }
     const ren = e.target.closest('[data-ren]'), del = e.target.closest('[data-del]');
     if (ren) { e.stopPropagation(); return startRename(ren.dataset.ren); }
     if (del) {
@@ -288,6 +323,13 @@
   function renderConfig(c) {
     config = c;
     $('brainName').textContent = c.brain ? c.brain.name : `${c.provider} · ${c.model}`;
+    if (c.workspace) {
+      if (c.workspace !== config._ws) { config._ws = c.workspace; queueMicrotask(renderChats); }
+      const parts = c.workspace.split(/[\\/]/).filter(Boolean);
+      $('wsName').textContent = parts.at(-1) || c.workspace;
+      $('wsBtn').title = `Cartella di lavoro: ${c.workspace}${c.sandbox ? '\nProtetta: Howl crea e modifica file solo qui dentro' : ''}`;
+      $('wsLock').hidden = !c.sandbox;
+    }
     $('wsPath').textContent = c.workspace;
     $('toolCount').textContent = `${c.tools.length} strumenti collegati`;
     const mode = MODES.find((m) => m[0] === c.mode) || MODES[1];
@@ -362,6 +404,7 @@
         renderTodos(ev.todos);
         renderGoal(ev.goal);
         tasks = ev.tasks || []; taskRunning = ev.taskRunning || null; renderTasks();
+        remote = ev.remote || null; renderRemote();
         setUsage(ev.usage);
         renderContext(ev.context);
         setBusy(ev.busy);
@@ -390,7 +433,7 @@
       case 'assistant_text': { const s = assistantEl(ev); s.raw = ev.text; s.el.classList.remove('live'); renderSeg(s); break; }
       case 'thinking_delta': { const s = thinkingEl(ev); s.raw += ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'thinking': { const s = thinkingEl(ev); s.raw = ev.text; s.el.lastElementChild.textContent = s.raw; break; }
-      case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name); break;
+      case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name, { tool: ev.name }); break;
       case 'tool_end': toolEnd(ev); break;
       case 'info': add(div('msg line', md(ev.text))); break;
       case 'error': add(div('msg line err', md(ev.text))); wolf('error'); break;
@@ -416,7 +459,7 @@
       case 'goal': renderGoal(ev.goal); break;
       case 'goal_phase':
         add(div(`msg goal-banner ${ev.phase}`, `<span>${inline(ev.text)}</span>`));
-        if (ev.phase === 'achieved') wolf('success', 'Obiettivo raggiunto');
+        if (ev.phase === 'achieved') wolf('goal', 'Obiettivo raggiunto');
         break;
       case 'goal_verdict':
         add(div(`msg verdict ${ev.done ? 'done' : ''}`,
@@ -437,6 +480,20 @@
           (ev.sessionId ? `<button class="link" data-open-session="${esc(ev.sessionId)}">apri la conversazione</button>` : '') + '</div>' +
           `<div>${md(ev.report || '')}</div>`));
         break;
+      case 'remote': remote = ev.remote; renderRemote(); break;
+      case 'remote_activity':
+        if (ev.phase === 'start') add(div('msg line', md(`📱 Richiesta da **${ev.channel === 'whatsapp' ? 'WhatsApp' : 'Telegram'}**: ${ev.text || ''}`)));
+        if (ev.phase === 'tool' && remote?.[ev.channel]?.running) { remote[ev.channel].running.tool = ev.tool; renderRemote(); }
+        break;
+      case 'remote_pair_request': showPairAsk(ev); break;
+      case 'branco':
+        if (!$('branco').hidden) {
+          if (ev.line) { const l = $('bcLog'); l.hidden = false; l.textContent += `${ev.line}\n`; l.scrollTop = l.scrollHeight; }
+          if (ev.fine || /→|— Generazione/.test(ev.line || '')) refreshBranco();
+        }
+        if (ev.fine) add(div('msg line', md(`🐺 Corsa del branco terminata${ev.code ? ' (interrotta)' : ''}. Apri **Impostazioni → Laboratorio del branco** per il grafo.`)));
+        break;
+      case 'remote_alert': if (!ev.quiet) add(div('msg line err', md(ev.text))); break;
       case 'usage': setUsage(ev.usage); break;
       case 'context': renderContext(ev.context); break;
       case 'busy': setBusy(ev.busy); break;
@@ -486,7 +543,15 @@
     input.focus();
   }
   $('suggest').addEventListener('mousedown', (e) => { const d = e.target.closest('[data-i]'); if (d) { e.preventDefault(); applySuggest(+d.dataset.i); } });
-  input.addEventListener('input', () => { autosize(); sugIndex = 0; updateSuggest(); });
+  input.addEventListener('input', () => { autosize(); sugIndex = 0; updateSuggest(); listenWhileTyping(); });
+  let typingTimer = null;
+  // mentre scrivi, Howl (se è libero) si mette in ascolto
+  function listenWhileTyping() {
+    if (document.body.classList.contains('busy')) return;
+    howl.listen(!!input.value.trim());
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => howl.listen(false), 4000);
+  }
   input.addEventListener('keydown', (e) => {
     if (!$('suggest').hidden && sugItems.length) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sugIndex = (sugIndex + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length; updateSuggest(); return; }
@@ -507,6 +572,9 @@
     if (e.key !== 'Escape') return;
     if (!$('brains').hidden) { $('brains').hidden = true; return; }
     if (!$('tasks').hidden) { $('tasks').hidden = true; return; }
+    if (!$('bcGraph').hidden) { closeGraph(); return; }
+    if (!$('branco').hidden) { $('branco').hidden = true; return; }
+    if (!$('phone').hidden) { $('phone').hidden = true; return; }
     if (closeMenus()) return;
     if (!$('suggest').hidden) { hideSuggest(); return; }
     if (document.body.classList.contains('busy')) { e.preventDefault(); stop(); }
@@ -548,6 +616,7 @@
     if (!open) { dd.classList.add('open'); menu.hidden = false; }
   }
   $('modeBtn').onclick = (e) => { e.stopPropagation(); toggleMenu('modeDd', 'modeMenu'); };
+  $('wsBtn').onclick = (e) => { e.stopPropagation(); renderWsMenu(); toggleMenu('wsDd', 'wsMenu'); };
   $('moreBtn').onclick = (e) => { e.stopPropagation(); toggleMenu('moreDd', 'moreMenu'); };
   $('modeMenu').onclick = (e) => { const b = e.target.closest('[data-mode]'); if (b) { send(`/mode ${b.dataset.mode}`); closeMenus(); } };
   $('moreMenu').onclick = (e) => {
@@ -556,7 +625,10 @@
     closeMenus();
     const act = b.dataset.act;
     if (act === 'tasks') openTasks();
-    if (act === 'cwd') { input.value = `/cwd ${config.workspace}`; input.focus(); }
+    if (act === 'phone') openPhone();
+    if (act === 'branco') openBranco();
+    if (act === 'update') { if (upd.status === 'ready') desk.installUpdate(); else desk.checkUpdate(); }
+    if (act === 'cwd') pickWorkspace();
     if (act === 'compact') send('/compact');
     if (act === 'memory') send('/memory');
     if (act === 'tools') send('/tools');
@@ -572,6 +644,37 @@
     desk.getMascot().then(paint);
     desk.onMascot(paint);
     pin.onclick = () => { const next = !pin.classList.contains('on'); paint(next); desk.setMascot(next); };
+  }
+
+  /* ───────── aggiornamenti dell'app desktop ───────── */
+  // L'app scarica da sola le versioni nuove; qui c'è solo il pulsante per installarle subito.
+  let upd = { status: 'dev' };
+  function renderUpdate(u) {
+    upd = u || upd;
+    const btn = $('updBtn'), item = $('updItem');
+    const packaged = upd.status !== 'dev';
+    item.hidden = !packaged;
+    btn.hidden = !['downloading', 'ready'].includes(upd.status);
+    btn.className = `upd-btn nodrag ${upd.status === 'ready' ? 'ready' : ''}`;
+    btn.disabled = upd.status !== 'ready';
+    if (upd.status === 'ready') btn.innerHTML = `${svg('bolt')} Aggiorna ora alla ${esc(upd.version)}`;
+    else if (upd.status === 'downloading') btn.innerHTML = `Scarico la ${esc(upd.version || 'nuova versione')} <span class="upd-bar"><i style="width:${upd.percent || 0}%"></i></span>`;
+    btn.title = upd.status === 'ready' ? "L'app si chiude, si aggiorna e si riapre da sola (pochi secondi)" : '';
+    const sub = {
+      idle: `Versione ${upd.current} · cerca aggiornamenti`,
+      checking: 'Controllo in corso…',
+      downloading: `Scarico la ${upd.version}… ${upd.percent || 0}%`,
+      ready: `La ${upd.version} è pronta: clic per installarla`,
+      latest: `Hai già l'ultima versione (${upd.current})`,
+      error: 'Controllo non riuscito: riprova più tardi',
+    }[upd.status] || '';
+    $('updItemTitle').textContent = upd.status === 'ready' ? 'Aggiorna ora' : 'Aggiornamenti';
+    $('updItemSub').textContent = sub;
+  }
+  if (desk?.getUpdate) {
+    desk.getUpdate().then(renderUpdate);
+    desk.onUpdate(renderUpdate);
+    $('updBtn').onclick = () => { if (upd.status === 'ready') { $('updBtn').textContent = 'Aggiorno…'; desk.installUpdate(); } };
   }
 
   /* ───────── modelli ───────── */
@@ -831,6 +934,261 @@
     tasks = r.tasks; renderTasks();
     tkForm.hidden = true;
   };
+
+  /* ───────── Howl dal telefono (Telegram / WhatsApp) ───────── */
+  const remoteApi = async (action, body) => {
+    const r = await post(`/api/remote/${action}`, body).then((x) => x.json()).catch((e) => ({ error: e.message }));
+    if (r.remote) { remote = r.remote; renderRemote(); }
+    if (r.error) alert(r.error);
+    return r;
+  };
+  const CH = { telegram: 'Telegram', whatsapp: 'WhatsApp' };
+  const MODE_OPTS = [
+    ['readonly', 'Solo leggere e cercare'],
+    ['ask', 'Chiede conferma sul telefono (consigliato)'],
+    ['auto', 'Autonomo — le azioni pericolose restano vietate'],
+  ];
+  const modeSelect = (ch, v) => `<select data-mode-ch="${ch}">${MODE_OPTS.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const pill = (el, text, s) => { el.textContent = text; el.dataset.s = s; };
+  const mins = (ts) => Math.max(0, Math.ceil((ts - Date.now()) / 60000));
+
+  function renderRemote() {
+    const r = remote;
+    // riquadro nella barra laterale
+    const on = r && (r.telegram.enabled || r.whatsapp.enabled);
+    $('phonePanel').hidden = !on;
+    if (on) {
+      const ch = ['telegram', 'whatsapp'].find((c) => r[c].running) || null;
+      const unlocked = ['telegram', 'whatsapp'].filter((c) => r[c].enabled && r[c].unlocked);
+      const locked = ['telegram', 'whatsapp'].some((c) => r[c].lockedOut);
+      pill($('phonePill'), ch ? 'al lavoro' : locked ? 'bloccato' : unlocked.length ? 'sbloccato' : 'protetto', ch ? 'run' : locked ? 'bad' : unlocked.length ? 'on' : 'off');
+      $('phoneNext').innerHTML = ch
+        ? `<b>${CH[ch]}: ${esc(r[ch].running.text || '')}</b><small>${r[ch].awaitingApproval ? 'aspetta la tua conferma sul telefono' : esc(TOOL_SAY[r[ch].running.tool] || r[ch].running.tool || 'ci sta lavorando…')}</small><div><button class="btn sm stop-remote" data-remote-stop>Ferma</button></div>`
+        : `<b>${['telegram', 'whatsapp'].filter((c) => r[c].enabled).map((c) => CH[c]).join(' · ')}</b><small>${locked ? '⛔ troppi PIN errati: riattiva dalle impostazioni' : unlocked.length ? `🔓 ${unlocked.map((c) => CH[c]).join(', ')} sbloccato` : '🔒 bloccato col PIN'}</small>`;
+    }
+    if ($('phone').hidden || !r) return;
+
+    $('phSeal').textContent = r.sealKind === 'plain' ? 'NON cifrati su questo sistema (manca DPAPI)' : 'Cifrati con il tuo account Windows';
+    pill($('phPinPill'), r.hasPin ? 'impostato' : 'da impostare', r.hasPin ? 'on' : 'bad');
+    $('phPinBtn').textContent = r.hasPin ? 'Cambia PIN' : 'Salva PIN';
+    if (document.activeElement !== $('phIdle')) $('phIdle').value = r.idleLockMin;
+    const needPin = r.hasPin ? '' : '<div class="warn">Imposta prima il PIN qui sopra: senza PIN l\'accesso dal telefono non si attiva.</div>';
+
+    // Telegram
+    const tg = r.telegram;
+    pill($('tgPill'), tg.lockedOut ? 'bloccato' : !tg.configured ? 'non collegato' : !tg.enabled ? 'spento' : tg.status === 'error' ? 'errore' : tg.owner ? 'attivo' : 'da abbinare',
+      tg.lockedOut || tg.status === 'error' ? 'bad' : tg.enabled && tg.owner ? 'on' : 'off');
+    let h = '';
+    if (!tg.configured) {
+      h = `${needPin}<ol>
+          <li>Su Telegram apri <b>@BotFather</b> e scrivi <code>/newbot</code>: scegli un nome e un username (finisce con «bot»).</li>
+          <li>Copia il <b>token</b> che ti dà e incollalo qui sotto. Il bot è tuo e di nessun altro.</li>
+        </ol>
+        <div class="line"><input id="tgToken" type="password" autocomplete="off" spellcheck="false" placeholder="123456789:AA…"><button class="btn primary" data-r="tg_token" ${r.hasPin ? '' : 'disabled'}>Collega bot</button></div>
+        <div class="note">Consiglio: crea un bot solo per OpenHowl e non condividere il token con nessuno.</div>`;
+    } else {
+      h += `<div class="line"><span class="grow">Bot <b>@${esc(tg.bot?.username || '?')}</b> · ${tg.status === 'on' ? 'connesso' : tg.status === 'error' ? 'errore' : 'spento'}</span>
+        <button class="btn sm" data-r="tg_toggle">${tg.enabled ? 'Spegni' : 'Accendi'}</button></div>`;
+      if (tg.error) h += `<div class="bad">${esc(tg.error)}</div>`;
+      if (tg.lockedOut) h += '<div class="bad">⛔ Troppi PIN sbagliati dal telefono: accesso bloccato. <button class="btn sm" data-r="tg_reset">Riattiva</button></div>';
+      if (!tg.owner) {
+        const p = r.pairing?.channel === 'telegram' ? r.pairing : null;
+        if (p && !p.candidate) {
+          h += `<div class="ph-pair">${p.qr ? `<img src="${p.qr}" alt="QR di abbinamento">` : ''}
+            <div><div class="note">Inquadra il QR col telefono, oppure apri il bot e scrivi:</div>
+            <div class="ph-code">/start ${esc(p.code)}</div>
+            <div class="note">Valido ancora ${mins(p.expires)} min · poi dovrai confermare qui sul PC.</div>
+            <div class="line" style="margin-top:6px"><button class="btn sm" data-r="pair_cancel">Annulla</button></div></div></div>`;
+        } else if (p?.candidate) {
+          h += '<div class="warn">Richiesta ricevuta: conferma nella finestra che si è aperta.</div>';
+        } else {
+          h += `<div class="line"><span class="grow">Nessun account abbinato: il bot non risponde a nessuno.</span><button class="btn primary" data-r="tg_pair" ${tg.enabled && tg.status === 'on' ? '' : 'disabled'}>Abbina il mio Telegram</button></div>`;
+        }
+      } else {
+        h += `<div class="line"><span class="grow">Proprietario: <b>${esc(tg.owner.name || '')}</b>${tg.owner.username ? ` (@${esc(tg.owner.username)})` : ''} · id ${esc(tg.owner.id)}</span></div>
+          <div class="line"><span>Permessi</span>${modeSelect('telegram', tg.mode)}</div>
+          <div class="note">${tg.unlocked ? `🔓 Sbloccato ancora per ${mins(tg.unlockedUntil)} min.` : '🔒 Bloccato: dal telefono si sblocca con /sblocca e il PIN.'}</div>
+          <div class="line"><button class="btn sm" data-r="tg_unpair">Scollega account</button><button class="btn sm danger" data-r="tg_forget">Rimuovi bot</button></div>`;
+      }
+    }
+    $('tgBox').innerHTML = h;
+
+    // WhatsApp
+    const wa = r.whatsapp;
+    pill($('waPill'), wa.lockedOut ? 'bloccato' : wa.linked && wa.enabled && wa.status === 'on' ? 'attivo' : wa.status === 'qr' ? 'inquadra il QR' : wa.status === 'connecting' ? 'connessione…' : wa.linked ? 'spento' : 'non collegato',
+      wa.lockedOut ? 'bad' : wa.linked && wa.enabled && wa.status === 'on' ? 'on' : 'off');
+    h = '';
+    if (wa.status === 'qr') {
+      h = `<div class="ph-qr">${wa.qr ? `<img src="${wa.qr}" alt="QR WhatsApp">` : '<span class="spinner"></span>'}
+        <ol><li>Apri WhatsApp sul telefono</li><li><b>Impostazioni → Dispositivi collegati → Collega un dispositivo</b></li><li>Inquadra questo codice</li></ol></div>
+        <div class="line"><span class="grow note">Il codice cambia ogni 20 secondi e compare solo su questo schermo.</span><button class="btn sm" data-r="wa_cancel">Annulla</button></div>`;
+    } else if (!wa.linked) {
+      h = `${needPin}<div>Howl diventa un «dispositivo collegato» del tuo WhatsApp e ascolta <b>solo</b> la chat <b>«Messaggio a te stesso»</b> (in cima ai contatti, col tuo nome). Le altre chat vengono scartate appena arrivano: non le legge, non le salva, non le segna come lette.</div>
+        <div class="warn">WhatsApp non ha un'API ufficiale per questo: OpenHowl usa una libreria non ufficiale (Baileys). Funziona bene, ma WhatsApp in rari casi può limitare l'account. Se ti preoccupa, usa Telegram.</div>
+        ${wa.status === 'connecting' ? '<div class="note"><span class="spinner"></span> Connessione…</div>' : ''}
+        ${wa.error ? `<div class="bad">${esc(wa.error)}</div>` : ''}
+        <div class="line"><span class="grow"></span><button class="btn primary" data-r="wa_link" ${r.hasPin && wa.status !== 'connecting' ? '' : 'disabled'}>Collega WhatsApp</button></div>`;
+    } else {
+      h = `<div class="line"><span class="grow">Numero <b>+${esc(wa.me?.number || '?')}</b>${wa.me?.name ? ` (${esc(wa.me.name)})` : ''} · ${wa.status === 'on' ? 'connesso' : wa.status === 'connecting' ? 'connessione…' : 'spento'}</span>
+          <button class="btn sm" data-r="wa_toggle">${wa.enabled ? 'Spegni' : 'Accendi'}</button></div>
+        ${wa.error ? `<div class="bad">${esc(wa.error)}</div>` : ''}
+        ${wa.lockedOut ? '<div class="bad">⛔ Troppi PIN sbagliati: accesso bloccato. <button class="btn sm" data-r="wa_reset">Riattiva</button></div>' : ''}
+        <div class="note">Scrivi a Howl nella chat «Messaggio a te stesso». Le sue risposte iniziano con 🐺.</div>
+        <div class="line"><span>Permessi</span>${modeSelect('whatsapp', wa.mode)}</div>
+        <div class="note">${wa.unlocked ? `🔓 Sbloccato ancora per ${mins(wa.unlockedUntil)} min.` : '🔒 Bloccato: dal telefono si sblocca con /sblocca e il PIN.'}</div>
+        <div class="line"><button class="btn sm danger" data-r="wa_unlink">Scollega WhatsApp</button></div>`;
+    }
+    $('waBox').innerHTML = h;
+
+    $('phStrangers').textContent = r.strangers ? `${r.strangers} messaggi di sconosciuti ignorati` : '';
+    $('phAudit').textContent = r.audit?.length
+      ? r.audit.map((l) => {
+        const [ts, ch, t] = l.split('\t');
+        return `${new Date(ts).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}  ${(ch || '').padEnd(8)} ${t || ''}`;
+      }).join('\n')
+      : 'Ancora niente.';
+  }
+
+  let phoneTimer = null;
+  function openPhone() {
+    $('phone').hidden = false;
+    renderRemote();
+    remoteApi('state', {});
+    clearInterval(phoneTimer);
+    // aggiorna i minuti rimasti (sblocco, codice di abbinamento)
+    phoneTimer = setInterval(() => { if ($('phone').hidden) clearInterval(phoneTimer); else renderRemote(); }, 30000);
+  }
+  $('phonePanel').addEventListener('click', (e) => {
+    if (e.target.closest('[data-remote-stop]')) { e.stopPropagation(); remoteApi('stop', {}); return; }
+    openPhone();
+  });
+  $('phClose').onclick = () => { $('phone').hidden = true; };
+  $('phone').addEventListener('mousedown', (e) => { if (e.target.id === 'phone') $('phone').hidden = true; });
+
+  $('phPinForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target.elements;
+    if (f.pin.value !== f.pin2.value) return alert('I due PIN non coincidono.');
+    if (remote?.hasPin && !confirm('Cambiare il PIN? Le sessioni sbloccate sul telefono verranno chiuse.')) return;
+    const r = await remoteApi('pin', { pin: f.pin.value });
+    if (!r.error) { f.pin.value = ''; f.pin2.value = ''; }
+  };
+  $('phIdle').onchange = (e) => remoteApi('options', { idleLockMin: +e.target.value });
+  $('phPanic').onclick = () => { if (confirm('Spegnere subito Telegram e WhatsApp e fermare ogni lavoro partito dal telefono?')) remoteApi('lock_all', {}); };
+
+  $('phone').addEventListener('change', (e) => {
+    const s = e.target.closest('[data-mode-ch]');
+    if (!s) return;
+    if (s.value === 'auto' && !confirm('In modalità autonoma Howl agisce senza chiederti conferma sul telefono (le azioni pericolose restano comunque vietate). Continuare?')) { renderRemote(); return; }
+    remoteApi('channel', { channel: s.dataset.modeCh, mode: s.value });
+  });
+  $('phone').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-r]');
+    if (!b || b.disabled) return;
+    const a = b.dataset.r;
+    const busyBtn = () => { b.disabled = true; b.textContent = '…'; };
+    if (a === 'tg_token') {
+      const token = $('tgToken').value.trim();
+      if (!token) return $('tgToken').focus();
+      busyBtn();
+      await remoteApi('tg_token', { token });
+    }
+    if (a === 'tg_pair') { busyBtn(); await remoteApi('tg_pair', {}); }
+    if (a === 'pair_cancel') remoteApi('pair_cancel', {});
+    if (a === 'tg_toggle') { busyBtn(); await remoteApi('channel', { channel: 'telegram', enabled: !remote.telegram.enabled }); }
+    if (a === 'wa_toggle') { busyBtn(); await remoteApi('channel', { channel: 'whatsapp', enabled: !remote.whatsapp.enabled }); }
+    if (a === 'tg_reset') remoteApi('channel', { channel: 'telegram', resetLock: true });
+    if (a === 'wa_reset') remoteApi('channel', { channel: 'whatsapp', resetLock: true });
+    if (a === 'tg_unpair' && confirm('Scollegare il tuo account Telegram? Per ricollegarlo servirà un nuovo codice.')) remoteApi('tg_unpair', {});
+    if (a === 'tg_forget' && confirm('Rimuovere il bot da OpenHowl? Il token verrà cancellato da questo PC.')) remoteApi('tg_forget', {});
+    if (a === 'wa_link') { busyBtn(); await remoteApi('wa_link', {}); }
+    if (a === 'wa_cancel') remoteApi('channel', { channel: 'whatsapp', enabled: false });
+    if (a === 'wa_unlink' && confirm('Scollegare WhatsApp? OpenHowl sparirà dai «Dispositivi collegati» e le credenziali verranno cancellate.')) remoteApi('wa_unlink', {});
+  });
+
+  // Abbinamento Telegram: si conferma SOLO da questo schermo
+  function showPairAsk(ev) {
+    const w = ev.who || {};
+    $('paWho').textContent = `${w.name || 'Sconosciuto'}${w.username ? `  @${w.username}` : ''}  ·  id ${w.id}`;
+    $('pairAsk').hidden = false;
+    $('paNo').focus();
+  }
+  const answerPair = (accept) => { $('pairAsk').hidden = true; remoteApi('pair_answer', { accept }); };
+  $('paYes').onclick = () => answerPair(true);
+  $('paNo').onclick = () => answerPair(false);
+
+  /* ───────── laboratorio del branco ───────── */
+  const brancoApi = (action, body) => post(`/api/branco/${action}`, body).then((r) => r.json()).catch((e) => ({ error: e.message }));
+  let bcRunning = null;
+  async function refreshBranco() {
+    const r = await brancoApi('list', {});
+    if (r.error) return;
+    bcRunning = r.inCorso;
+    $('bcStart').hidden = !!bcRunning;
+    $('bcStop').hidden = !bcRunning;
+    for (const el of $('bcForm').querySelectorAll('select, input:not([name=modello])')) el.disabled = !!bcRunning;
+    $('bcList').innerHTML = r.corse.length ? r.corse.map((c) => `<div class="br-item bc-item ${c.stato === 'in corso' ? 'active' : ''}">
+        <div><div class="n">${esc(c.creato)} · ${c.obiettivo === 'intelligenza' ? 'solo intelligenza' : 'intelligenza + velocità'} · ${esc(c.stato)}</div>
+        <div class="m">${esc(c.modello)} · ${c.esaminati}/${c.previsti} agenti${c.alfa ? ` · ★ alfa ${esc(c.alfa.nome)} ${c.alfa.voto} in ${c.alfa.secondi}s${c.alfa.segreto ? ` · esame segreto ${c.alfa.segreto}` : ''}` : ''}</div></div>
+        <div class="acts"><button class="use" data-graph="${esc(c.id)}">Grafo</button></div></div>`).join('')
+      : '<span class="muted">Nessuna corsa ancora. Serve un modello locale attivo (es. Qwen su LM Studio): una corsa da 4 generazioni dura circa un\'ora.</span>';
+  }
+  function openBranco() {
+    $('branco').hidden = false;
+    const f = $('bcForm').elements;
+    f.modello.value = config.brain ? config.brain.name : config.model || '';
+    $('bcNote').textContent = 'Il laboratorio usa solo modelli locali. Durante la corsa il modello è occupato: meglio non chattare con Howl, o i tempi misurati diventano falsi.';
+    refreshBranco();
+  }
+  $('bcClose').onclick = () => { $('branco').hidden = true; };
+  $('branco').addEventListener('mousedown', (e) => { if (e.target.id === 'branco') $('branco').hidden = true; });
+  $('bcForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target.elements;
+    $('bcLog').textContent = ''; $('bcLog').hidden = false;
+    const r = await brancoApi('start', { obiettivo: f.obiettivo.value, generazioni: +f.generazioni.value, figli: +f.figli.value, riprendi: f.riprendi.checked });
+    if (r.error) { $('bcLog').hidden = true; return alert(r.error); }
+    refreshBranco();
+    openGraph(r.id);
+  };
+  $('bcStop').onclick = async () => { if (confirm('Fermare la corsa? Gli agenti già esaminati restano salvati.')) { await brancoApi('stop', {}); setTimeout(refreshBranco, 500); } };
+  $('bcList').onclick = (e) => { const b = e.target.closest('[data-graph]'); if (b) openGraph(b.dataset.graph); };
+  function openGraph(id) { $('bcFrame').src = `/branco.html?corsa=${encodeURIComponent(id)}`; $('bcGraph').hidden = false; }
+  function closeGraph() { $('bcGraph').hidden = true; $('bcFrame').src = 'about:blank'; }
+  $('bcGraphClose').onclick = closeGraph;
+
+  /* ───────── cartella di lavoro ───────── */
+  function renderWsMenu() {
+    const recent = (config.recentWorkspaces || []).filter((d) => d !== config.workspace);
+    $('wsMenu').innerHTML =
+      `<div class="ws-cur">Howl lavora in<br><b>${esc(config.workspace || '')}</b>${config.sandbox ? '<br>🔒 Crea e modifica file solo qui dentro. Fuori può soltanto leggere.' : ''}</div>` +
+      recent.map((d) => `<button data-ws="${esc(d)}">${svg('folder')}<span><b>${esc(d.split(/[\\/]/).filter(Boolean).at(-1) || d)}</b><small>${esc(d)}</small></span></button>`).join('') +
+      `<button data-ws-pick>${svg('folder')}<span><b>Scegli un'altra cartella…</b><small>Apre il selettore di cartelle</small></span></button>`;
+  }
+  $('wsMenu').onclick = (e) => {
+    const b = e.target.closest('[data-ws],[data-ws-pick]');
+    if (!b) return;
+    closeMenus();
+    if (b.dataset.ws) setWorkspace(b.dataset.ws);
+    else pickWorkspace();
+  };
+  // nuova chat dentro un progetto (se è un altro progetto, Howl passa prima alla sua cartella)
+  async function startInProject(dir) {
+    if (pkey(dir) !== pkey(config.workspace)) await setWorkspace(dir);
+    post('/api/chat/new');
+  }
+  $('newProject').onclick = async () => {
+    const dir = desk?.pickFolder ? await desk.pickFolder(config.workspace) : prompt('Cartella del nuovo progetto:', '');
+    if (dir) { await setWorkspace(dir); post('/api/chat/new'); }
+  };
+  async function pickWorkspace() {
+    const dir = desk?.pickFolder ? await desk.pickFolder(config.workspace) : prompt('Percorso della cartella di lavoro:', config.workspace || '');
+    if (dir) setWorkspace(dir);
+  }
+  async function setWorkspace(dir) {
+    const r = await post('/api/workspace', { path: dir }).then((x) => x.json()).catch((e) => ({ error: e.message }));
+    if (r.error) alert(r.error);
+  }
 
   connect();
 })();

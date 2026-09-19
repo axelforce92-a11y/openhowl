@@ -1,7 +1,7 @@
 {
   "name": "openhowl",
   "productName": "OpenHowl",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenHowl — l'agente AI open source che lavora sul tuo PC, con il lupo sul desktop",
   "author": "OpenHowl",
   "license": "MIT",
@@ -41,8 +41,10 @@
     "node": ">=22"
   },
   "dependencies": {
+    "baileys": "7.0.0-rc14",
     "electron-updater": "^6.8.9",
-    "playwright-core": "^1.50.0"
+    "playwright-core": "^1.50.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "electron": "^38.0.0",
@@ -69,7 +71,8 @@
     ],
     "asarUnpack": [
       "src/tools/computer_helper.py",
-      "node_modules/playwright-core/**"
+      "node_modules/playwright-core/**",
+      "src/branco/**"
     ],
     "publish": [
       {

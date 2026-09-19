@@ -24,6 +24,20 @@ Node.js 22 or newer. `pyautogui` is only needed for the computer-use tool.
   so be honest about it.
 - Anything unattended (automations, sub-agents) must **refuse** dangerous actions rather than wait for a human.
 
+## The wolf (mascot assets)
+
+Howl's poses are rendered images; the animation comes from splitting them into layers.
+
+```bash
+python scripts/gen_pose.py <name> "<pose description>"   # new pose with Gemini, using the existing ones as reference
+python scripts/make_assets.py                            # cut out the white background -> ui/wolf/<name>.png
+python scripts/make_rig.py                               # layers + eyelids -> ui/wolf/rig/ and rig.json
+```
+
+`gen_pose.py` reads a Gemini API key from `~/.openhowl/.env` (`GEMINI_API_KEY=...`). A new pose only needs to be
+mapped to a state in `ui/wolf.js`; adding it to the rig (tail, head, arms, eyes) means measuring its polygons by hand
+in `make_rig.py`.
+
 ## Before opening a pull request
 
 - Try the change with both a frontier model and a small local one: most rough edges only show up with the small ones.

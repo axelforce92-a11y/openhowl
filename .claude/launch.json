@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "grafo-branco",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["lab/branco-agenti/serve.mjs", "7811"],
+      "port": 7811
+    }
+  ]
+}

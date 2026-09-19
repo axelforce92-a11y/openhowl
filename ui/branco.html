@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="howl-token" content="%%HOWL_TOKEN%%">
+<title>Grafo del branco</title>
+<style>
+  /* Scuro di base, come Obsidian; il tema chiaro resta disponibile. */
+  :root {
+    color-scheme: dark;
+    --page: #161616;
+    --surface-1: #1e1e1e;
+    --surface-2: #252525;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --link: rgba(255, 255, 255, 0.16);
+    --link-hot: rgba(255, 255, 255, 0.75);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --gen-lo: #184f95;
+    --gen-hi: #cde2fb;
+    --pending: #52514e;
+    --good: #0ca30c;
+    --bad: #e66767;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --page: #f9f9f7; --surface-1: #fcfcfb; --surface-2: #f1f0ec; --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+      --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10); --link: rgba(11, 11, 11, 0.14); --link-hot: rgba(11, 11, 11, 0.7);
+      --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --gen-lo: #86b6ef; --gen-hi: #0d366b; --pending: #c3c2b7;
+      --good: #006300; --bad: #d03b3b;
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page: #f9f9f7; --surface-1: #fcfcfb; --surface-2: #f1f0ec; --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10); --link: rgba(11, 11, 11, 0.14); --link-hot: rgba(11, 11, 11, 0.7);
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --gen-lo: #86b6ef; --gen-hi: #0d366b; --pending: #c3c2b7;
+    --good: #006300; --bad: #d03b3b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--page); color: var(--text-primary); font: 13px/1.45 var(--sans); }
+  canvas#g { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; }
+  canvas#g.drag { cursor: grabbing; }
+  .panel { position: fixed; background: color-mix(in srgb, var(--surface-1) 92%, transparent); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; backdrop-filter: blur(6px); }
+  .top { top: 12px; left: 12px; max-width: 420px; }
+  .top h1 { font-size: 16px; margin: 0 0 2px; }
+  .top p { margin: 0; color: var(--text-secondary); }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 99px; padding: 1px 9px; margin-left: 6px; vertical-align: 2px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--text-secondary); font-size: 12px; align-items: center; }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .legend .grad { display: inline-block; width: 60px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--gen-lo), var(--gen-hi)); vertical-align: 0; margin-right: 5px; }
+  .tools { display: flex; gap: 12px; margin-top: 8px; color: var(--text-secondary); font-size: 12px; flex-wrap: wrap; }
+  .tools label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+  .tools button { font: inherit; font-size: 12px; background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); border-radius: 7px; padding: 2px 9px; cursor: pointer; }
+
+  .card { top: 12px; right: 12px; width: 330px; max-height: calc(100vh - 24px); overflow: auto; }
+  .card h2 { font-size: 17px; margin: 0; }
+  .card .sub { color: var(--text-muted); margin-bottom: 6px; }
+  .card .big { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+  .card .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 12px 0 4px; }
+  .card .genes { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .card .genes span:nth-child(odd) { color: var(--text-muted); }
+  .card ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+  .card small { color: var(--text-muted); }
+  .cases { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .case { border: 1px solid var(--border); border-radius: 7px; text-align: center; font-size: 11.5px; padding: 3px 0; }
+  .case b { display: block; font-size: 13px; }
+  .case.ok b { color: var(--good); } .case.no b { color: var(--bad); }
+  .tag { display: inline-block; font-size: 11px; border: 1px solid var(--border); border-radius: 99px; padding: 0 7px; margin-left: 6px; color: var(--text-secondary); vertical-align: 2px; }
+  .link { background: none; border: 0; padding: 0; font: inherit; color: var(--series-1); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+  .charts { bottom: 12px; left: 12px; width: 440px; }
+  .charts h3 { font-size: 12.5px; margin: 0 0 2px; font-weight: 600; }
+  .charts .hint { color: var(--text-muted); font-size: 11.5px; margin-bottom: 4px; }
+  .charts svg { display: block; width: 100%; height: auto; }
+  .charts .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .axis text { fill: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .tip { position: fixed; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; max-width: 300px; z-index: 10; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+  .collapse { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+  .charts.min > :not(h3):not(.collapse) { display: none; }
+  @media (max-width: 900px) { .charts { width: 330px; } .card { width: 290px; max-height: 60vh; } .top { max-width: calc(100vw - 330px); } }
+  @media (max-width: 640px) { .charts { width: calc(100vw - 24px); } .card { width: calc(100vw - 24px); top: auto; bottom: 12px; max-height: 45vh; } .top { max-width: calc(100vw - 24px); } }
+</style>
+</head>
+<body>
+<canvas id="g" aria-label="Grafo interattivo degli agenti e delle regole"></canvas>
+
+<div class="panel top">
+  <h1>🐺 Il branco <span id="live"></span></h1>
+  <p id="sub">Caricamento…</p>
+  <div class="legend">
+    <span><span class="grad"></span>agente (dal fondatore → al più giovane)</span>
+    <span><span class="dot" style="background:var(--series-2)"></span>regola di precisione</span>
+    <span><span class="dot" style="background:var(--series-3)"></span>regola di velocità</span>
+    <span><span class="dot" style="background:transparent;outline:2px solid var(--text-primary);outline-offset:-2px"></span>fronte dei migliori</span>
+  </div>
+  <div class="tools">
+    <label><input type="checkbox" id="showRules" checked> regole</label>
+    <label><input type="checkbox" id="showLabels" checked> nomi</label>
+    <button id="fit">Centra</button>
+  </div>
+</div>
+
+<div class="panel card" id="card" hidden></div>
+
+<div class="panel charts" id="charts">
+  <button class="collapse" id="toggleCharts" title="Riduci / espandi">▾</button>
+  <h3>Intelligenza contro tempo</h3>
+  <div class="hint">Ogni punto è un agente. In alto a sinistra: più bravo e più veloce. La linea unisce il fronte dei migliori.</div>
+  <svg id="scatter" viewBox="0 0 420 200" role="img" aria-label="Voto contro secondi per esame"></svg>
+  <div class="row">
+    <div><h3>Voto del migliore</h3><svg id="lineVoto" viewBox="0 0 200 90" role="img" aria-label="Voto migliore per generazione"></svg></div>
+    <div><h3>Secondi del più veloce</h3><svg id="lineTempo" viewBox="0 0 200 90" role="img" aria-label="Tempo del più veloce per generazione"></svg></div>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const corsa = new URLSearchParams(location.search).get('corsa') || '';
+  const TOKEN = document.querySelector('meta[name=howl-token]').content;
+  const load = () => fetch('/api/branco/data', { method: 'POST', headers: { 'content-type': 'application/json', 'x-howl-token': TOKEN }, body: JSON.stringify({ id: corsa }) })
+    .then((r) => r.json()).then((j) => { if (j.error) throw new Error(j.error); return j.data; });
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let C = {};
+  const readColors = () => { const cs = getComputedStyle(document.documentElement); for (const k of ['page', 'text-primary', 'text-secondary', 'text-muted', 'link', 'link-hot', 'series-1', 'series-2', 'series-3', 'gen-lo', 'gen-hi', 'pending', 'grid', 'axis', 'surface-1']) C[k] = cs.getPropertyValue(`--${k}`).trim(); };
+  readColors();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); drawCharts(); });
+  const hex = (h) => (h.length === 4 ? h.slice(1).split('').map((c) => parseInt(c + c, 16)) : h.match(/\w\w/g).map((x) => parseInt(x, 16)));
+  const mix = (a, b, t) => `rgb(${hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t)).join(',')})`;
+
+  /* ───────── stato del grafo ───────── */
+  let data = null, lastStamp = 0, maxGen = 1;
+  const nodes = new Map(); // id → {id, kind, x, y, vx, vy, r, ...}
+  let links = [];
+  const view = { x: 0, y: 0, k: 1 };
+  let hover = null, selected = null, drag = null, heat = 1;
+
+  const genColor = (g) => mix(C['gen-lo'], C['gen-hi'], maxGen ? g / maxGen : 0);
+
+  function ingest(d) {
+    data = d;
+    maxGen = Math.max(1, ...d.nodi.map((n) => n.gen));
+    const N = d.esame.length;
+    const seen = new Set();
+    // agenti
+    for (const a of d.nodi) {
+      const id = `a${a.id}`;
+      seen.add(id);
+      let n = nodes.get(id);
+      if (!n) {
+        // nasce vicino ai genitori, con un po' di spinta casuale
+        const ps = a.genitori.map((p) => nodes.get(`a${p}`)).filter(Boolean);
+        const cx = ps.length ? ps.reduce((s, p) => s + p.x, 0) / ps.length : (Math.random() - 0.5) * 200;
+        const cy = ps.length ? ps.reduce((s, p) => s + p.y, 0) / ps.length + 40 : (Math.random() - 0.5) * 200;
+        n = { id, kind: 'agente', x: cx + (Math.random() - 0.5) * 40, y: cy + (Math.random() - 0.5) * 40, vx: 0, vy: 0, born: performance.now() };
+        nodes.set(id, n);
+        heat = 1;
+      }
+      Object.assign(n, { a, label: a.nome, r: a.voto == null ? 7 : 6 + a.voto * 12 });
+    }
+    // regole (una per testo)
+    const rules = new Map();
+    for (const a of d.nodi) for (const r of a.regole || []) {
+      if (!rules.has(r.testo)) rules.set(r.testo, { ...r, portatori: [] });
+      rules.get(r.testo).portatori.push(a.id);
+    }
+    let i = 0;
+    for (const [testo, r] of rules) {
+      const id = `r${hashStr(testo)}`;
+      seen.add(id);
+      let n = nodes.get(id);
+      if (!n) {
+        const disc = d.nodi.find((a) => a.nome === r.scopritore);
+        const p = disc ? nodes.get(`a${disc.id}`) : null;
+        n = { id, kind: 'regola', x: (p?.x || 0) + (Math.random() - 0.5) * 50, y: (p?.y || 0) + (Math.random() - 0.5) * 50, vx: 0, vy: 0, born: performance.now() };
+        nodes.set(id, n);
+        heat = 1;
+      }
+      Object.assign(n, { rule: r, label: shorten(testo, 42), r: 3.5 + Math.min(6, r.portatori.length) });
+      i++;
+    }
+    for (const id of [...nodes.keys()]) if (!seen.has(id)) nodes.delete(id);
+    // collegamenti
+    links = [];
+    for (const a of d.nodi) {
+      for (const p of a.genitori) links.push({ s: `a${p}`, t: `a${a.id}`, kind: 'famiglia' });
+      for (const r of a.regole || []) links.push({ s: `a${a.id}`, t: `r${hashStr(r.testo)}`, kind: r.scopritore === a.nome ? 'scoperta' : 'porta' });
+    }
+    updateHeader();
+    drawCharts();
+    if (selected && nodes.has(selected)) showCard(selected);
+  }
+  function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  function shorten(s, n) { return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
+
+  /* ───────── fisica (stile Obsidian: repulsione, molle, gravità verso il centro) ───────── */
+  function tick() {
+    const arr = [...nodes.values()].filter(visible);
+    const showRules = $('showRules').checked;
+    const alpha = 0.3 * heat + 0.02;
+    for (let i = 0; i < arr.length; i++) {
+      const a = arr[i];
+      for (let j = i + 1; j < arr.length; j++) {
+        const b = arr[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 0.5; }
+        const f = (a.kind === 'regola' && b.kind === 'regola' ? 900 : 2600) / d2;
+        const d = Math.sqrt(d2);
+        const fx = (dx / d) * f, fy = (dy / d) * f;
+        a.vx -= fx; a.vy -= fy; b.vx += fx; b.vy += fy;
+      }
+    }
+    for (const l of links) {
+      if (!showRules && l.kind !== 'famiglia') continue;
+      const a = nodes.get(l.s), b = nodes.get(l.t);
+      if (!a || !b) continue;
+      const len = l.kind === 'famiglia' ? 70 : l.kind === 'scoperta' ? 40 : 90;
+      const k = l.kind === 'famiglia' ? 0.05 : l.kind === 'scoperta' ? 0.06 : 0.012;
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const f = (d - len) * k;
+      const fx = (dx / d) * f, fy = (dy / d) * f;
+      a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+    }
+    for (const n of arr) {
+      n.vx -= n.x * 0.004; n.vy -= n.y * 0.004; // gravità
+      if (drag?.node === n) { n.vx = 0; n.vy = 0; continue; }
+      n.vx *= 0.82; n.vy *= 0.82;
+      n.x += n.vx * alpha; n.y += n.vy * alpha;
+    }
+    heat = Math.max(0, heat * 0.995);
+  }
+  const visible = (n) => n.kind === 'agente' || $('showRules').checked;
+
+  /* ───────── disegno ───────── */
+  const cv = $('g'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1;
+  function resize() { dpr = devicePixelRatio || 1; W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; }
+  addEventListener('resize', resize);
+  resize();
+  const toScreen = (x, y) => [W / 2 + (x + view.x) * view.k, H / 2 + (y + view.y) * view.k];
+  const toWorld = (sx, sy) => [(sx - W / 2) / view.k - view.x, (sy - H / 2) / view.k - view.y];
+
+  function neighbors(id) {
+    const s = new Set([id]);
+    for (const l of links) { if (l.s === id) s.add(l.t); if (l.t === id) s.add(l.s); }
+    return s;
+  }
+
+  function colorOf(n) {
+    if (n.kind === 'regola') return n.rule.tipo === 'velocità' ? C['series-3'] : C['series-2'];
+    return n.a.voto == null ? C.pending : genColor(n.a.gen);
+  }
+
+  function draw(now) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.page;
+    ctx.fillRect(0, 0, W, H);
+    const focus = hover || selected;
+    const near = focus ? neighbors(focus) : null;
+    const showRules = $('showRules').checked;
+    // collegamenti
+    for (const l of links) {
+      if (!showRules && l.kind !== 'famiglia') continue;
+      const a = nodes.get(l.s), b = nodes.get(l.t);
+      if (!a || !b) continue;
+      const hot = near && near.has(l.s) && near.has(l.t) && (l.s === focus || l.t === focus);
+      ctx.strokeStyle = hot ? C['link-hot'] : C.link;
+      ctx.globalAlpha = near && !hot ? 0.25 : 1;
+      ctx.lineWidth = (hot ? 1.6 : l.kind === 'famiglia' ? 1.1 : 0.7) * Math.sqrt(view.k);
+      ctx.setLineDash(l.kind === 'porta' ? [3, 4] : []);
+      const [x1, y1] = toScreen(a.x, a.y), [x2, y2] = toScreen(b.x, b.y);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // nodi
+    const alphaId = data?.alfa != null ? `a${data.alfa}` : null;
+    for (const n of nodes.values()) {
+      if (!visible(n)) continue;
+      const [x, y] = toScreen(n.x, n.y);
+      const age = (now - n.born) / 600;
+      const grow = Math.min(1, age);
+      let r = n.r * Math.sqrt(view.k) * (0.4 + 0.6 * grow);
+      const dim = near && !near.has(n.id);
+      ctx.globalAlpha = dim ? 0.18 : 1;
+      if (n.kind === 'agente' && n.a.voto == null) r *= 1 + 0.12 * Math.sin(now / 250); // all'esame: pulsa
+      // alone per i nuovi arrivati e per il nodo in primo piano
+      if (age < 3 || n.id === focus) {
+        ctx.beginPath(); ctx.arc(x, y, r + 7, 0, Math.PI * 2);
+        ctx.fillStyle = colorOf(n); ctx.globalAlpha = (dim ? 0.05 : 0.18) * (n.id === focus ? 1 : Math.max(0, 1 - age / 3));
+        ctx.fill(); ctx.globalAlpha = dim ? 0.18 : 1;
+      }
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = colorOf(n); ctx.fill();
+      if (n.kind === 'agente' && (n.a.pareto || n.id === alphaId)) {
+        ctx.lineWidth = n.id === alphaId ? 2.5 : 1.6; ctx.strokeStyle = C['text-primary'];
+        ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (n.id === selected) { ctx.lineWidth = 2; ctx.strokeStyle = C['series-2']; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); }
+      // etichette: sempre per gli agenti se richieste, per le regole solo vicino al fuoco o con zoom
+      const showLabel = $('showLabels').checked && (n.kind === 'agente' ? view.k > 0.55 || n.id === focus : (near?.has(n.id) || view.k > 1.4));
+      if (showLabel && !dim) {
+        const txt = n.kind === 'agente' ? `${n.id === alphaId ? '★ ' : ''}${n.label}${n.a.voto != null ? ` ${Math.round(n.a.voto * data.esame.length)}/${data.esame.length}` : ' …'}` : n.label;
+        ctx.font = `${n.kind === 'agente' ? 600 : 400} ${n.kind === 'agente' ? 12 : 11}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = C.page; ctx.strokeText(txt, x, y + r + 14);
+        ctx.fillStyle = n.kind === 'agente' ? C['text-primary'] : C['text-secondary']; ctx.fillText(txt, x, y + r + 14);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function loop(now) { for (let i = 0; i < 2; i++) tick(); draw(now); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+
+  /* ───────── interazione: trascina, zoom, passa sopra, clicca ───────── */
+  function pickAt(sx, sy) {
+    let best = null, bd = Infinity;
+    for (const n of nodes.values()) {
+      if (!visible(n)) continue;
+      const [x, y] = toScreen(n.x, n.y);
+      const d = Math.hypot(sx - x, sy - y), r = Math.max(10, n.r * Math.sqrt(view.k) + 4);
+      if (d < r && d < bd) { best = n; bd = d; }
+    }
+    return best;
+  }
+  const tip = $('tip');
+  cv.addEventListener('pointerdown', (e) => {
+    const n = pickAt(e.clientX, e.clientY);
+    drag = { node: n, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
+    cv.setPointerCapture(e.pointerId);
+    cv.classList.add('drag');
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (drag) {
+      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (drag.node) { const [wx, wy] = toWorld(e.clientX, e.clientY); drag.node.x = wx; drag.node.y = wy; heat = Math.max(heat, 0.3); }
+      else { view.x = drag.vx + dx / view.k; view.y = drag.vy + dy / view.k; }
+      return;
+    }
+    const n = pickAt(e.clientX, e.clientY);
+    hover = n?.id || null;
+    cv.style.cursor = n ? 'pointer' : 'grab';
+    if (n) {
+      tip.innerHTML = n.kind === 'agente'
+        ? `<b>${esc(n.a.nome)}</b> · ${n.a.gen === 0 ? `fondatore «${esc(n.a.primer)}»` : `generazione ${n.a.gen}`}<br>${n.a.voto != null ? `Esame <b>${Math.round(n.a.voto * data.esame.length)}/${data.esame.length}</b> in ${Math.round(n.a.secondi)}s` : 'sta sostenendo l\'esame…'}<br><span style="color:var(--text-muted)">ragiona: ${esc(n.a.ragionamento)} · ${n.a.regole?.length || 0} regole</span>`
+        : `<b>Regola di ${esc(n.rule.tipo || 'precisione')}</b><br>${esc(n.rule.testo)}<br><span style="color:var(--text-muted)">scoperta da ${esc(n.rule.scopritore)} · la portano ${n.rule.portatori.length} agenti</span>`;
+      tip.hidden = false;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = `${Math.min(e.clientX + 14, innerWidth - w - 8)}px`;
+      tip.style.top = `${Math.min(e.clientY + 14, innerHeight - h - 8)}px`;
+    } else tip.hidden = true;
+  });
+  cv.addEventListener('pointerup', (e) => {
+    cv.classList.remove('drag');
+    if (drag && !drag.moved) {
+      const n = pickAt(e.clientX, e.clientY);
+      selected = n?.id || null;
+      if (n) showCard(n.id); else $('card').hidden = true;
+    }
+    drag = null;
+  });
+  cv.addEventListener('pointerleave', () => { hover = null; tip.hidden = true; });
+  cv.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const [wx, wy] = toWorld(e.clientX, e.clientY);
+    view.k = Math.min(4, Math.max(0.2, view.k * Math.exp(-e.deltaY * 0.0015)));
+    const [nx, ny] = toWorld(e.clientX, e.clientY);
+    view.x += nx - wx; view.y += ny - wy;
+  }, { passive: false });
+  $('fit').onclick = fit;
+  function fit() {
+    const arr = [...nodes.values()].filter(visible);
+    if (!arr.length) return;
+    const xs = arr.map((n) => n.x), ys = arr.map((n) => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    view.k = Math.min(2, Math.max(0.25, Math.min((W - 160) / (maxX - minX + 1), (H - 160) / (maxY - minY + 1))));
+    view.x = -(minX + maxX) / 2; view.y = -(minY + maxY) / 2;
+  }
+  $('showRules').onchange = () => { heat = 1; };
+  $('toggleCharts').onclick = () => { const c = $('charts'); c.classList.toggle('min'); $('toggleCharts').textContent = c.classList.contains('min') ? '▸' : '▾'; };
+
+  /* ───────── scheda ───────── */
+  function showCard(id) {
+    const n = nodes.get(id);
+    const card = $('card');
+    if (!n) { card.hidden = true; return; }
+    card.hidden = false;
+    const N = data.esame.length;
+    if (n.kind === 'regola') {
+      const r = n.rule;
+      card.innerHTML = `<button class="collapse" id="closeCard">✕</button><h2>Regola di ${esc(r.tipo || 'precisione')}</h2>
+        <div class="sub">scoperta da ${esc(r.scopritore)} alla generazione ${r.gen}</div>
+        <p>«${esc(r.testo)}»</p>
+        <div class="lab">La portano (${r.portatori.length})</div>
+        <div>${r.portatori.map((pid) => { const a = data.nodi[pid]; return `<button class="link" data-go="a${pid}">${esc(a.nome)}</button>${a.voto != null ? ` ${Math.round(a.voto * N)}/${N}` : ''}`; }).join(' · ')}</div>`;
+    } else {
+      const a = n.a;
+      const res = new Map((a.risultati || []).map((r) => [r.id, r]));
+      const kids = data.nodi.filter((k) => k.genitori.includes(a.id));
+      card.innerHTML = `<button class="collapse" id="closeCard">✕</button>
+        <h2>${esc(a.nome)}${data.alfa === a.id ? '<span class="tag">★ alfa</span>' : ''}${a.pareto ? '<span class="tag">fronte dei migliori</span>' : ''}</h2>
+        <div class="sub">${a.gen === 0 ? `fondatore «${esc(a.primer)}»` : `generazione ${a.gen}`}${a.voto == null ? ' · all\'esame' : a.scelto ? ' · scelto per riprodursi' : ''}</div>
+        <div class="big">${a.voto != null ? `${Math.round(a.voto * N)}/${N}` : '…'}</div>
+        <div class="sub">${a.voto != null ? `${Math.round(a.secondi)} secondi per l'esame${a.token ? ` · ${a.token.toLocaleString('it-IT')} token` : ''}` : ''}${a.votoSegreto != null ? ` · segreto ${Math.round(a.votoSegreto * data.segreto.length)}/${data.segreto.length}` : ''}</div>
+        <div class="cases">${data.esame.map((t) => { const r = res.get(t.id); return `<div class="case ${r ? (r.ok ? 'ok' : 'no') : ''}" title="${esc(t.domanda)}${r ? ` — risposta: ${r.risposta ?? 'nessuna'} (${r.secondi}s)` : ''}"><b>${r ? (r.ok ? '✓' : '✗') : '·'}</b>${t.id}</div>`; }).join('')}</div>
+        <div class="lab">DNA</div>
+        <div class="genes"><span>personalità</span><span>${esc(a.persona)}</span><span>ragiona</span><span>${esc(a.ragionamento)}</span><span>temperatura</span><span>${a.temperatura}</span><span>passi max</span><span>${a.passiMax ?? 10}</span></div>
+        <div class="lab">Regole (${a.regole?.length || 0})</div>
+        ${a.regole?.length ? `<ol>${a.regole.map((r) => `<li>${esc(r.testo)} <small>— ${esc(r.tipo || 'precisione')}, da ${esc(r.scopritore)}</small></li>`).join('')}</ol>` : '<small>nessuna</small>'}
+        ${a.mutazioni?.length ? `<div class="lab">Mutazioni</div><div>${esc(a.mutazioni.join(' · '))}</div>` : ''}
+        ${a.genitori.length ? `<div class="lab">Genitori</div><div>${a.genitori.map((p) => `<button class="link" data-go="a${p}">${esc(data.nodi[p].nome)}</button>`).join(' × ')}</div>` : ''}
+        ${kids.length ? `<div class="lab">Figli (${kids.length})</div><div>${kids.map((k) => `<button class="link" data-go="a${k.id}">${esc(k.nome)}</button>`).join(' · ')}</div>` : ''}`;
+    }
+    $('closeCard').onclick = () => { card.hidden = true; selected = null; };
+  }
+  $('card').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { selected = b.dataset.go; showCard(selected); } });
+
+  /* ───────── grafici ───────── */
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); parent.appendChild(e); return e; };
+  function drawCharts() {
+    if (!data) return;
+    const N = data.esame.length;
+    const done = data.nodi.filter((a) => a.voto != null);
+    // dispersione voto / secondi
+    const sv = $('scatter');
+    sv.innerHTML = '';
+    const Wd = 420, Hd = 200, M = { l: 34, r: 10, t: 8, b: 26 };
+    const maxS = Math.max(60, ...done.map((a) => a.secondi)) * 1.05;
+    const xs = (s) => M.l + (Wd - M.l - M.r) * (s / maxS);
+    const ys = (v) => M.t + (Hd - M.t - M.b) * (1 - v);
+    const ax = el('g', { class: 'axis' }, sv);
+    for (let k = 0; k <= N; k += 2) { el('line', { x1: M.l, x2: Wd - M.r, y1: ys(k / N), y2: ys(k / N), stroke: C.grid }, ax); el('text', { x: M.l - 5, y: ys(k / N) + 3, 'text-anchor': 'end' }, ax).textContent = `${k}/${N}`; }
+    const step = maxS > 200 ? 50 : 25;
+    for (let s = 0; s <= maxS; s += step) el('text', { x: xs(s), y: Hd - 8, 'text-anchor': 'middle' }, ax).textContent = `${s}s`;
+    el('line', { x1: M.l, x2: Wd - M.r, y1: Hd - M.b, y2: Hd - M.b, stroke: C.axis }, ax);
+    // fronte di Pareto come scala
+    const front = done.filter((a) => a.pareto).sort((a, b) => a.secondi - b.secondi);
+    if (front.length) {
+      let d = `M${xs(front[0].secondi)},${ys(0)} L${xs(front[0].secondi)},${ys(front[0].voto)}`;
+      for (let i = 1; i < front.length; i++) d += ` L${xs(front[i].secondi)},${ys(front[i - 1].voto)} L${xs(front[i].secondi)},${ys(front[i].voto)}`;
+      d += ` L${xs(maxS)},${ys(front.at(-1).voto)}`;
+      el('path', { d, fill: 'none', stroke: C['text-primary'], 'stroke-width': 1.2, 'stroke-dasharray': '4 3', opacity: 0.8 }, sv);
+    }
+    for (const a of done) {
+      const jitter = ((a.id * 37) % 7 - 3) * 1.2; // piccoli spostamenti per i punti sovrapposti
+      const c = el('circle', { cx: xs(a.secondi), cy: ys(a.voto) + jitter, r: a.pareto ? 5 : 4, fill: genColor(a.gen), stroke: a.pareto ? C['text-primary'] : C['surface-1'], 'stroke-width': a.pareto ? 1.5 : 1 }, sv);
+      c.style.cursor = 'pointer';
+      c.addEventListener('mouseenter', (e) => { tip.innerHTML = `<b>${esc(a.nome)}</b> · gen ${a.gen}<br>${Math.round(a.voto * N)}/${N} in ${Math.round(a.secondi)}s`; tip.hidden = false; tip.style.left = `${e.clientX + 12}px`; tip.style.top = `${e.clientY - 40}px`; hover = `a${a.id}`; });
+      c.addEventListener('mouseleave', () => { tip.hidden = true; hover = null; });
+      c.addEventListener('click', () => { selected = `a${a.id}`; showCard(selected); });
+    }
+    // andamento per generazione: due grafici separati (scale diverse → mai un doppio asse)
+    const hist = data.storia || [];
+    const gens = Math.max(1, data.config?.generations || 1);
+    const line = (svgId, key, lo, hi, fmt, color) => {
+      const s = $(svgId);
+      s.innerHTML = '';
+      const w = 200, h = 90, m = { l: 30, r: 8, t: 8, b: 16 };
+      const X = (g) => m.l + (w - m.l - m.r) * g / gens;
+      const Y = (v) => m.t + (h - m.t - m.b) * (1 - (v - lo) / (hi - lo || 1));
+      const a = el('g', { class: 'axis' }, s);
+      for (const v of [lo, (lo + hi) / 2, hi]) { el('line', { x1: m.l, x2: w - m.r, y1: Y(v), y2: Y(v), stroke: C.grid }, a); el('text', { x: m.l - 4, y: Y(v) + 3, 'text-anchor': 'end' }, a).textContent = fmt(v); }
+      el('text', { x: m.l, y: h - 3 }, a).textContent = 'fond.';
+      el('text', { x: w - m.r, y: h - 3, 'text-anchor': 'end' }, a).textContent = `gen ${gens}`;
+      const pts = hist.filter((x) => Number.isFinite(x[key]));
+      if (!pts.length) return;
+      el('path', { d: pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.gen)},${Y(p[key])}`).join(''), fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round' }, s);
+      for (const p of pts) el('circle', { cx: X(p.gen), cy: Y(p[key]), r: 3.5, fill: color, stroke: C['surface-1'], 'stroke-width': 1.5 }, s);
+    };
+    line('lineVoto', 'migliore', 0, 1, (v) => `${Math.round(v * N)}/${N}`, C['series-1']);
+    const tmax = Math.max(60, ...hist.map((x) => x.piuVeloce).filter(Number.isFinite)) * 1.1;
+    line('lineTempo', 'piuVeloce', 0, tmax, (v) => `${Math.round(v)}s`, C['series-2']);
+  }
+
+  function updateHeader() {
+    const d = data, N = d.esame.length;
+    const done = d.nodi.filter((a) => a.voto != null);
+    const alpha = d.alfa != null ? d.nodi[d.alfa] : null;
+    const running = d.stato === 'in corso';
+    $('live').innerHTML = running ? '<span class="live"><i></i>dal vivo</span>' : `<span class="live">${d.stato === 'finito' ? 'finita' : 'interrotta'}</span>`;
+    const fast = done.filter((a) => a.pareto).sort((a, b) => a.secondi - b.secondi)[0];
+    $('sub').innerHTML = `Obiettivo <b>${esc(d.config?.obiettivo || 'intelligenza')}</b> · ${done.length} agenti esaminati · ${new Set(d.nodi.flatMap((a) => (a.regole || []).map((r) => r.testo))).size} regole scoperte<br>
+      ${alpha ? `★ Alfa <b>${esc(alpha.nome)}</b> ${Math.round(alpha.voto * N)}/${N} in ${Math.round(alpha.secondi)}s` : ''}${fast && fast !== alpha ? ` · il più veloce del fronte <b>${esc(fast.nome)}</b> ${Math.round(fast.voto * N)}/${N} in ${Math.round(fast.secondi)}s` : ''}`;
+  }
+
+  /* ───────── aggiornamento dal vivo ───────── */
+  let first = true;
+  async function poll() {
+    try {
+      const d = await load();
+      if (d.aggiornato !== lastStamp) { lastStamp = d.aggiornato; ingest(d); if (first) { first = false; setTimeout(fit, 1500); } }
+      if (d.stato !== 'in corso') return;
+    } catch (e) {
+      $('sub').textContent = `In attesa dei dati… (${e.message})`;
+    }
+    setTimeout(poll, 4000);
+  }
+  poll();
+})();
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ import { chat, detectLocal, listModels } from './providers.js';
 import { Harness } from './harness.js';
 import { shutdownShells } from './tools/shell.js';
 import { shutdownComputer } from './tools/computer.js';
+import { useSafeStorage } from './secrets.js';
 
 const UI = path.join(ROOT, 'ui');
 const MIME = {
@@ -26,7 +27,8 @@ const readBody = (req) => new Promise((resolve) => {
 });
 const json = (res, obj, status = 200) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
 
-export async function startServer({ port } = {}) {
+export async function startServer({ port, safeStorage } = {}) {
+  if (safeStorage) useSafeStorage(safeStorage); // app desktop: segreti cifrati con l'account Windows
   const cfg = loadConfig();
   const h = new Harness(cfg);
   const TOKEN = crypto.randomBytes(24).toString('hex');
@@ -82,11 +84,52 @@ export async function startServer({ port } = {}) {
       case 'run': {
         const t = sc.find(body.id);
         if (!t) throw new Error('Automazione non trovata.');
-        if (h.busy) throw new Error('Howl sta già lavorando: interrompi prima di eseguirla a mano.');
+        if (h.busy || h.remoteBusy) throw new Error('Howl sta già lavorando: interrompi prima di eseguirla a mano.');
         sc.execute(t, 'manual').catch((e) => h.broadcast('task_done', { taskId: t.id, name: t.name, ok: false, report: e.message, notify: false }));
         return { ok: true };
       }
       case 'stop': sc.running?.abort.abort(); return { ok: true };
+      default: throw new Error('azione sconosciuta');
+    }
+  }
+
+  // Accesso dal telefono (Telegram / WhatsApp). Solo da qui, cioè dal PC, si allentano le regole.
+  async function remoteApi(action, body) {
+    const r = h.remote;
+    if (!r) throw new Error('Accesso remoto non pronto.');
+    switch (action) {
+      case 'state': break;
+      case 'pin': r.setPin(body.pin); break;
+      case 'options': r.setOptions(body); break;
+      case 'channel': await r.setChannel(body.channel, body); break;
+      case 'lock_all': await r.lockAll(); break;
+      case 'stop': r.stopAll('fermato dal PC'); break;
+      case 'tg_token': await r.setTelegramToken(body.token); break;
+      case 'tg_pair': r.startPairing('telegram'); break;
+      case 'pair_cancel': r.cancelPairing(); break;
+      case 'pair_answer': await r.answerPairing(!!body.accept); break;
+      case 'tg_unpair': await r.unpairTelegram(false); break;
+      case 'tg_forget': await r.unpairTelegram(true); break;
+      case 'wa_link': await r.linkWhatsApp(); break;
+      case 'wa_unlink': await r.unlinkWhatsApp(); break;
+      default: throw new Error('azione sconosciuta');
+    }
+    return { remote: r.publicState() };
+  }
+
+  // Laboratorio del branco: addestramento degli agenti in locale
+  function brancoApi(action, body) {
+    const b = h.branco;
+    switch (action) {
+      case 'list': return { corse: b.list(), inCorso: b.runId };
+      case 'start': return { ...b.start(body), corse: b.list(), inCorso: b.runId };
+      case 'stop': b.stop(); return { ok: true };
+      case 'data': {
+        const id = body.id || b.runId || b.list()[0]?.id;
+        const d = b.data(id);
+        if (id !== b.runId && d.stato !== 'finito') d.stato = 'interrotta'; // processo fermato a metà
+        return { data: d };
+      }
       default: throw new Error('azione sconosciuta');
     }
   }
@@ -116,12 +159,22 @@ export async function startServer({ port } = {}) {
       if (url.pathname === '/api/approve') { h.resolveApproval(body.id, !!body.allow, !!body.always); return json(res, { ok: true }); }
       if (url.pathname === '/api/stop') { h.stop(); return json(res, { ok: true }); }
       if (url.pathname === '/api/useraction') { h.resolveUserAction(body.id, body.outcome); return json(res, { ok: true }); }
+      if (url.pathname === '/api/workspace') {
+        if (h.busy || h.remoteBusy) return json(res, { error: 'Howl sta lavorando: aspetta che finisca prima di cambiare cartella.' });
+        try { return json(res, { workspace: h.setWorkspace(body.path, { newChat: true }) }); } catch (e) { return json(res, { error: e.message }); }
+      }
       if (url.pathname === '/api/chat/new') { h.newChat(); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/open') { h.openSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/delete') { h.removeSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/rename') { h.renameSession(body.id, body.title); return json(res, { ok: true }); }
       if (url.pathname.startsWith('/api/tasks/')) {
         try { return json(res, taskApi(url.pathname.slice(11), body)); } catch (e) { return json(res, { error: e.message }); }
+      }
+      if (url.pathname.startsWith('/api/branco/')) {
+        try { return json(res, brancoApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
+      }
+      if (url.pathname.startsWith('/api/remote/')) {
+        try { return json(res, await remoteApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message, remote: h.remote?.publicState() }); }
       }
       if (url.pathname.startsWith('/api/brains/')) {
         try { return json(res, await brainApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
@@ -157,6 +210,8 @@ export async function startServer({ port } = {}) {
     close() {
       h.stop();
       h.scheduler?.stop();
+      h.remote?.shutdown();
+      h.branco?.stop();
       for (const c of h.mcpClients) c.close();
       shutdownShells();
       shutdownComputer();

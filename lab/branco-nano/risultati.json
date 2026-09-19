@@ -1,0 +1,3758 @@
+{
+ "creato": "2026-09-19 09:18",
+ "secondi": 2.5,
+ "seed": 3,
+ "materie": [
+  "massimo",
+  "minimo",
+  "confronto",
+  "vicinanza"
+ ],
+ "parametri": 17488,
+ "alfa": 116,
+ "riferimenti": {
+  "miglior_fondatore": 0.7083,
+  "zuppa_fondatori": 0.7243,
+  "addestramento_diretto": 1.0,
+  "addestramento_diretto_segreto": 0.8798,
+  "antenato": 0.462
+ },
+ "passi_addestramento": 3700,
+ "storia": [
+  {
+   "gen": 0,
+   "migliore": 0.7083,
+   "media": 0.6482749999999999,
+   "segreto": 0.6923
+  },
+  {
+   "gen": 1,
+   "migliore": 0.6924,
+   "media": 0.63839375,
+   "segreto": 0.6827
+  },
+  {
+   "gen": 2,
+   "migliore": 0.7218,
+   "media": 0.6066875,
+   "segreto": 0.6971
+  },
+  {
+   "gen": 3,
+   "migliore": 0.7145,
+   "media": 0.6057687500000001,
+   "segreto": 0.7404
+  },
+  {
+   "gen": 4,
+   "migliore": 0.777,
+   "media": 0.57353125,
+   "segreto": 0.7404
+  },
+  {
+   "gen": 5,
+   "migliore": 0.7463,
+   "media": 0.62530625,
+   "segreto": 0.6923
+  },
+  {
+   "gen": 6,
+   "migliore": 0.7512,
+   "media": 0.6521125,
+   "segreto": 0.6971
+  },
+  {
+   "gen": 7,
+   "migliore": 0.7953,
+   "media": 0.6377875,
+   "segreto": 0.7115
+  },
+  {
+   "gen": 8,
+   "migliore": 0.75,
+   "media": 0.63701875,
+   "segreto": 0.6971
+  }
+ ],
+ "nodi": [
+  {
+   "id": 0,
+   "nome": "Antenato",
+   "gen": -1,
+   "tipo": "antenato",
+   "genitori": [],
+   "ricetta": null,
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.216,
+    "minimo": 0.338,
+    "confronto": 0.73,
+    "vicinanza": 0.564
+   },
+   "voto": 0.462,
+   "segreto": 0.4471,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 1,
+   "nome": "Luna",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [
+    0
+   ],
+   "ricetta": {
+    "tipo": "pcr",
+    "primer": "massimo"
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 1.0,
+    "minimo": 0.436,
+    "confronto": 0.794,
+    "vicinanza": 0.603
+   },
+   "voto": 0.7083,
+   "segreto": 0.6923,
+   "scelto": true,
+   "primer": "massimo",
+   "stirpe": true
+  },
+  {
+   "id": 2,
+   "nome": "Ombra",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [
+    0
+   ],
+   "ricetta": {
+    "tipo": "pcr",
+    "primer": "minimo"
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.245,
+    "minimo": 1.0,
+    "confronto": 0.828,
+    "vicinanza": 0.711
+   },
+   "voto": 0.6961,
+   "segreto": 0.6346,
+   "scelto": true,
+   "primer": "minimo",
+   "stirpe": true
+  },
+  {
+   "id": 3,
+   "nome": "Zanna",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [
+    0
+   ],
+   "ricetta": {
+    "tipo": "pcr",
+    "primer": "confronto"
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.275,
+    "minimo": 0.471,
+    "confronto": 1.0,
+    "vicinanza": 0.667
+   },
+   "voto": 0.6029,
+   "segreto": 0.524,
+   "scelto": true,
+   "primer": "confronto",
+   "stirpe": true
+  },
+  {
+   "id": 4,
+   "nome": "Neve",
+   "gen": 0,
+   "tipo": "fondatore",
+   "genitori": [
+    0
+   ],
+   "ricetta": {
+    "tipo": "pcr",
+    "primer": "vicinanza"
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.324,
+    "minimo": 0.338,
+    "confronto": 0.681,
+    "vicinanza": 1.0
+   },
+   "voto": 0.5858,
+   "segreto": 0.476,
+   "scelto": true,
+   "primer": "vicinanza",
+   "stirpe": false
+  },
+  {
+   "id": 5,
+   "nome": "Fumo",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    3
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.86
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.554,
+    "minimo": 0.426,
+    "confronto": 0.824,
+    "vicinanza": 0.613
+   },
+   "voto": 0.6042,
+   "segreto": 0.5144,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 6,
+   "nome": "Brace",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    3
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.66
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.299,
+    "minimo": 0.892,
+    "confronto": 0.917,
+    "vicinanza": 0.662
+   },
+   "voto": 0.6924,
+   "segreto": 0.5769,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 7,
+   "nome": "Selva",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    3
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.25,
+    "pesi": {
+     "W1": 0.39,
+     "b1": 0.78,
+     "W2": 0.69,
+     "b2": 0.58,
+     "W3": 0.64,
+     "b3": 0.26
+    }
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.289,
+    "minimo": 0.887,
+    "confronto": 0.907,
+    "vicinanza": 0.652
+   },
+   "voto": 0.6838,
+   "segreto": 0.5913,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 8,
+   "nome": "Rupe",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    3
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.54,
+    "pesi": {
+     "W1": 0.28,
+     "b1": 0.53,
+     "W2": 0.23,
+     "b2": 0.68,
+     "W3": 0.47,
+     "b3": 0.68
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.377,
+    "minimo": 0.495,
+    "confronto": 0.975,
+    "vicinanza": 0.618
+   },
+   "voto": 0.6164,
+   "segreto": 0.5481,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 9,
+   "nome": "Nebbia",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    4
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.13,
+    "densita": 0.46
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.696,
+    "minimo": 0.314,
+    "confronto": 0.794,
+    "vicinanza": 0.868
+   },
+   "voto": 0.6679,
+   "segreto": 0.625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 10,
+   "nome": "Lampo",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    4
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.99,
+    "densita": 0.43
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.485,
+    "minimo": 0.804,
+    "confronto": 0.618,
+    "vicinanza": 0.824
+   },
+   "voto": 0.6826,
+   "segreto": 0.5721,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 11,
+   "nome": "Quercia",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    4
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.76,
+    "drop": 0.56
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.755,
+    "minimo": 0.637,
+    "confronto": 0.529,
+    "vicinanza": 0.721
+   },
+   "voto": 0.6605,
+   "segreto": 0.6298,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 12,
+   "nome": "Artiglio",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    4
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.6,
+    "pesi": {
+     "W1": 0.32,
+     "b1": 0.75,
+     "W2": 0.41,
+     "b2": 0.45,
+     "W3": 0.52,
+     "b3": 0.58
+    }
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.48,
+    "minimo": 0.716,
+    "confronto": 0.534,
+    "vicinanza": 0.76
+   },
+   "voto": 0.6225,
+   "segreto": 0.625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 13,
+   "nome": "Tuono",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.59,
+    "densita": 0.35
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.618,
+    "minimo": 0.637,
+    "confronto": 0.657,
+    "vicinanza": 0.696
+   },
+   "voto": 0.652,
+   "segreto": 0.6683,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 14,
+   "nome": "Cenere",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.98,
+    "densita": 0.22
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.431,
+    "minimo": 0.588,
+    "confronto": 0.765,
+    "vicinanza": 0.647
+   },
+   "voto": 0.6078,
+   "segreto": 0.5865,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 15,
+   "nome": "Vento",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.33,
+    "pesi": {
+     "W1": 0.29,
+     "b1": 0.44,
+     "W2": 0.41,
+     "b2": 0.63,
+     "W3": 0.71,
+     "b3": 0.64
+    }
+   },
+   "mutazione": "vicinanza",
+   "voti": {
+    "massimo": 0.402,
+    "minimo": 0.461,
+    "confronto": 0.75,
+    "vicinanza": 0.775
+   },
+   "voto": 0.5968,
+   "segreto": 0.5,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 16,
+   "nome": "Aurora",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.72,
+    "drop": 0.56
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.451,
+    "minimo": 0.99,
+    "confronto": 0.623,
+    "vicinanza": 0.691
+   },
+   "voto": 0.6887,
+   "segreto": 0.6827,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 17,
+   "nome": "Fiocco",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    4
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.06,
+    "drop": 0.31
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.608,
+    "minimo": 0.593,
+    "confronto": 0.426,
+    "vicinanza": 0.627
+   },
+   "voto": 0.5637,
+   "segreto": 0.5096,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 18,
+   "nome": "Sasso",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    4
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.18,
+    "densita": 0.42
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.824,
+    "minimo": 0.51,
+    "confronto": 0.49,
+    "vicinanza": 0.5
+   },
+   "voto": 0.5809,
+   "segreto": 0.5337,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 19,
+   "nome": "Lince",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    4
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.2,
+    "densita": 0.44
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.358,
+    "minimo": 0.613,
+    "confronto": 0.75,
+    "vicinanza": 0.863
+   },
+   "voto": 0.6458,
+   "segreto": 0.5721,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 20,
+   "nome": "Brina",
+   "gen": 1,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    4
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.6
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.868,
+    "minimo": 0.461,
+    "confronto": 0.608,
+    "vicinanza": 0.657
+   },
+   "voto": 0.6483,
+   "segreto": 0.5625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 21,
+   "nome": "Notte",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.62,
+    "pesi": {
+     "W1": 0.62,
+     "b1": 0.31,
+     "W2": 0.37,
+     "b2": 0.66,
+     "W3": 0.46,
+     "b3": 0.75
+    }
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.814,
+    "minimo": 0.721,
+    "confronto": 0.358,
+    "vicinanza": 0.466
+   },
+   "voto": 0.5895,
+   "segreto": 0.524,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 22,
+   "nome": "Falco",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.78,
+    "pesi": {
+     "W1": 0.37,
+     "b1": 0.78,
+     "W2": 0.79,
+     "b2": 0.8,
+     "W3": 0.65,
+     "b3": 0.58
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.353,
+    "minimo": 0.799,
+    "confronto": 0.539,
+    "vicinanza": 0.672
+   },
+   "voto": 0.5907,
+   "segreto": 0.5481,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 23,
+   "nome": "Rovo",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    16
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.9,
+    "densita": 0.38
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.5,
+    "minimo": 1.0,
+    "confronto": 0.701,
+    "vicinanza": 0.686
+   },
+   "voto": 0.7218,
+   "segreto": 0.6827,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 24,
+   "nome": "Ghiaccio",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    2,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.45,
+    "pesi": {
+     "W1": 0.49,
+     "b1": 0.42,
+     "W2": 0.8,
+     "b2": 0.27,
+     "W3": 0.33,
+     "b3": 0.76
+    }
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.848,
+    "minimo": 0.642,
+    "confronto": 0.368,
+    "vicinanza": 0.49
+   },
+   "voto": 0.587,
+   "segreto": 0.5,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 25,
+   "nome": "Luna-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.77,
+    "drop": 0.66
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.49,
+    "minimo": 0.48,
+    "confronto": 0.559,
+    "vicinanza": 0.627
+   },
+   "voto": 0.5392,
+   "segreto": 0.5288,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 26,
+   "nome": "Ombra-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.45,
+    "densita": 0.24
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.569,
+    "minimo": 0.578,
+    "confronto": 0.711,
+    "vicinanza": 0.686
+   },
+   "voto": 0.636,
+   "segreto": 0.625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 27,
+   "nome": "Zanna-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.63,
+    "pesi": {
+     "W1": 0.71,
+     "b1": 0.45,
+     "W2": 0.26,
+     "b2": 0.41,
+     "W3": 0.37,
+     "b3": 0.8
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.603,
+    "minimo": 0.549,
+    "confronto": 0.574,
+    "vicinanza": 0.632
+   },
+   "voto": 0.5895,
+   "segreto": 0.601,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 28,
+   "nome": "Neve-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    2
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.63
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.819,
+    "minimo": 0.672,
+    "confronto": 0.721,
+    "vicinanza": 0.642
+   },
+   "voto": 0.7132,
+   "segreto": 0.6971,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 29,
+   "nome": "Fumo-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    6,
+    16
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.08
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.897,
+    "minimo": 0.525,
+    "confronto": 0.461,
+    "vicinanza": 0.608
+   },
+   "voto": 0.6225,
+   "segreto": 0.5865,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 30,
+   "nome": "Brace-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    6,
+    16
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.91
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.353,
+    "minimo": 0.608,
+    "confronto": 0.485,
+    "vicinanza": 0.657
+   },
+   "voto": 0.5257,
+   "segreto": 0.5096,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 31,
+   "nome": "Selva-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    6,
+    16
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.73
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.985,
+    "minimo": 0.632,
+    "confronto": 0.588,
+    "vicinanza": 0.647
+   },
+   "voto": 0.7132,
+   "segreto": 0.649,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 32,
+   "nome": "Rupe-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    6,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.88,
+    "pesi": {
+     "W1": 0.42,
+     "b1": 0.52,
+     "W2": 0.4,
+     "b2": 0.28,
+     "W3": 0.29,
+     "b3": 0.78
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.373,
+    "minimo": 0.603,
+    "confronto": 0.466,
+    "vicinanza": 0.657
+   },
+   "voto": 0.5245,
+   "segreto": 0.5096,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 33,
+   "nome": "Nebbia-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.83,
+    "pesi": {
+     "W1": 0.36,
+     "b1": 0.38,
+     "W2": 0.32,
+     "b2": 0.29,
+     "W3": 0.24,
+     "b3": 0.22
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.525,
+    "minimo": 0.529,
+    "confronto": 0.402,
+    "vicinanza": 0.637
+   },
+   "voto": 0.5233,
+   "segreto": 0.5337,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 34,
+   "nome": "Lampo-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    16
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.33,
+    "densita": 0.29
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.505,
+    "minimo": 0.333,
+    "confronto": 0.877,
+    "vicinanza": 0.618
+   },
+   "voto": 0.5833,
+   "segreto": 0.5865,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 35,
+   "nome": "Quercia-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    16
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.57,
+    "pesi": {
+     "W1": 0.73,
+     "b1": 0.74,
+     "W2": 0.62,
+     "b2": 0.56,
+     "W3": 0.64,
+     "b3": 0.21
+    }
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.564,
+    "minimo": 0.853,
+    "confronto": 0.495,
+    "vicinanza": 0.681
+   },
+   "voto": 0.6483,
+   "segreto": 0.6106,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 36,
+   "nome": "Artiglio-2",
+   "gen": 2,
+   "tipo": "figlio",
+   "genitori": [
+    1,
+    16
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.43,
+    "densita": 0.42
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.593,
+    "minimo": 0.289,
+    "confronto": 0.858,
+    "vicinanza": 0.657
+   },
+   "voto": 0.5993,
+   "segreto": 0.5529,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 37,
+   "nome": "Tuono-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    1
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.6,
+    "pesi": {
+     "W1": 0.71,
+     "b1": 0.35,
+     "W2": 0.42,
+     "b2": 0.27,
+     "W3": 0.21,
+     "b3": 0.26
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.667,
+    "minimo": 0.289,
+    "confronto": 0.324,
+    "vicinanza": 0.392
+   },
+   "voto": 0.4179,
+   "segreto": 0.4615,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 38,
+   "nome": "Cenere-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    1
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.65,
+    "drop": 0.39
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.598,
+    "minimo": 0.882,
+    "confronto": 0.534,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6728,
+   "segreto": 0.625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 39,
+   "nome": "Vento-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    1
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.7,
+    "drop": 0.76
+   },
+   "mutazione": "vicinanza",
+   "voti": {
+    "massimo": 0.426,
+    "minimo": 0.225,
+    "confronto": 0.76,
+    "vicinanza": 0.696
+   },
+   "voto": 0.527,
+   "segreto": 0.4471,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 40,
+   "nome": "Aurora-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    1
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.32,
+    "densita": 0.34
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.926,
+    "minimo": 0.583,
+    "confronto": 0.676,
+    "vicinanza": 0.672
+   },
+   "voto": 0.7145,
+   "segreto": 0.7404,
+   "scelto": true,
+   "stirpe": false
+  },
+  {
+   "id": 41,
+   "nome": "Fiocco-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    31,
+    1
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.7,
+    "pesi": {
+     "W1": 0.32,
+     "b1": 0.35,
+     "W2": 0.33,
+     "b2": 0.54,
+     "W3": 0.64,
+     "b3": 0.65
+    }
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.686,
+    "minimo": 0.73,
+    "confronto": 0.451,
+    "vicinanza": 0.652
+   },
+   "voto": 0.6299,
+   "segreto": 0.5962,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 42,
+   "nome": "Sasso-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    31,
+    1
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.44,
+    "pesi": {
+     "W1": 0.22,
+     "b1": 0.71,
+     "W2": 0.29,
+     "b2": 0.46,
+     "W3": 0.57,
+     "b3": 0.44
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.892,
+    "minimo": 0.348,
+    "confronto": 0.505,
+    "vicinanza": 0.613
+   },
+   "voto": 0.5895,
+   "segreto": 0.5817,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 43,
+   "nome": "Lince-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    31,
+    1
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.07,
+    "densita": 0.53
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.574,
+    "minimo": 0.961,
+    "confronto": 0.559,
+    "vicinanza": 0.681
+   },
+   "voto": 0.6936,
+   "segreto": 0.6202,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 44,
+   "nome": "Brina-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    31,
+    1
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.3,
+    "densita": 0.6
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.603,
+    "minimo": 0.877,
+    "confronto": 0.505,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6654,
+   "segreto": 0.6298,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 45,
+   "nome": "Notte-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.84
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.657,
+    "minimo": 0.603,
+    "confronto": 0.51,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6115,
+   "segreto": 0.5769,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 46,
+   "nome": "Falco-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.57,
+    "pesi": {
+     "W1": 0.44,
+     "b1": 0.35,
+     "W2": 0.64,
+     "b2": 0.73,
+     "W3": 0.3,
+     "b3": 0.59
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.667,
+    "minimo": 0.627,
+    "confronto": 0.525,
+    "vicinanza": 0.681
+   },
+   "voto": 0.625,
+   "segreto": 0.5962,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 47,
+   "nome": "Rovo-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.41,
+    "densita": 0.29
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.618,
+    "minimo": 0.603,
+    "confronto": 0.657,
+    "vicinanza": 0.701
+   },
+   "voto": 0.6446,
+   "segreto": 0.5721,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 48,
+   "nome": "Ghiaccio-2",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.06,
+    "drop": 0.47
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.485,
+    "minimo": 0.456,
+    "confronto": 0.402,
+    "vicinanza": 0.627
+   },
+   "voto": 0.4926,
+   "segreto": 0.4087,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 49,
+   "nome": "Luna-3",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.5,
+    "densita": 0.47
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.578,
+    "minimo": 0.77,
+    "confronto": 0.564,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6471,
+   "segreto": 0.625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 50,
+   "nome": "Ombra-3",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.55,
+    "pesi": {
+     "W1": 0.73,
+     "b1": 0.42,
+     "W2": 0.58,
+     "b2": 0.42,
+     "W3": 0.43,
+     "b3": 0.43
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.529,
+    "minimo": 0.75,
+    "confronto": 0.5,
+    "vicinanza": 0.652
+   },
+   "voto": 0.6078,
+   "segreto": 0.5865,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 51,
+   "nome": "Zanna-3",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.98,
+    "drop": 0.32
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.358,
+    "minimo": 0.338,
+    "confronto": 0.858,
+    "vicinanza": 0.686
+   },
+   "voto": 0.56,
+   "segreto": 0.5096,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 52,
+   "nome": "Neve-3",
+   "gen": 3,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.02,
+    "drop": 0.67
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.74,
+    "minimo": 0.49,
+    "confronto": 0.49,
+    "vicinanza": 0.652
+   },
+   "voto": 0.5931,
+   "segreto": 0.5577,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 53,
+   "nome": "Fumo-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.3,
+    "densita": 0.23
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.77,
+    "minimo": 0.843,
+    "confronto": 0.716,
+    "vicinanza": 0.691
+   },
+   "voto": 0.7549,
+   "segreto": 0.726,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 54,
+   "nome": "Brace-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.42,
+    "pesi": {
+     "W1": 0.72,
+     "b1": 0.28,
+     "W2": 0.35,
+     "b2": 0.32,
+     "W3": 0.36,
+     "b3": 0.2
+    }
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.426,
+    "minimo": 0.412,
+    "confronto": 0.902,
+    "vicinanza": 0.662
+   },
+   "voto": 0.6005,
+   "segreto": 0.5481,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 55,
+   "nome": "Selva-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.91
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.466,
+    "minimo": 0.574,
+    "confronto": 0.417,
+    "vicinanza": 0.608
+   },
+   "voto": 0.5159,
+   "segreto": 0.5288,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 56,
+   "nome": "Rupe-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    28
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.84,
+    "densita": 0.44
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 1.0,
+    "minimo": 0.392,
+    "confronto": 0.49,
+    "vicinanza": 0.515
+   },
+   "voto": 0.5993,
+   "segreto": 0.5385,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 57,
+   "nome": "Nebbia-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.56,
+    "pesi": {
+     "W1": 0.32,
+     "b1": 0.22,
+     "W2": 0.29,
+     "b2": 0.38,
+     "W3": 0.63,
+     "b3": 0.71
+    }
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.686,
+    "minimo": 0.461,
+    "confronto": 0.858,
+    "vicinanza": 0.686
+   },
+   "voto": 0.6728,
+   "segreto": 0.5962,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 58,
+   "nome": "Lampo-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.92
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.608,
+    "minimo": 0.515,
+    "confronto": 0.495,
+    "vicinanza": 0.681
+   },
+   "voto": 0.5748,
+   "segreto": 0.5673,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 59,
+   "nome": "Quercia-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.67,
+    "pesi": {
+     "W1": 0.26,
+     "b1": 0.64,
+     "W2": 0.53,
+     "b2": 0.69,
+     "W3": 0.74,
+     "b3": 0.37
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.667,
+    "minimo": 0.554,
+    "confronto": 0.49,
+    "vicinanza": 0.672
+   },
+   "voto": 0.5956,
+   "segreto": 0.5481,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 60,
+   "nome": "Artiglio-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    23,
+    31
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.04,
+    "drop": 0.54
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.402,
+    "minimo": 0.784,
+    "confronto": 0.328,
+    "vicinanza": 0.529
+   },
+   "voto": 0.511,
+   "segreto": 0.4856,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 61,
+   "nome": "Tuono-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    40,
+    28
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.75,
+    "drop": 0.55
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.632,
+    "minimo": 0.402,
+    "confronto": 0.495,
+    "vicinanza": 0.613
+   },
+   "voto": 0.5355,
+   "segreto": 0.5577,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 62,
+   "nome": "Cenere-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    40,
+    28
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.09
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.368,
+    "minimo": 0.27,
+    "confronto": 0.24,
+    "vicinanza": 0.368
+   },
+   "voto": 0.3113,
+   "segreto": 0.3413,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 63,
+   "nome": "Vento-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    40,
+    28
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.78,
+    "drop": 0.51
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.397,
+    "minimo": 0.299,
+    "confronto": 0.216,
+    "vicinanza": 0.382
+   },
+   "voto": 0.3235,
+   "segreto": 0.3365,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 64,
+   "nome": "Aurora-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    40,
+    28
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.69,
+    "drop": 0.34
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.583,
+    "minimo": 0.49,
+    "confronto": 0.431,
+    "vicinanza": 0.613
+   },
+   "voto": 0.5294,
+   "segreto": 0.5673,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 65,
+   "nome": "Fiocco-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    31
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.78,
+    "pesi": {
+     "W1": 0.67,
+     "b1": 0.3,
+     "W2": 0.27,
+     "b2": 0.27,
+     "W3": 0.28,
+     "b3": 0.58
+    }
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.647,
+    "minimo": 0.363,
+    "confronto": 0.848,
+    "vicinanza": 0.696
+   },
+   "voto": 0.6385,
+   "segreto": 0.5913,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 66,
+   "nome": "Sasso-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    31
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.94,
+    "densita": 0.47
+   },
+   "mutazione": "vicinanza",
+   "voti": {
+    "massimo": 0.848,
+    "minimo": 0.48,
+    "confronto": 0.755,
+    "vicinanza": 0.799
+   },
+   "voto": 0.7206,
+   "segreto": 0.6154,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 67,
+   "nome": "Lince-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    31
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.77,
+    "drop": 0.72
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.529,
+    "minimo": 0.789,
+    "confronto": 0.373,
+    "vicinanza": 0.373
+   },
+   "voto": 0.5159,
+   "segreto": 0.4423,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 68,
+   "nome": "Brina-3",
+   "gen": 4,
+   "tipo": "figlio",
+   "genitori": [
+    28,
+    31
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.99,
+    "densita": 0.56
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.966,
+    "minimo": 0.755,
+    "confronto": 0.701,
+    "vicinanza": 0.686
+   },
+   "voto": 0.777,
+   "segreto": 0.7404,
+   "scelto": true,
+   "stirpe": false
+  },
+  {
+   "id": 69,
+   "nome": "Notte-3",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    66
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.64,
+    "drop": 0.38
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.637,
+    "minimo": 0.907,
+    "confronto": 0.588,
+    "vicinanza": 0.691
+   },
+   "voto": 0.7059,
+   "segreto": 0.6923,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 70,
+   "nome": "Falco-3",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    66
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.92
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.716,
+    "minimo": 0.848,
+    "confronto": 0.52,
+    "vicinanza": 0.667
+   },
+   "voto": 0.6875,
+   "segreto": 0.6635,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 71,
+   "nome": "Rovo-3",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    66
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.97,
+    "densita": 0.23
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.995,
+    "minimo": 0.564,
+    "confronto": 0.784,
+    "vicinanza": 0.569
+   },
+   "voto": 0.7279,
+   "segreto": 0.6587,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 72,
+   "nome": "Ghiaccio-3",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    66
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.45,
+    "pesi": {
+     "W1": 0.37,
+     "b1": 0.32,
+     "W2": 0.24,
+     "b2": 0.78,
+     "W3": 0.49,
+     "b3": 0.59
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.691,
+    "minimo": 0.451,
+    "confronto": 0.578,
+    "vicinanza": 0.716
+   },
+   "voto": 0.6091,
+   "segreto": 0.601,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 73,
+   "nome": "Luna-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    23
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.73,
+    "pesi": {
+     "W1": 0.4,
+     "b1": 0.36,
+     "W2": 0.35,
+     "b2": 0.53,
+     "W3": 0.53,
+     "b3": 0.3
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.49,
+    "minimo": 0.672,
+    "confronto": 0.52,
+    "vicinanza": 0.667
+   },
+   "voto": 0.587,
+   "segreto": 0.5673,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 74,
+   "nome": "Ombra-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    23
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.57,
+    "pesi": {
+     "W1": 0.45,
+     "b1": 0.45,
+     "W2": 0.22,
+     "b2": 0.37,
+     "W3": 0.64,
+     "b3": 0.48
+    }
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.951,
+    "minimo": 0.74,
+    "confronto": 0.368,
+    "vicinanza": 0.49
+   },
+   "voto": 0.6373,
+   "segreto": 0.5529,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 75,
+   "nome": "Zanna-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    23
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.93
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.363,
+    "minimo": 0.397,
+    "confronto": 0.833,
+    "vicinanza": 0.701
+   },
+   "voto": 0.5735,
+   "segreto": 0.5337,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 76,
+   "nome": "Neve-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    23
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.82,
+    "pesi": {
+     "W1": 0.39,
+     "b1": 0.42,
+     "W2": 0.56,
+     "b2": 0.27,
+     "W3": 0.24,
+     "b3": 0.57
+    }
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.868,
+    "minimo": 0.706,
+    "confronto": 0.368,
+    "vicinanza": 0.525
+   },
+   "voto": 0.6164,
+   "segreto": 0.5673,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 77,
+   "nome": "Fumo-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    66
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.46,
+    "densita": 0.28
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.662,
+    "minimo": 0.975,
+    "confronto": 0.642,
+    "vicinanza": 0.706
+   },
+   "voto": 0.7463,
+   "segreto": 0.6731,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 78,
+   "nome": "Brace-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    66
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.84,
+    "pesi": {
+     "W1": 0.39,
+     "b1": 0.4,
+     "W2": 0.7,
+     "b2": 0.49,
+     "W3": 0.27,
+     "b3": 0.42
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.539,
+    "minimo": 0.402,
+    "confronto": 0.461,
+    "vicinanza": 0.652
+   },
+   "voto": 0.5135,
+   "segreto": 0.5192,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 79,
+   "nome": "Selva-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    66
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.42,
+    "densita": 0.22
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 1.0,
+    "minimo": 0.681,
+    "confronto": 0.662,
+    "vicinanza": 0.618
+   },
+   "voto": 0.7402,
+   "segreto": 0.6635,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 80,
+   "nome": "Rupe-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    66
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.71,
+    "drop": 0.45
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.51,
+    "minimo": 0.417,
+    "confronto": 0.608,
+    "vicinanza": 0.691
+   },
+   "voto": 0.5564,
+   "segreto": 0.524,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 81,
+   "nome": "Nebbia-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    23
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.48,
+    "densita": 0.35
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.598,
+    "minimo": 0.73,
+    "confronto": 0.647,
+    "vicinanza": 0.691
+   },
+   "voto": 0.6667,
+   "segreto": 0.6058,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 82,
+   "nome": "Lampo-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    23
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.98
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.505,
+    "minimo": 0.539,
+    "confronto": 0.471,
+    "vicinanza": 0.667
+   },
+   "voto": 0.5453,
+   "segreto": 0.5288,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 83,
+   "nome": "Quercia-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    23
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.02
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.426,
+    "minimo": 0.358,
+    "confronto": 0.794,
+    "vicinanza": 0.676
+   },
+   "voto": 0.5637,
+   "segreto": 0.5192,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 84,
+   "nome": "Artiglio-4",
+   "gen": 5,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    23
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.03
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.48,
+    "minimo": 0.51,
+    "confronto": 0.456,
+    "vicinanza": 0.667
+   },
+   "voto": 0.5282,
+   "segreto": 0.5288,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 85,
+   "nome": "Tuono-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    77
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.77,
+    "pesi": {
+     "W1": 0.21,
+     "b1": 0.22,
+     "W2": 0.57,
+     "b2": 0.61,
+     "W3": 0.36,
+     "b3": 0.66
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.569,
+    "minimo": 0.681,
+    "confronto": 0.485,
+    "vicinanza": 0.647
+   },
+   "voto": 0.5956,
+   "segreto": 0.5529,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 86,
+   "nome": "Cenere-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    77
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.67
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.681,
+    "minimo": 0.858,
+    "confronto": 0.574,
+    "vicinanza": 0.691
+   },
+   "voto": 0.701,
+   "segreto": 0.649,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 87,
+   "nome": "Vento-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    77
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.51,
+    "densita": 0.42
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.613,
+    "minimo": 0.618,
+    "confronto": 0.569,
+    "vicinanza": 0.681
+   },
+   "voto": 0.6201,
+   "segreto": 0.5721,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 88,
+   "nome": "Aurora-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    77
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.96
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.559,
+    "minimo": 0.613,
+    "confronto": 0.485,
+    "vicinanza": 0.637
+   },
+   "voto": 0.5735,
+   "segreto": 0.5481,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 89,
+   "nome": "Fiocco-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    77
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.49,
+    "densita": 0.22
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.574,
+    "minimo": 0.691,
+    "confronto": 0.877,
+    "vicinanza": 0.706
+   },
+   "voto": 0.712,
+   "segreto": 0.6154,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 90,
+   "nome": "Sasso-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    77
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.08,
+    "drop": 0.38
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.534,
+    "minimo": 0.412,
+    "confronto": 0.466,
+    "vicinanza": 0.657
+   },
+   "voto": 0.5172,
+   "segreto": 0.4856,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 91,
+   "nome": "Lince-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    77
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.37,
+    "pesi": {
+     "W1": 0.31,
+     "b1": 0.66,
+     "W2": 0.62,
+     "b2": 0.68,
+     "W3": 0.71,
+     "b3": 0.63
+    }
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.642,
+    "minimo": 0.637,
+    "confronto": 0.882,
+    "vicinanza": 0.696
+   },
+   "voto": 0.7145,
+   "segreto": 0.6442,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 92,
+   "nome": "Brina-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    77
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.81
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.603,
+    "minimo": 0.525,
+    "confronto": 0.809,
+    "vicinanza": 0.701
+   },
+   "voto": 0.6593,
+   "segreto": 0.6202,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 93,
+   "nome": "Notte-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    77,
+    79
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.62
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.868,
+    "minimo": 0.858,
+    "confronto": 0.529,
+    "vicinanza": 0.667
+   },
+   "voto": 0.7304,
+   "segreto": 0.6971,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 94,
+   "nome": "Falco-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    77,
+    79
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.09
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.539,
+    "minimo": 0.466,
+    "confronto": 0.804,
+    "vicinanza": 0.696
+   },
+   "voto": 0.6262,
+   "segreto": 0.5865,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 95,
+   "nome": "Rovo-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    77,
+    79
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.61
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.721,
+    "minimo": 0.681,
+    "confronto": 0.907,
+    "vicinanza": 0.696
+   },
+   "voto": 0.7512,
+   "segreto": 0.6394,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 96,
+   "nome": "Ghiaccio-4",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    77,
+    79
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.52,
+    "pesi": {
+     "W1": 0.62,
+     "b1": 0.62,
+     "W2": 0.34,
+     "b2": 0.6,
+     "W3": 0.79,
+     "b3": 0.69
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.77,
+    "minimo": 0.789,
+    "confronto": 0.456,
+    "vicinanza": 0.588
+   },
+   "voto": 0.6507,
+   "segreto": 0.5913,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 97,
+   "nome": "Luna-5",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.51,
+    "densita": 0.56
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.603,
+    "minimo": 0.417,
+    "confronto": 0.873,
+    "vicinanza": 0.686
+   },
+   "voto": 0.6446,
+   "segreto": 0.5962,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 98,
+   "nome": "Ombra-5",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.42,
+    "pesi": {
+     "W1": 0.51,
+     "b1": 0.74,
+     "W2": 0.7,
+     "b2": 0.26,
+     "W3": 0.22,
+     "b3": 0.27
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.74,
+    "minimo": 0.618,
+    "confronto": 0.515,
+    "vicinanza": 0.623
+   },
+   "voto": 0.6238,
+   "segreto": 0.601,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 99,
+   "nome": "Zanna-5",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.38,
+    "densita": 0.57
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.603,
+    "minimo": 0.412,
+    "confronto": 0.897,
+    "vicinanza": 0.667
+   },
+   "voto": 0.6446,
+   "segreto": 0.5913,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 100,
+   "nome": "Neve-5",
+   "gen": 6,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.34,
+    "pesi": {
+     "W1": 0.29,
+     "b1": 0.73,
+     "W2": 0.46,
+     "b2": 0.78,
+     "W3": 0.66,
+     "b3": 0.26
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.74,
+    "minimo": 0.706,
+    "confronto": 0.544,
+    "vicinanza": 0.686
+   },
+   "voto": 0.6691,
+   "segreto": 0.6635,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 101,
+   "nome": "Fumo-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.08
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.49,
+    "minimo": 0.417,
+    "confronto": 0.368,
+    "vicinanza": 0.623
+   },
+   "voto": 0.4743,
+   "segreto": 0.4952,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 102,
+   "nome": "Brace-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.61,
+    "pesi": {
+     "W1": 0.29,
+     "b1": 0.64,
+     "W2": 0.73,
+     "b2": 0.62,
+     "W3": 0.79,
+     "b3": 0.29
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.696,
+    "minimo": 0.539,
+    "confronto": 0.461,
+    "vicinanza": 0.676
+   },
+   "voto": 0.5931,
+   "segreto": 0.6058,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 103,
+   "nome": "Selva-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.69,
+    "drop": 0.65
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.539,
+    "minimo": 0.863,
+    "confronto": 0.691,
+    "vicinanza": 0.549
+   },
+   "voto": 0.6605,
+   "segreto": 0.5817,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 104,
+   "nome": "Rupe-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.66,
+    "pesi": {
+     "W1": 0.7,
+     "b1": 0.62,
+     "W2": 0.65,
+     "b2": 0.8,
+     "W3": 0.75,
+     "b3": 0.26
+    }
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.598,
+    "minimo": 0.397,
+    "confronto": 0.868,
+    "vicinanza": 0.672
+   },
+   "voto": 0.6336,
+   "segreto": 0.6058,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 105,
+   "nome": "Nebbia-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.71,
+    "drop": 0.62
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.539,
+    "minimo": 0.779,
+    "confronto": 0.52,
+    "vicinanza": 0.525
+   },
+   "voto": 0.5907,
+   "segreto": 0.5721,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 106,
+   "nome": "Lampo-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.03,
+    "densita": 0.32
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.711,
+    "minimo": 0.745,
+    "confronto": 0.77,
+    "vicinanza": 0.706
+   },
+   "voto": 0.7328,
+   "segreto": 0.6731,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 107,
+   "nome": "Quercia-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.0,
+    "densita": 0.57
+   },
+   "mutazione": "vicinanza",
+   "voti": {
+    "massimo": 0.725,
+    "minimo": 0.466,
+    "confronto": 0.794,
+    "vicinanza": 0.779
+   },
+   "voto": 0.6912,
+   "segreto": 0.6298,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 108,
+   "nome": "Artiglio-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.84,
+    "pesi": {
+     "W1": 0.23,
+     "b1": 0.63,
+     "W2": 0.65,
+     "b2": 0.25,
+     "W3": 0.68,
+     "b3": 0.66
+    }
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.735,
+    "minimo": 0.887,
+    "confronto": 0.667,
+    "vicinanza": 0.672
+   },
+   "voto": 0.7402,
+   "segreto": 0.6587,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 109,
+   "nome": "Tuono-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.92,
+    "pesi": {
+     "W1": 0.44,
+     "b1": 0.4,
+     "W2": 0.72,
+     "b2": 0.78,
+     "W3": 0.53,
+     "b3": 0.41
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.544,
+    "minimo": 0.505,
+    "confronto": 0.603,
+    "vicinanza": 0.676
+   },
+   "voto": 0.5821,
+   "segreto": 0.5769,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 110,
+   "nome": "Cenere-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.74
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.98,
+    "minimo": 0.637,
+    "confronto": 0.569,
+    "vicinanza": 0.588
+   },
+   "voto": 0.6936,
+   "segreto": 0.6442,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 111,
+   "nome": "Vento-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.64
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 1.0,
+    "minimo": 0.686,
+    "confronto": 0.613,
+    "vicinanza": 0.637
+   },
+   "voto": 0.7341,
+   "segreto": 0.6538,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 112,
+   "nome": "Aurora-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.05,
+    "drop": 0.74
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.436,
+    "minimo": 0.299,
+    "confronto": 0.382,
+    "vicinanza": 0.588
+   },
+   "voto": 0.4265,
+   "segreto": 0.399,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 113,
+   "nome": "Fiocco-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    95,
+    77
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.02
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.49,
+    "minimo": 0.515,
+    "confronto": 0.618,
+    "vicinanza": 0.686
+   },
+   "voto": 0.5772,
+   "segreto": 0.5625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 114,
+   "nome": "Sasso-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    95,
+    77
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.8,
+    "pesi": {
+     "W1": 0.32,
+     "b1": 0.21,
+     "W2": 0.64,
+     "b2": 0.41,
+     "W3": 0.34,
+     "b3": 0.31
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.539,
+    "minimo": 0.608,
+    "confronto": 0.642,
+    "vicinanza": 0.691
+   },
+   "voto": 0.6201,
+   "segreto": 0.5817,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 115,
+   "nome": "Lince-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    95,
+    77
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.76,
+    "pesi": {
+     "W1": 0.42,
+     "b1": 0.78,
+     "W2": 0.45,
+     "b2": 0.41,
+     "W3": 0.6,
+     "b3": 0.59
+    }
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.882,
+    "minimo": 0.691,
+    "confronto": 0.495,
+    "vicinanza": 0.569
+   },
+   "voto": 0.6593,
+   "segreto": 0.6058,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 116,
+   "nome": "Brina-5",
+   "gen": 7,
+   "tipo": "figlio",
+   "genitori": [
+    95,
+    77
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.11,
+    "densita": 0.57
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.721,
+    "minimo": 0.912,
+    "confronto": 0.848,
+    "vicinanza": 0.701
+   },
+   "voto": 0.7953,
+   "segreto": 0.7115,
+   "scelto": true,
+   "stirpe": true
+  },
+  {
+   "id": 117,
+   "nome": "Notte-5",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 0.98,
+    "densita": 0.54
+   },
+   "mutazione": "confronto",
+   "voti": {
+    "massimo": 0.706,
+    "minimo": 0.539,
+    "confronto": 0.961,
+    "vicinanza": 0.632
+   },
+   "voto": 0.7096,
+   "segreto": 0.6394,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 118,
+   "nome": "Falco-5",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.35,
+    "pesi": {
+     "W1": 0.4,
+     "b1": 0.68,
+     "W2": 0.36,
+     "b2": 0.58,
+     "W3": 0.24,
+     "b3": 0.7
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.725,
+    "minimo": 0.672,
+    "confronto": 0.549,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6556,
+   "segreto": 0.6442,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 119,
+   "nome": "Rovo-5",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 1.06,
+    "drop": 0.59
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.475,
+    "minimo": 0.368,
+    "confronto": 0.441,
+    "vicinanza": 0.471
+   },
+   "voto": 0.4387,
+   "segreto": 0.4423,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 120,
+   "nome": "Ghiaccio-5",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    53
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.71
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.711,
+    "minimo": 0.632,
+    "confronto": 0.534,
+    "vicinanza": 0.676
+   },
+   "voto": 0.6385,
+   "segreto": 0.6154,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 121,
+   "nome": "Luna-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.48,
+    "densita": 0.4
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.706,
+    "minimo": 0.936,
+    "confronto": 0.696,
+    "vicinanza": 0.662
+   },
+   "voto": 0.75,
+   "segreto": 0.6971,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 122,
+   "nome": "Ombra-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.08
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.672,
+    "minimo": 0.814,
+    "confronto": 0.515,
+    "vicinanza": 0.637
+   },
+   "voto": 0.6593,
+   "segreto": 0.6106,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 123,
+   "nome": "Zanna-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 1.03
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.696,
+    "minimo": 0.809,
+    "confronto": 0.554,
+    "vicinanza": 0.652
+   },
+   "voto": 0.6777,
+   "segreto": 0.6058,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 124,
+   "nome": "Neve-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    68,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.88
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.691,
+    "minimo": 0.877,
+    "confronto": 0.618,
+    "vicinanza": 0.662
+   },
+   "voto": 0.712,
+   "segreto": 0.6587,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 125,
+   "nome": "Fumo-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    116,
+    68
+   ],
+   "ricetta": {
+    "tipo": "media",
+    "forza": 1.47,
+    "pesi": {
+     "W1": 0.31,
+     "b1": 0.58,
+     "W2": 0.45,
+     "b2": 0.43,
+     "W3": 0.36,
+     "b3": 0.38
+    }
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.706,
+    "minimo": 0.681,
+    "confronto": 0.559,
+    "vicinanza": 0.686
+   },
+   "voto": 0.6581,
+   "segreto": 0.6202,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 126,
+   "nome": "Brace-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    116,
+    68
+   ],
+   "ricetta": {
+    "tipo": "ties",
+    "forza": 1.2,
+    "densita": 0.26
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 1.0,
+    "minimo": 0.691,
+    "confronto": 0.598,
+    "vicinanza": 0.642
+   },
+   "voto": 0.7328,
+   "segreto": 0.6635,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 127,
+   "nome": "Selva-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    116,
+    68
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.87
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.657,
+    "minimo": 0.623,
+    "confronto": 0.554,
+    "vicinanza": 0.691
+   },
+   "voto": 0.6311,
+   "segreto": 0.5962,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 128,
+   "nome": "Rupe-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    116,
+    68
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.95
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.618,
+    "minimo": 0.574,
+    "confronto": 0.534,
+    "vicinanza": 0.691
+   },
+   "voto": 0.6042,
+   "segreto": 0.5625,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 129,
+   "nome": "Nebbia-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.9,
+    "drop": 0.62
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.245,
+    "minimo": 0.24,
+    "confronto": 0.529,
+    "vicinanza": 0.701
+   },
+   "voto": 0.4289,
+   "segreto": 0.4615,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 130,
+   "nome": "Lampo-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.66
+   },
+   "mutazione": null,
+   "voti": {
+    "massimo": 0.662,
+    "minimo": 0.691,
+    "confronto": 0.794,
+    "vicinanza": 0.706
+   },
+   "voto": 0.7132,
+   "segreto": 0.6538,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 131,
+   "nome": "Quercia-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "somma",
+    "forza": 0.76
+   },
+   "mutazione": "minimo",
+   "voti": {
+    "massimo": 0.691,
+    "minimo": 0.951,
+    "confronto": 0.667,
+    "vicinanza": 0.662
+   },
+   "voto": 0.7426,
+   "segreto": 0.6731,
+   "scelto": false,
+   "stirpe": false
+  },
+  {
+   "id": 132,
+   "nome": "Artiglio-6",
+   "gen": 8,
+   "tipo": "figlio",
+   "genitori": [
+    53,
+    95
+   ],
+   "ricetta": {
+    "tipo": "dare",
+    "forza": 0.84,
+    "drop": 0.73
+   },
+   "mutazione": "massimo",
+   "voti": {
+    "massimo": 0.505,
+    "minimo": 0.358,
+    "confronto": 0.314,
+    "vicinanza": 0.583
+   },
+   "voto": 0.44,
+   "segreto": 0.3942,
+   "scelto": false,
+   "stirpe": false
+  }
+ ]
+}
