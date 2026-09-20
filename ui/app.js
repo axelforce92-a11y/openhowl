@@ -242,7 +242,7 @@
         <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
         <span class="pn">${k ? `${svg('folder')} ${esc(baseName(dir))}` : 'Altre conversazioni'}</span>
         <small>${list.length}</small>
-        ${k ? `<button data-proj-new="${esc(dir)}" title="Nuova chat in questo progetto">＋</button>` : '<span></span>'}
+        ${k ? `<button data-proj-new="${esc(dir)}" title="Nuova chat in questo progetto">＋</button><button data-proj-delete="${esc(dir)}" title="Rimuovi lo storico del progetto">×</button>` : '<span></span>'}
       </div>`;
       if (open) html += `<div class="proj-chats">${list.length ? list.map(chatRow).join('') : '<div class="chats-empty">Ancora nessuna conversazione in questo progetto.</div>'}</div>`;
     }
@@ -422,7 +422,16 @@
         if (cur) $('chatTitle').textContent = cur.title;
         break;
       }
-      case 'user': add(div('msg user')).textContent = ev.text; break;
+      case 'user': {
+        const node = add(div('msg user'));
+        node.append(document.createTextNode(ev.text || 'Immagine allegata'));
+        if (ev.images?.length) {
+          const images = document.createElement('div'); images.className = 'user-images';
+          for (const im of ev.images) { const img = new Image(); img.src = `data:${im.mediaType};base64,${im.data}`; img.alt = 'Immagine allegata'; img.onclick = () => lightbox(img.src); images.appendChild(img); }
+          node.appendChild(images);
+        }
+        break;
+      }
       case 'text_delta': {
         const s = assistantEl(ev);
         s.raw += ev.text;
@@ -514,10 +523,34 @@
   };
 
   /* ───────── composer ───────── */
+  let attachments = [];
+  const renderAttachments = () => {
+    const tray = $('attachmentTray');
+    tray.hidden = !attachments.length;
+    tray.innerHTML = attachments.map((a, i) => `<div class="attachment"><img src="data:${a.mediaType};base64,${a.data}" alt="Immagine allegata"><button type="button" data-remove-image="${i}" title="Rimuovi">×</button></div>`).join('');
+  };
+  const addImages = async (files) => {
+    for (const file of [...files]) {
+      if (attachments.length >= 3) break;
+      if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) continue;
+      if (file.size > 3 * 1024 * 1024) { alert(`"${file.name}" è troppo grande. Scegli un'immagine sotto i 3 MB.`); continue; }
+      const dataUrl = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+      const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
+      if (m) attachments.push({ mediaType: m[1], data: m[2] });
+    }
+    renderAttachments();
+  };
+  $('attachBtn').onclick = () => $('imageInput').click();
+  $('imageInput').onchange = (e) => { addImages(e.target.files); e.target.value = ''; };
+  $('attachmentTray').onclick = (e) => { const b = e.target.closest('[data-remove-image]'); if (b) { attachments.splice(+b.dataset.removeImage, 1); renderAttachments(); } };
+  input.addEventListener('paste', (e) => { const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith('image/')); if (files.length) { e.preventDefault(); addImages(files); } });
+  $('composer').addEventListener('dragover', (e) => e.preventDefault());
+  $('composer').addEventListener('drop', (e) => { const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/')); if (files.length) { e.preventDefault(); addImages(files); } });
   function send(text) {
     text = text.trim();
-    if (!text) return;
-    post('/api/message', { text });
+    if (!text && !attachments.length) return;
+    post('/api/message', { text, images: attachments });
+    attachments = []; renderAttachments();
     input.value = '';
     autosize();
     hideSuggest();
@@ -1337,7 +1370,8 @@
       riprendi: f.riprendi.checked,
       famiglie: +f.famiglie.value || 1,
       migrazione: +f.migrazione.value || 2,
-      crossbreed: f.crossbreed.checked
+      crossbreed: f.crossbreed.checked,
+      useDefault: fndUsaDefault.checked
     });
     if (r.error) { $('bcLog').hidden = true; return; }
     refreshBranco();
@@ -1382,5 +1416,9 @@
     if (r.error) alert(r.error);
   }
 
+  // Electron non garantisce l'autofocus dopo il primo paint: rendiamo il compositore subito pronto.
+  const focusComposer = () => { if (!document.hidden && !$('approval').hidden && !$('userAction').hidden && document.activeElement === document.body) input.focus(); };
+  addEventListener('focus', () => setTimeout(focusComposer, 0));
+  setTimeout(focusComposer, 160);
   connect();
 })();

@@ -22,7 +22,7 @@ const MIME = {
 
 const readBody = (req) => new Promise((resolve) => {
   let data = '';
-  req.on('data', (c) => { data += c; if (data.length > 1e6) req.destroy(); });
+  req.on('data', (c) => { data += c; if (data.length > 12 * 1024 * 1024) req.destroy(); });
   req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { resolve({}); } });
 });
 const json = (res, obj, status = 200) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
@@ -118,7 +118,7 @@ export async function startServer({ port, safeStorage } = {}) {
   }
 
   // Laboratorio del branco: addestramento degli agenti in locale
-  function brancoApi(action, body) {
+  async function brancoApi(action, body) {
     const b = h.branco;
     switch (action) {
       case 'list': return { corse: b.list(), inCorso: b.runId };
@@ -160,7 +160,7 @@ export async function startServer({ port, safeStorage } = {}) {
       if (req.method !== 'POST') return json(res, { error: 'metodo' }, 405);
       const body = await readBody(req);
       if (url.pathname === '/api/message') {
-        h.handleInput(body.text).catch((e) => h.send('error', { text: e.message }));
+        h.handleInput({ text: body.text, images: body.images }).catch((e) => h.send('error', { text: e.message }));
         return json(res, { ok: true });
       }
       if (url.pathname === '/api/approve') { h.resolveApproval(body.id, !!body.allow, !!body.always); return json(res, { ok: true }); }
@@ -173,12 +173,13 @@ export async function startServer({ port, safeStorage } = {}) {
       if (url.pathname === '/api/chat/new') { h.newChat(); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/open') { h.openSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/delete') { h.removeSession(body.id); return json(res, { ok: true }); }
+      if (url.pathname === '/api/chat/delete-project') { h.removeProjectSessions(body.workspace); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/rename') { h.renameSession(body.id, body.title); return json(res, { ok: true }); }
       if (url.pathname.startsWith('/api/tasks/')) {
         try { return json(res, taskApi(url.pathname.slice(11), body)); } catch (e) { return json(res, { error: e.message }); }
       }
       if (url.pathname.startsWith('/api/branco/')) {
-        try { return json(res, brancoApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
+        try { return json(res, await brancoApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
       }
       if (url.pathname.startsWith('/api/remote/')) {
         try { return json(res, await remoteApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message, remote: h.remote?.publicState() }); }

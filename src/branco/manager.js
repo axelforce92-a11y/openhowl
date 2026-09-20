@@ -57,7 +57,7 @@ export class BrancoManager {
     return d;
   }
 
-  start({ obiettivo = 'equilibrio', generazioni = 4, figli = 6, riprendi = true, famiglie = 1, migrazione = 2, crossbreed = false } = {}) {
+  start({ obiettivo = 'equilibrio', generazioni = 4, figli = 6, riprendi = true, famiglie = 1, migrazione = 2, crossbreed = false, useDefault = true } = {}) {
     if (this.child) throw new Error('C\'è già una corsa in corso: fermala prima.');
     if (this.h.busy || this.h.remoteBusy) throw new Error('Howl sta lavorando: il branco userebbe lo stesso modello e falserebbe i tempi. Riprova quando ha finito.');
     const p = this.h.providerInfo();
@@ -78,6 +78,7 @@ export class BrancoManager {
     if (m) args.push('--mondo', path.join(BRANCO_DIR, 'mondo.json'));
     const f = listFondatori();
     if (f && f.length) args.push('--fondatori-file', path.join(BRANCO_DIR, 'fondatori.json'));
+    if (useDefault) args.push('--use-default');
 
     if (riprendi) {
       const prev = this.list().find((r) => r.modello === p.model && r.esaminati >= 6);

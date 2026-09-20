@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ESAME, SEGRETO, TOOLS, runTool } from './mondo.mjs';
+import * as DefaultWorld from './mondo.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
@@ -34,6 +34,31 @@ const CFG = {
 const OUT = path.resolve(HERE, CFG.out);
 fs.mkdirSync(OUT, { recursive: true });
 
+// Il dominio personalizzato è il banco di prova reale dell'agente creato dall'utente.
+const customWorldFile = arg('mondo', '');
+let customWorld = null;
+try { if (customWorldFile && fs.existsSync(customWorldFile)) customWorld = JSON.parse(fs.readFileSync(customWorldFile, 'utf8')); } catch {}
+const ESAME = Array.isArray(customWorld?.esame) && customWorld.esame.length ? customWorld.esame : DefaultWorld.ESAME;
+const SEGRETO = Array.isArray(customWorld?.segreto) && customWorld.segreto.length ? customWorld.segreto : DefaultWorld.SEGRETO;
+const TOOLS = customWorld ? [
+  { type: 'function', function: { name: 'leggi_contesto', description: 'Legge il contesto di riferimento.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'calcola', description: 'Calcolatrice aritmetica.', parameters: { type: 'object', properties: { espressione: { type: 'string' } }, required: ['espressione'] } } },
+] : DefaultWorld.TOOLS;
+const runTool = (name, args = {}) => {
+  if (!customWorld) return DefaultWorld.runTool(name, args);
+  if (name === 'leggi_contesto') return customWorld.contesto || '(nessun contesto configurato)';
+  if (name === 'calcola') {
+    const e = String(args.espressione || '').replace(/,/g, '.').replace(/[x×]/g, '*').replace(/%/g, '/100');
+    if (!/^[\d\s.+\-*/()]+$/.test(e)) return 'Espressione non valida.';
+    try { const v = Function('"use strict";return (' + e + ')')(); return Number.isFinite(v) ? String(Math.round(v * 10000) / 10000) : 'Risultato non valido.'; } catch { return 'Espressione non valida.'; }
+  }
+  return 'Strumento sconosciuto.';
+};
+const answerIsCorrect = (answer, expected) => {
+  if (!customWorld || customWorld.tipoRisposta === 'numero') return Number.isFinite(Number(answer)) && Math.abs(Number(answer) - Number(expected)) < 0.51;
+  const a = String(answer ?? '').trim().toLowerCase(), b = String(expected ?? '').trim().toLowerCase();
+  return a === b || a.includes(b) || b.includes(a);
+};
 // generatore casuale riproducibile
 let s = CFG.seed >>> 0;
 const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32);
@@ -45,7 +70,7 @@ let nameIdx = 0;
 const nextName = () => { const n = NOMI[nameIdx % NOMI.length] + (nameIdx >= NOMI.length ? `-${Math.floor(nameIdx / NOMI.length) + 1}` : ''); nameIdx++; return n; };
 
 /* ───────── fondatori (i "primer" della PCR) ───────── */
-const FONDATORI = [
+const DEFAULT_FONDATORI = [
   { primer: 'Scrupoloso', persona: 'Leggi sempre l\'indice e TUTTI gli articoli che potrebbero riguardare il caso prima di rispondere.', ragionamento: 'low', temperatura: 0.2 },
   { primer: 'Contabile', persona: 'Fai ogni calcolo con lo strumento calcola, mai a mente.', ragionamento: 'none', temperatura: 0.2 },
   { primer: 'Velocista', persona: 'Rispondi in fretta, con il minor numero di passi possibile.', ragionamento: 'none', temperatura: 0.5 },
@@ -55,13 +80,15 @@ const FONDATORI = [
 ];
 
 function systemPrompt(g) {
-  return `Sei un consulente dello sportello di LupoCasa e rispondi alle domande sugli affitti.
+  const role = customWorld
+    ? `${customWorld.ruolo || 'un assistente specializzato'}. Usa lo strumento leggi_contesto prima di rispondere e non inventare informazioni.`
+    : 'un consulente dello sportello di LupoCasa e rispondi alle domande sugli affitti.';
+  const format = customWorld?.tipoRisposta === 'numero' || !customWorld ? '<numero>' : '<valore>';
+  return `Sei ${role}
 ${g.persona}
 ${g.regole.length ? `\nRegole che hai imparato dall'esperienza:\n${g.regole.map((r) => `- ${r.testo}`).join('\n')}\n` : ''}
-Usa gli strumenti per leggere il regolamento e la scheda del cliente: non inventare mai numeri o regole.
-Termina SEMPRE con una riga nel formato: RISPOSTA: <numero>  (solo il numero in euro, senza simbolo).`;
+Termina SEMPRE con una riga nel formato: RISPOSTA: ${format}.`;
 }
-
 /* ───────── chiamate al modello ───────── */
 const stats = { chiamate: 0, token: 0 };
 async function chat(body) {
@@ -117,7 +144,7 @@ async function solve(g, task) {
   const m = final.match(/RISPOSTA:\s*([-\d.,]+)/i) || final.match(/([-\d]+(?:[.,]\d+)?)(?!.*\d)/s);
   const n = m ? Number(m[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) : NaN;
   return {
-    id: task.id, ok: Number.isFinite(n) && Math.abs(n - task.risposta) < 0.51, risposta: Number.isFinite(n) ? n : null,
+    id: task.id, ok: answerIsCorrect(Number.isFinite(n) ? n : (final.match(/RISPOSTA:\s*([^\n]+)/i)?.[1]?.trim()), task.risposta), risposta: Number.isFinite(n) ? n : (final.match(/RISPOSTA:\s*([^\n]+)/i)?.[1]?.trim() || null),
     passi: trace.length, token, secondi: Math.round((Date.now() - t0) / 100) / 10, trace: trace.slice(0, 12), finale: final.slice(-400),
   };
 }
@@ -221,7 +248,7 @@ function fronts(pool) {
 }
 
 /* ───────── salvataggio e visualizzazione ───────── */
-const state = { creato: new Date().toISOString().slice(0, 16).replace('T', ' '), modello: CFG.model, config: CFG, stato: 'in corso', nodi: [], storia: [], esame: ESAME.map(({ id, domanda }) => ({ id, domanda })), segreto: SEGRETO.map(({ id, domanda }) => ({ id, domanda })), stats };
+const state = { creato: new Date().toISOString().slice(0, 16).replace('T', ' '), modello: CFG.model, dominio: customWorld?.nome || 'LupoCasa', config: CFG, stato: 'in corso', nodi: [], storia: [], esame: ESAME.map(({ id, domanda }) => ({ id, domanda })), segreto: SEGRETO.map(({ id, domanda }) => ({ id, domanda })), stats };
 const logLines = [];
 function log(t) { console.log(t); logLines.push(t); }
 
@@ -252,6 +279,15 @@ async function evaluate(n) {
 }
 
 /* ───────── evoluzione ───────── */
+const customFoundersFile = arg('fondatori-file', '');
+let customFounders = [];
+try { if (customFoundersFile && fs.existsSync(customFoundersFile)) customFounders = JSON.parse(fs.readFileSync(customFoundersFile, 'utf8')); } catch {}
+const FONDATORI = process.argv.includes('--use-default') ? [...DEFAULT_FONDATORI, ...customFounders] : (customFounders.length ? customFounders : DEFAULT_FONDATORI);
+if (!FONDATORI.length) throw new Error('Aggiungi almeno un fondatore prima di avviare la corsa.');
+if (process.argv.includes('--validate')) {
+  console.log(JSON.stringify({ ok: true, dominio: customWorld?.nome || 'LupoCasa', esame: ESAME.length, segreto: SEGRETO.length, fondatori: FONDATORI.length, strumenti: TOOLS.map((t) => t.function.name) }));
+  process.exit(0);
+}
 if (process.argv.includes('--prova')) {
   // prova veloce: ogni fondatore su un solo caso
   for (const f of FONDATORI.slice(0, Number(arg('prova', 2)))) {

@@ -139,9 +139,12 @@
 
       <form class="composer" id="composer">
         <div class="suggest" id="suggest" hidden></div>
+        <div class="attachment-tray" id="attachmentTray" hidden></div>
         <textarea id="input" rows="1" placeholder="Scrivi un messaggio…  ( / per i comandi )" autofocus></textarea>
         <div class="composer-bar">
           <span class="hint" id="hint">Invio per inviare · Shift+Invio per andare a capo</span>
+          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+          <button type="button" class="sq attach" id="attachBtn" title="Allega immagini o incollale qui"><svg viewBox="0 0 24 24"><path d="m21.4 11.6-8.8 8.8a6 6 0 0 1-8.5-8.5l8.8-8.8a4 4 0 1 1 5.7 5.7l-8.8 8.8a2 2 0 1 1-2.8-2.8l8.1-8.1"/></svg></button>
           <button type="submit" class="sq send" id="sendBtn" title="Invia (Invio)">
             <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
           </button>

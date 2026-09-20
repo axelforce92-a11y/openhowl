@@ -138,6 +138,17 @@ export class Harness {
     else this.sendSessions();
   }
 
+  // Un progetto nella UI è una cartella con il relativo storico: non eliminiamo mai i file della cartella.
+  removeProjectSessions(workspace) {
+    const key = (p) => String(p || '').replace(/[\\/]+/g, '/').replace(/\/$/, '').toLowerCase();
+    const target = key(workspace);
+    const ids = listSessions().filter((s) => key(s.workspace) === target).map((s) => s.id);
+    const active = ids.includes(this.session.id);
+    ids.forEach(deleteSession);
+    if (active) this.newChat();
+    else this.sendSessions();
+  }
+
   renameSession(id, title) {
     const t = String(title || '').trim().slice(0, 80);
     if (!t) return;
@@ -421,24 +432,28 @@ export class Harness {
   /* ── Input ── */
 
   async handleInput(raw) {
-    const text = String(raw || '').trim();
-    if (!text) return;
-    if (text.startsWith('/')) return this.command(text);
+    const payload = raw && typeof raw === 'object' ? raw : { text: raw };
+    const text = String(payload.text || '').trim();
+    const images = Array.isArray(payload.images) ? payload.images
+      .filter((im) => /^image\/(png|jpe?g|webp|gif)$/i.test(im?.mediaType || '') && typeof im.data === 'string' && im.data.length <= 5_000_000)
+      .slice(0, 3)
+      .map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.mediaType, data: im.data } })) : [];
+    if (!text && !images.length) return;
+    if (text.startsWith('/') && !images.length) return this.command(text);
     if (this.busy) return this.send('info', { text: 'Sto già lavorando: premi Interrompi prima di inviare altro.' });
-    if (this.remoteBusy) return this.send('info', { text: `📱 Sto lavorando a una richiesta arrivata dal telefono: aspetta che finisca oppure fermala dal riquadro "Telefono".` });
-    if (!this.agent.messages.length) { this.session.title = titleFrom(text); this.sendSessions(); }
-    this.send('user', { text });
+    if (this.remoteBusy) return this.send('info', { text: 'Sto lavorando a una richiesta arrivata dal telefono: aspetta che finisca oppure fermala dal riquadro Telefono.' });
+    if (!this.agent.messages.length) { this.session.title = titleFrom(text || 'Immagine allegata'); this.sendSessions(); }
+    this.send('user', { text: text || 'Immagine allegata', images: images.map((im) => ({ mediaType: im.source.media_type, data: im.source.data })) });
     const hooked = await runHook(this, 'onUserMessage', { text });
     let prompt = hooked.text || text;
     const relevant = matchSkills(prompt);
     if (relevant.length) {
-      this.send('info', { text: `📘 Skill pertinente: ${relevant.map((s) => `**${s.name}**`).join(', ')}` });
-      prompt += `\n\n[harness] Skill pertinenti a questa richiesta: ${relevant.map((s) => s.name).join(', ')}. ` +
-        `Carica le istruzioni con lo strumento skill PRIMA di iniziare e poi seguile.`;
+      this.send('info', { text: `Skill pertinente: ${relevant.map((s) => `**${s.name}**`).join(', ')}` });
+      prompt += `\n\n[harness] Skill pertinenti a questa richiesta: ${relevant.map((s) => s.name).join(', ')}. Carica le istruzioni con lo strumento skill PRIMA di iniziare e poi seguile.`;
     }
-    await this.runTask((signal) => this.agent.run(prompt, { signal }));
+    const content = images.length ? [{ type: 'text', text: prompt || 'Analizza queste immagini.' }, ...images] : prompt;
+    await this.runTask((signal) => this.agent.run(content, { signal }));
   }
-
   async runTask(fn) {
     if (this.remoteBusy) return this.send('info', { text: '📱 Sto lavorando a una richiesta arrivata dal telefono: riprova tra poco.' });
     this.busy = true;

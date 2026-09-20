@@ -29,13 +29,14 @@ export class Agent {
   emit(type, data = {}) { this.h.send(type, { agent: this.name, ...data }); }
 
   async run(input, { signal } = {}) {
+    const inputBlocks = typeof input === 'string' ? null : Array.isArray(input) ? input : [{ type: 'text', text: String(input || '') }];
     // Se l'ultimo messaggio è già dell'utente (es. dopo un'interruzione) accodiamo, per mantenere l'alternanza dei ruoli.
     const last = this.messages.at(-1);
     if (last?.role === 'user') {
       const blocks = typeof last.content === 'string' ? [{ type: 'text', text: last.content }] : last.content;
-      last.content = [...blocks, { type: 'text', text: input }];
+      last.content = [...blocks, ...(inputBlocks || [{ type: 'text', text: input }])];
     } else {
-      this.messages.push({ role: 'user', content: input });
+      this.messages.push({ role: 'user', content: inputBlocks || input });
     }
     this.finishRequested = false;
     const toolMap = new Map(this.tools.map((t) => [t.name, t]));
