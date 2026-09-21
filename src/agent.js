@@ -12,7 +12,7 @@ function normalizeOutput(out) {
   return { text: out.text || '', images: out.images || [] };
 }
 // Frasi con cui il modello dichiara di aver compiuto un'azione concreta.
-const CLAIM = /\b(ho (creato|scritto|salvato|eseguito|spostato|copiato|eliminato|cancellato|rinominato|installato|aperto|modificato|aggiornato|inviato|scaricato)|(cartella|file|documento) (è stat[oa] )?(creat[oa]|salvat[oa])|(creat[oa]|salvat[oa]) (con successo|correttamente)|i('|’)ve (created|written|saved|run|moved|deleted))\b/i;
+const CLAIM = /\b(ho (creato|scritto|salvato|eseguito|spostato|copiato|eliminato|cancellato|rinominato|installato|aperto|modificato|aggiornato|inviato|scaricato|ingerito|importato|elaborato)|(cartella|file|documento) (è stat[oa] )?(creat[oa]|salvat[oa]|ingerit[oa]|elaborat[oa])|(creat[oa]|salvat[oa]|ingestione completata) (con successo|correttamente)?|i('|’)ve (created|written|saved|run|moved|deleted|ingested))\b|ingest_(start|end)/i;
 const clip = (s, n) => (s.length > n ? s.slice(0, n) + `\n… [troncato, ${s.length} caratteri]` : s);
 
 export class Agent {
@@ -54,23 +54,39 @@ export class Agent {
       this.emit('state', { state: 'thinking' });
       const seg = ++segCounter;
       let streaming = false;
+      let deltaTimer = null, textDelta = '', thinkingDelta = '';
+      const flushDeltas = () => {
+        deltaTimer = null;
+        if (textDelta) { this.emit('text_delta', { seg: `s${seg}`, text: textDelta }); textDelta = ''; }
+        if (thinkingDelta) { this.emit('thinking_delta', { seg: `t${seg}`, text: thinkingDelta }); thinkingDelta = ''; }
+      };
+      const scheduleFlush = () => { if (!deltaTimer) deltaTimer = setTimeout(flushDeltas, 16); };
       const system = typeof this.systemPrompt === 'function' ? this.systemPrompt() : this.systemPrompt;
-      const resp = await chat(this.h.providerInfo(), {
+      const provider = this.h.providerInfo();
+      const startedAt = Date.now();
+      let firstTokenAt = 0;
+      const resp = await chat(provider, {
         system,
         messages: this.messages,
         tools: schemas,
         signal,
         maxTokens: this.h.limits.maxTokens,
         thinkingBudget: this.h.limits.thinkingBudget,
+        reasoningEffort: this.h.limits.reasoningEffort,
         onDelta: (d) => {
+          if (!firstTokenAt) firstTokenAt = Date.now();
           if (d.type === 'text') {
             if (!streaming) { streaming = true; this.emit('state', { state: 'streaming' }); }
-            this.emit('text_delta', { seg: `s${seg}`, text: d.text });
+            textDelta += d.text;
           } else {
-            this.emit('thinking_delta', { seg: `t${seg}`, text: d.text });
+            thinkingDelta += d.text;
           }
+          scheduleFlush();
         },
       });
+      if (deltaTimer) clearTimeout(deltaTimer);
+      flushDeltas();
+      const finishedAt = Date.now();
       this.h.addUsage(resp.usage);
       // quanto della finestra di contesto è occupato adesso (input della richiesta + risposta)
       if (this.name === 'main') this.h.setContext((resp.usage.input || 0) + (resp.usage.output || 0));
@@ -79,7 +95,22 @@ export class Agent {
       const thinking = resp.content.filter((b) => b.type === 'thinking').map((b) => b.thinking).join('\n').trim();
       if (thinking) this.emit('thinking', { seg: `t${seg}`, text: thinking });
       const text = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-      if (text) { this.emit('assistant_text', { seg: `s${seg}`, text }); finalText = text; }
+      if (text) {
+        this.emit('assistant_text', { seg: `s${seg}`, text });
+        const outputTokens = resp.usage.output || Math.max(1, Math.round((text.length + thinking.length) / 3.5));
+        const generationMs = Math.max(1, finishedAt - (firstTokenAt || startedAt));
+        this.emit('response_metrics', {
+          seg: `s${seg}`,
+          model: provider.model,
+          inputTokens: resp.usage.input || 0,
+          outputTokens,
+          ttftMs: firstTokenAt ? firstTokenAt - startedAt : finishedAt - startedAt,
+          generationMs,
+          totalMs: finishedAt - startedAt,
+          tokensPerSecond: outputTokens / (generationMs / 1000),
+        });
+        finalText = text;
+      }
 
       const uses = resp.content.filter((b) => b.type === 'tool_use');
       if (uses.some((u) => u.name !== 'todo_write')) toolsUsed = true;

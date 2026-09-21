@@ -24,6 +24,14 @@
         </button>
       </div>
 
+      <nav class="feature-dock" aria-label="Spazi di lavoro">
+        <button data-feature="wiki" class="feature-btn wiki" title="LLM Wiki"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="17" r="2"/><path d="m8 7 8-.7M7.3 8.6l3.5 6.7M16.8 7.7l-3.7 7.7"/></svg><span>Wiki</span></button>
+        <button data-feature="branco" class="feature-btn" title="Laboratorio del branco"><svg viewBox="0 0 24 24"><circle cx="7" cy="8" r="2"/><circle cx="17" cy="8" r="2"/><path d="M5 18c1.2-4 3.5-6 7-6s5.8 2 7 6M12 4v8"/></svg><span>Branco</span></button>
+        <button data-feature="tasks" class="feature-btn" title="Automazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Routine</span></button>
+        <button data-feature="phone" class="feature-btn" title="Howl dal telefono"><svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg><span>Remoto</span></button>
+        <button data-feature="memory" class="feature-btn" title="Memoria"><svg viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-6 .1A3 3 0 0 0 4 11a3 3 0 0 0 2 5 3 3 0 0 0 6 1V5z"/><path d="M12 5a3 3 0 1 1 6 .1A3 3 0 0 1 20 11a3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg><span>Memoria</span></button>
+      </nav>
+
 
       <div class="chats" id="chats"></div>
 
@@ -125,7 +133,7 @@
 
       <div class="feed" id="feed">
         <div class="welcome" id="welcome">
-          <img class="welcome-wolf" src="wolf/hello.png" alt="">
+          <div class="welcome-wolf" id="welcomeWolf" aria-label="Howl saluta"></div>
           <h2>Come posso aiutarti?</h2>
           <p>Scrivo codice, cerco sul web, navigo i siti e uso le app del tuo computer.<br>Per i lavori lunghi usa <code>/goal</code>: procedo e verifico finché non è fatto.</p>
           <div class="examples">
@@ -143,6 +151,9 @@
         <textarea id="input" rows="1" placeholder="Scrivi un messaggio…  ( / per i comandi )" autofocus></textarea>
         <div class="composer-bar">
           <span class="hint" id="hint">Invio per inviare · Shift+Invio per andare a capo</span>
+          <button type="button" class="sq think" id="thinkBtn" title="Ragionamento del modello">
+            <svg viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 1 1.6h5c.1-.6.4-1.2 1-1.6A6 6 0 0 0 12 3z"/></svg>
+          </button>
           <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
           <button type="button" class="sq attach" id="attachBtn" title="Allega immagini o incollale qui"><svg viewBox="0 0 24 24"><path d="m21.4 11.6-8.8 8.8a6 6 0 0 1-8.5-8.5l8.8-8.8a4 4 0 1 1 5.7 5.7l-8.8 8.8a2 2 0 1 1-2.8-2.8l8.1-8.1"/></svg></button>
           <button type="submit" class="sq send" id="sendBtn" title="Invia (Invio)">
@@ -376,7 +387,11 @@
     </div>
   </div>
   <div class="bc-graph" id="bcGraph" hidden>
-    <button class="bc-graph-x" id="bcGraphClose" title="Chiudi il grafo">✕ Chiudi</button>
+    <div class="bc-graph-actions">
+      <button type="button" class="bc-graph-x" id="bcGraphClose" title="Chiudi il grafo (Esc)" aria-label="Chiudi il grafo">✕ Chiudi <kbd>Esc</kbd></button>
+      <button type="button" class="bc-graph-action pause" id="bcGraphPause" hidden>Ⅱ Metti in pausa</button>
+      <button type="button" class="bc-graph-action danger" id="bcGraphDelete">Elimina corsa</button>
+    </div>
     <iframe id="bcFrame" title="Grafo del branco"></iframe>
   </div>
 
@@ -432,6 +447,44 @@
     </div>
   </div>
 
+  <!-- ───────── LLM Wiki ───────── -->
+  <div class="modal wiki-modal" id="wiki" hidden>
+    <div class="modal-card wiki-card">
+      <header class="wiki-head">
+        <div><div class="wiki-kicker"><span class="wiki-live"></span> Memoria compilata</div><h3>LLM Wiki</h3><p>Il cervello trasforma le fonti raw in pagine Markdown vive, collegate e verificabili.</p></div>
+        <div class="wiki-head-actions"><span class="wiki-brain" id="wikiBrain">—</span><button class="x" id="wikiClose" title="Chiudi">✕</button></div>
+      </header>
+      <div class="wiki-command">
+        <label class="wiki-drop" id="wikiDrop"><input id="wikiFiles" type="file" multiple accept=".pdf,.docx,.xlsx,.pptx,.odt,.ods,.odp,.odg,.rtf,.epub,.md,.markdown,.txt,.json,.jsonl,.csv,.tsv,.html,.htm,.xml,.yaml,.yml,.log,.ini,.toml,.js,.mjs,.cjs,.ts,.tsx,.jsx,.css,.py,.java,.c,.cpp,.h,.hpp,.rs,.go,.sql" hidden><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg><span><b>Carica in raw</b><small>Salva le fonti; poi chiedi a Gemma di fare ingest</small></span></label>
+        <div class="wiki-query"><form id="wikiAsk" class="wiki-ask"><input id="wikiQuestion" placeholder="Chiedi alla Wiki…" autocomplete="off"><button type="submit" title="Howl navigherà le pagine collegate"><svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg></button></form><label class="wiki-save-answer"><input id="wikiSaveAnswer" type="checkbox"> Salva la risposta utile nella Wiki</label></div>
+      </div>
+      <div class="wiki-status" id="wikiStatus" hidden></div>
+      <div class="wiki-stats"><span><b id="wikiPageCount">0</b> pagine</span><span><b id="wikiSourceCount">0</b> elaborate</span><span><b id="wikiPendingCount">0</b> in raw</span><span><b id="wikiLinkCount">0</b> collegamenti</span><div class="wiki-ops"><button id="wikiSchema">Schema</button><button id="wikiLog">Registro</button><button id="wikiLint">Controlla Wiki</button></div></div>
+      <div class="wiki-workspace">
+        <section class="wiki-map" aria-label="Grafo della Wiki">
+          <div class="wiki-view-switch" role="group" aria-label="Visualizzazione del grafo">
+            <button id="wikiGraph2d" class="on" type="button">Rete</button>
+            <button id="wikiGraph3d" type="button">3D molecolare</button>
+            <button id="wikiGraphMotion" class="on pulse-toggle" type="button" title="Attiva o ferma gli impulsi">Impulsi</button>
+            <button id="wikiGraphReset" type="button" title="Centra e ripristina la vista">Centra</button>
+            <button id="wikiGraphExpand" type="button" title="Espandi il grafo">Espandi</button>
+          </div>
+          <canvas id="wikiGraph" tabindex="0" role="img" aria-label="Grafo neurale interattivo delle pagine Wiki"></canvas>
+          <div class="wiki-graph-tip" id="wikiGraphTip" hidden></div>
+          <div class="wiki-gesture" id="wikiGesture">Trascina per spostare · rotella per zoomare · doppio clic per centrare</div>
+          <div class="wiki-empty" id="wikiEmpty"><div class="wiki-orbit"><i></i><i></i><i></i><b></b></div><strong>La mappa è ancora vuota</strong><span>Carica una fonte in raw, poi scrivi a Gemma: «fai ingest dei nuovi file».</span></div>
+          <div class="wiki-legend"><i class="concept"></i> Concetto <i class="entity"></i> Entità <i class="synthesis"></i> Sintesi</div>
+        </section>
+        <aside class="wiki-inspector">
+          <div id="wikiNoteEmpty" class="wiki-note-empty">Seleziona un nodo per leggere la pagina e vedere quale cervello l’ha compilata.</div>
+          <article id="wikiNote" hidden><div class="wiki-note-heading"><div><div class="wiki-note-type" id="wikiNoteType"></div><h4 id="wikiNoteTitle"></h4></div><button class="wiki-note-delete" id="wikiNoteDelete" type="button" title="Elimina questa pagina" aria-label="Elimina questa pagina"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg><span>Elimina</span></button></div><div class="wiki-note-meta" id="wikiNoteMeta"></div><div class="wiki-note-body" id="wikiNoteBody"></div></article>
+          <div class="wiki-pages" id="wikiPages"></div>
+        </aside>
+      </div>
+      <footer class="wiki-foot"><span id="wikiPath"></span><span>Markdown compatibile con Obsidian</span></footer>
+    </div>
+  </div>
+
   <!-- ───────── Modelli ───────── -->
   <div class="modal" id="brains" hidden>
     <div class="modal-card wide">
@@ -473,6 +526,7 @@
   </div>
 
   <script src="wolf.js"></script>
+  <script src="wiki-graph.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

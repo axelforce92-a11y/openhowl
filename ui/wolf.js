@@ -5,18 +5,27 @@
 //   const w = HowlWolf.mount(elemento, { variant: 'mini' | 'shadow', sleepAfter: ms });
 //   w.set('tool', { tool: 'web_search' });   w.hello();   w.listen(true);
 (() => {
-  const BASE_H = 700; // altezza delle pose "normali": le altre si scalano in proporzione
+  const BASE_H = 1;
+  // Un solo atlas mantiene identici volto, proporzioni e palette in ogni stato.
+  // L'ordine corrisponde alla griglia 4x4 di howl-atlas.png.
+  const ATLAS = {
+    idle: [0, 0], hello: [1, 0], listening: [2, 0], thinking: [3, 0],
+    talking: [0, 1], working: [1, 1], reading: [2, 1], searching: [3, 1],
+    approval: [0, 2], pointing: [1, 2], success: [2, 2], thumbsup: [3, 2],
+    worried: [0, 3], howling: [1, 3], yawning: [2, 3], sleeping: [3, 3],
+  };
   const TOOL_POSE = {
     web_search: 'searching', grep: 'searching', glob: 'searching', browser: 'searching',
     read_file: 'reading', web_fetch: 'reading', list_dir: 'reading', process_output: 'reading', submit_verdict: 'reading', skill: 'reading',
-    delegate: 'howling', remember: 'listening', schedule_task: 'thumbsup', todo_write: 'thinking',
+    run_command: 'working', write_file: 'working', edit_file: 'working', create_folder: 'working', computer: 'working',
+    delegate: 'howling', remember: 'listening', schedule_task: 'thumbsup', todo_write: 'thinking', wiki: 'reading',
   };
   // stati che durano poco e poi tornano da soli a "idle"
   const TRANSIENT = { success: 2600, goal: 3400, error: 4200, hello: 2600, yawning: 1500 };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let manifest = null;
-  const ready = fetch('wolf/rig/rig.json').then((r) => r.json()).then((m) => (manifest = m)).catch(() => (manifest = {}));
+  const manifest = Object.fromEntries(Object.entries(ATLAS).map(([name, cell]) => [name, { w: 1, h: 1, atlas: cell }]));
+  const ready = Promise.resolve(manifest);
 
   function poseFor(state, opts = {}) {
     switch (state) {
@@ -50,7 +59,12 @@
       el.dataset.pose = name;
       el.style.height = `${(p.h / BASE_H) * 100}%`;
       el.style.aspectRatio = `${p.w} / ${p.h}`;
-      if (p.layers) {
+      if (p.atlas) {
+        const sprite = document.createElement('div');
+        sprite.className = 'hw-sprite';
+        sprite.style.backgroundPosition = `${(p.atlas[0] / 3) * 100}% ${(p.atlas[1] / 3) * 100}%`;
+        el.appendChild(sprite);
+      } else if (p.layers) {
         for (const l of p.layers) {
           const img = new Image();
           img.src = `wolf/rig/${name}-${l.name}.png`;
@@ -80,6 +94,8 @@
       body.appendChild(el);
     }
     root.replaceChildren(body, fx);
+    root.setAttribute('role', 'img');
+    root.setAttribute('aria-label', 'Howl, la mascotte di OpenHowl');
     return poses;
   }
 
@@ -88,6 +104,7 @@
     let state = 'idle', pose = 'idle', asleep = false;
     let backTimer = null, sleepTimer = null, drowsyTimer = null, lifeTimer = null, blinkTimer = null;
     let listening = false;
+    let mounted = false;
 
     const show = (name) => {
       if (!poses[name]) name = 'idle';
@@ -99,14 +116,14 @@
 
     const tilt = (deg) => {
       const el = poses[pose];
-      el?.querySelectorAll('.p-head').forEach((h) => { h.style.transform = deg ? `rotate(${deg}deg)` : ''; });
+      el?.querySelectorAll('.p-head, .hw-sprite').forEach((h) => { h.style.transform = deg ? `rotate(${deg}deg)` : ''; });
     };
 
     // battito di ciglia: solo nelle pose che hanno le palpebre
     const blink = () => {
       clearTimeout(blinkTimer);
-      const hasLids = poses[pose]?.querySelector('.lids');
-      if (hasLids && !asleep && !reduced) {
+      const canBlink = ['idle', 'thinking', 'working', 'listening'].includes(pose);
+      if (canBlink && !asleep && !reduced) {
         root.classList.add('blink');
         setTimeout(() => root.classList.remove('blink'), 120);
         if (Math.random() < 0.2) setTimeout(() => { root.classList.add('blink'); setTimeout(() => root.classList.remove('blink'), 110); }, 260);
@@ -129,7 +146,10 @@
       root.classList.remove('waving');
       void root.offsetWidth; // riavvia l'animazione
       root.classList.add('waving');
+      const before = pose;
+      if (state === 'idle') show('hello');
       setTimeout(() => root.classList.remove('waving'), 1800);
+      setTimeout(() => { if (state === 'idle' && pose === 'hello') show(before); }, 1700);
     };
 
     const armSleep = () => {
@@ -156,7 +176,7 @@
     }
 
     function set(next, opts = {}) {
-      if (!manifest) { ready.then(() => set(next, opts)); return; }
+      if (!mounted) { ready.then(() => set(next, opts)); return; }
       // svegliarlo: prima uno sbadiglio, poi quello che deve fare
       if (asleep && next !== 'idle' && next !== 'sleeping') {
         asleep = false;
@@ -171,6 +191,7 @@
     }
 
     ready.then(() => {
+      mounted = true;
       poses = build(root, variant);
       apply('idle');
       blinkTimer = setTimeout(blink, 1500);

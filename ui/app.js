@@ -1,12 +1,31 @@
 // OpenHowl — interfaccia: riceve gli eventi dell'agente (SSE) e li trasforma in UI.
 (() => {
-  const TOKEN = document.querySelector('meta[name=howl-token]').content;
+  let TOKEN = document.querySelector('meta[name=howl-token]').content;
   const desk = window.howlDesktop;
   const $ = (id) => document.getElementById(id);
   const feed = $('feed'), input = $('input');
   if (desk) document.body.classList.add('desktop');
 
-  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-howl-token': TOKEN }, body: JSON.stringify(body || {}) });
+  let eventSource = null, tokenRefresh = null;
+  async function refreshToken() {
+    if (tokenRefresh) return tokenRefresh;
+    tokenRefresh = (async () => {
+      const html = await fetch(`/?token_refresh=${Date.now()}`, { cache: 'no-store' }).then((r) => r.text());
+      const fresh = html.match(/name="howl-token" content="([^"]+)"/)?.[1];
+      if (!fresh) throw new Error('Impossibile aggiornare la sessione locale.');
+      TOKEN = fresh;
+      document.querySelector('meta[name=howl-token]').content = fresh;
+      connect();
+      return fresh;
+    })().finally(() => { tokenRefresh = null; });
+    return tokenRefresh;
+  }
+  const post = async (url, body) => {
+    const request = () => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-howl-token': TOKEN }, body: JSON.stringify(body || {}) });
+    let response = await request();
+    if (response.status === 401) { await refreshToken(); response = await request(); }
+    return response;
+  };
 
   /* ───────── icone ───────── */
   const P = {
@@ -30,11 +49,12 @@
     trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>',
     clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/>',
+    wiki: '<circle cx="6" cy="7" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="17" r="2"/><path d="m8 7 8-.7M7.3 8.6l3.5 6.7M16.8 7.7l-3.7 7.7"/>',
   };
   const ICON_OF = {
     read_file: 'file', write_file: 'pen', edit_file: 'pen', create_folder: 'folder', list_dir: 'folder', glob: 'search', grep: 'search',
     run_command: 'term', process_output: 'term', web_search: 'globe', web_fetch: 'globe', browser: 'compass',
-    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale', schedule_task: 'clock',
+    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale', schedule_task: 'clock', wiki: 'wiki',
   };
   const svg = (k) => `<svg viewBox="0 0 24 24">${P[k]}</svg>`;
   const icon = (name) => svg(ICON_OF[name] || (name.startsWith('mcp__') ? 'plug' : 'cog'));
@@ -44,6 +64,7 @@
     run_command: 'Esegue un comando', web_search: 'Cerca sul web', web_fetch: 'Legge una pagina', browser: 'Naviga nel browser',
     computer: 'Usa il computer', delegate: 'Chiama il branco', grep: 'Cerca nel codice', glob: 'Cerca file',
     todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro', schedule_task: 'Programma un\'automazione',
+    list_dir: 'Esplora una cartella', process_output: 'Segue un comando', wiki: 'Consulta la Wiki', skill: 'Prepara una competenza',
   };
   const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', goal: 'Obiettivo raggiunto', error: 'Errore' };
   const MODES = [
@@ -60,6 +81,8 @@
 
   /* ───────── stato del lupo ───────── */
   const howl = window.HowlWolf.mount($('wolfMini'), { variant: 'mini' });
+  const welcomeHowl = window.HowlWolf.mount($('welcomeWolf'), { variant: 'mini', sleepAfter: 0 });
+  welcomeHowl.hello();
   function wolf(state, say, opts = {}) {
     if (replaying) return;
     clearTimeout(resetTimer);
@@ -141,6 +164,19 @@
     return s;
   }
   const renderSeg = (s) => { s.el.innerHTML = s.tag + md(s.raw); };
+  const metricTime = (ms) => ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
+  function renderResponseMetrics(ev) {
+    const s = assistantEl(ev);
+    let row = s.el.querySelector('.response-metrics');
+    if (!row) { row = document.createElement('div'); row.className = 'response-metrics'; s.el.appendChild(row); }
+    const speed = Number(ev.tokensPerSecond || 0);
+    row.innerHTML = `<span class="speed">${speed.toFixed(speed >= 100 ? 0 : 1)} tok/s</span>` +
+      `<span title="Tempo al primo token">primo token ${metricTime(ev.ttftMs || 0)}</span>` +
+      `<span>${fmt(ev.outputTokens || 0)} token</span>` +
+      `<span title="Token del prompt, inclusi cronologia e strumenti">prompt ${fmt(ev.inputTokens || 0)}</span>` +
+      `<span>totale ${metricTime(ev.totalMs || 0)}</span>`;
+    row.title = `${ev.model || 'Modello'} · generazione ${metricTime(ev.generationMs || 0)}`;
+  }
   function thinkingEl(ev) {
     let s = segs.get(ev.seg);
     if (!s) {
@@ -242,7 +278,7 @@
         <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
         <span class="pn">${k ? `${svg('folder')} ${esc(baseName(dir))}` : 'Altre conversazioni'}</span>
         <small>${list.length}</small>
-        ${k ? `<button data-proj-new="${esc(dir)}" title="Nuova chat in questo progetto">＋</button><button data-proj-delete="${esc(dir)}" title="Rimuovi lo storico del progetto">×</button>` : '<span></span>'}
+        ${k ? `<button data-proj-new="${esc(dir)}" title="Nuova chat in questo progetto" aria-label="Nuova chat">＋</button><button class="proj-delete" data-proj-delete="${esc(dir)}" title="Elimina progetto dalla barra laterale" aria-label="Elimina progetto">${svg('trash')}</button>` : '<span></span>'}
       </div>`;
       if (open) html += `<div class="proj-chats">${list.length ? list.map(chatRow).join('') : '<div class="chats-empty">Ancora nessuna conversazione in questo progetto.</div>'}</div>`;
     }
@@ -251,6 +287,20 @@
   $('chats').addEventListener('click', (e) => {
     const pn = e.target.closest('[data-proj-new]');
     if (pn) { e.stopPropagation(); return startInProject(pn.dataset.projNew); }
+    const pd = e.target.closest('[data-proj-delete]');
+    if (pd) {
+      e.stopPropagation();
+      const dir = pd.dataset.projDelete;
+      const active = pkey(dir) === pkey(config.workspace);
+      const message = active
+        ? 'Eliminare tutte le conversazioni di questo progetto? La cartella e i suoi file non verranno cancellati. Il progetto resta visibile perché è quello attivo.'
+        : 'Eliminare questo progetto dalla barra laterale e tutte le sue conversazioni? La cartella e i suoi file non verranno cancellati.';
+      if (confirm(message)) {
+        openProjects.delete(pkey(dir)); saveOpen();
+        post('/api/chat/delete-project', { workspace: dir });
+      }
+      return;
+    }
     const ph = e.target.closest('.proj-h');
     if (ph) {
       const k = ph.dataset.proj;
@@ -321,10 +371,11 @@
   }
   const setUsage = (u) => { $('usageTotal').textContent = `${fmt(u.input + u.output)} token usati`; };
   function renderConfig(c) {
+    const previousWorkspace = config.workspace;
     config = c;
     $('brainName').textContent = c.brain ? c.brain.name : `${c.provider} · ${c.model}`;
     if (c.workspace) {
-      if (c.workspace !== config._ws) { config._ws = c.workspace; queueMicrotask(renderChats); }
+      if (c.workspace !== previousWorkspace) queueMicrotask(renderChats);
       const parts = c.workspace.split(/[\\/]/).filter(Boolean);
       $('wsName').textContent = parts.at(-1) || c.workspace;
       $('wsBtn').title = `Cartella di lavoro: ${c.workspace}${c.sandbox ? '\nProtetta: Howl crea e modifica file solo qui dentro' : ''}`;
@@ -337,6 +388,11 @@
     $('modeIcon').innerHTML = svg(mode[3]);
     $('modeMenu').innerHTML = MODES.map(([id, label, descr, ic]) =>
       `<button data-mode="${id}" class="${id === c.mode ? 'on' : ''}">${svg(ic)}<span><b>${label}</b><small>${descr}</small></span>${id === c.mode ? '<span class="check">✓</span>' : ''}</button>`).join('');
+    const think = c.think !== false;
+    $('thinkBtn').classList.toggle('on', think);
+    $('thinkBtn').title = think
+      ? 'Ragionamento acceso: il modello pensa prima di rispondere — clic per spegnerlo'
+      : 'Ragionamento spento: risposte dirette e più veloci — clic per accenderlo';
     if (!$('brains').hidden) renderBrainList();
   }
   function setBusy(b) {
@@ -440,6 +496,7 @@
         break;
       }
       case 'assistant_text': { const s = assistantEl(ev); s.raw = ev.text; s.el.classList.remove('live'); renderSeg(s); break; }
+      case 'response_metrics': renderResponseMetrics(ev); break;
       case 'thinking_delta': { const s = thinkingEl(ev); s.raw += ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'thinking': { const s = thinkingEl(ev); s.raw = ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name, { tool: ev.name }); break;
@@ -492,7 +549,10 @@
       case 'remote': remote = ev.remote; renderRemote(); break;
       case 'remote_activity':
         if (ev.phase === 'start') add(div('msg line', md(`📱 Richiesta da **${ev.channel === 'whatsapp' ? 'WhatsApp' : 'Telegram'}**: ${ev.text || ''}`)));
+        if (ev.phase === 'start') wolf('listening', 'Ascolta una richiesta dal telefono');
         if (ev.phase === 'tool' && remote?.[ev.channel]?.running) { remote[ev.channel].running.tool = ev.tool; renderRemote(); }
+        if (ev.phase === 'tool') wolf('tool', TOOL_SAY[ev.tool] || ev.tool, { tool: ev.tool });
+        if (ev.phase === 'done') wolf('success', 'Richiesta dal telefono completata');
         break;
       case 'remote_pair_request': showPairAsk(ev); break;
       case 'branco':
@@ -501,6 +561,9 @@
           if (ev.fine || /→|— Generazione/.test(ev.line || '')) refreshBranco();
         }
         if (ev.fine) add(div('msg line', md(`🐺 Corsa del branco terminata${ev.code ? ' (interrotta)' : ''}. Apri **Impostazioni → Laboratorio del branco** per il grafo.`)));
+        break;
+      case 'wiki_progress':
+        if (!$('wiki').hidden) { $('wikiStatus').hidden = false; const label=ev.phase==='raw'?'Salvo in raw':ev.phase==='extract'?'Estraggo il testo':'Il cervello compila'; $('wikiStatus').innerHTML = `<span class="spinner"></span> ${label} <b>${esc(ev.name || 'la fonte')}</b> · ${ev.current}/${ev.total}${ev.parts ? ` · parte ${ev.part}/${ev.parts}` : ''}`; }
         break;
       case 'remote_alert': if (!ev.quiet) add(div('msg line err', md(ev.text))); break;
       case 'usage': setUsage(ev.usage); break;
@@ -518,8 +581,17 @@
   }
 
   const connect = () => {
-    const es = new EventSource(`/api/events?t=${TOKEN}`);
+    eventSource?.close();
+    const es = eventSource = new EventSource(`/api/events?t=${TOKEN}`);
     es.onmessage = (m) => { try { handle(JSON.parse(m.data)); } catch (e) { console.error(e); } };
+    es.onerror = () => setTimeout(async () => {
+      if (eventSource !== es) return;
+      try {
+        const html = await fetch(`/?token_probe=${Date.now()}`, { cache: 'no-store' }).then((r) => r.text());
+        const fresh = html.match(/name="howl-token" content="([^"]+)"/)?.[1];
+        if (fresh && fresh !== TOKEN) { TOKEN = fresh; document.querySelector('meta[name=howl-token]').content = fresh; connect(); }
+      } catch {}
+    }, 500);
   };
 
   /* ───────── composer ───────── */
@@ -652,6 +724,7 @@
   $('wsBtn').onclick = (e) => { e.stopPropagation(); renderWsMenu(); toggleMenu('wsDd', 'wsMenu'); };
   $('moreBtn').onclick = (e) => { e.stopPropagation(); toggleMenu('moreDd', 'moreMenu'); };
   $('modeMenu').onclick = (e) => { const b = e.target.closest('[data-mode]'); if (b) { send(`/mode ${b.dataset.mode}`); closeMenus(); } };
+  $('thinkBtn').onclick = () => send('/think');
   $('moreMenu').onclick = (e) => {
     const b = e.target.closest('[data-act]');
     if (!b) return;
@@ -666,6 +739,15 @@
     if (act === 'memory') send('/memory');
     if (act === 'tools') send('/tools');
     if (act === 'help') send('/help');
+  };
+  document.querySelector('.feature-dock').onclick = (e) => {
+    const b = e.target.closest('[data-feature]'); if (!b) return;
+    const act = b.dataset.feature;
+    if (act === 'wiki') openWiki();
+    if (act === 'branco') openBranco();
+    if (act === 'tasks') openTasks();
+    if (act === 'phone') openPhone();
+    if (act === 'memory') send('/memory');
   };
   addEventListener('click', (e) => { if (!e.target.closest('.dd')) closeMenus(); });
 
@@ -763,10 +845,21 @@
     }).join('') : '<span class="muted">Nessun modello salvato: usa uno di quelli rilevati o aggiungine uno.</span>';
   }
   $('brList').onclick = async (e) => {
-    const t = e.target;
-    if (t.dataset.use) await brainApi('activate', { id: t.dataset.use });
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.use) {
+      t.disabled = true;
+      const label = t.textContent;
+      t.textContent = 'Attivo…';
+      const r = await brainApi('activate', { id: t.dataset.use });
+      if (r.error) { t.disabled = false; t.textContent = label; return alert(r.error); }
+      $('brains').hidden = true;
+    }
     if (t.dataset.edit) openForm(config.brains.find((b) => b.id === t.dataset.edit));
-    if (t.dataset.del && confirm('Eliminare questo modello?')) await brainApi('delete', { id: t.dataset.del });
+    if (t.dataset.del && confirm('Eliminare questo modello?')) {
+      const r = await brainApi('delete', { id: t.dataset.del });
+      if (r.error) alert(r.error);
+    }
   };
   async function scan() {
     $('brDetected').innerHTML = '<span class="muted">Cerco modelli sul tuo computer…</span>';
@@ -779,10 +872,13 @@
       const b = e.target.closest('[data-det]');
       if (!b) return;
       const { s, m } = items[+b.dataset.det];
-      const existing = config.brains.find((x) => x.baseUrl === s.baseUrl && x.model === m);
+      const existing = (config.brains || []).find((x) => x.baseUrl === s.baseUrl && x.model === m);
       b.textContent = '…';
-      if (existing) await brainApi('activate', { id: existing.id });
-      else await brainApi('save', { activate: true, brain: { name: `${m.split('/').pop()} (${s.name})`, kind: 'openai', baseUrl: s.baseUrl, model: m, contextLimit: 32000, maxTokens: 4096 } });
+      const r = existing
+        ? await brainApi('activate', { id: existing.id })
+        : await brainApi('save', { activate: true, brain: { name: `${m.split('/').pop()} (${s.name})`, kind: 'openai', baseUrl: s.baseUrl, model: m, contextLimit: 32000, maxTokens: 4096 } });
+      if (r.error) { b.textContent = 'Usa'; return alert(r.error); }
+      $('brains').hidden = true;
     };
   }
   $('brainBtn').onclick = () => { $('brains').hidden = false; renderBrainList(); form.hidden = true; scan(); };
@@ -1150,6 +1246,92 @@
   $('paYes').onclick = () => answerPair(true);
   $('paNo').onclick = () => answerPair(false);
 
+  /* ───────── LLM Wiki ───────── */
+  const wikiApi = (action, body) => post(`/api/wiki/${action}`, body).then((r) => r.json());
+  let wikiData = { notes: [], edges: [] };
+  let wikiSelectedPage = null;
+  const WIKI_COLORS = { concept: '#69a9ff', entity: '#59d2a9', project: '#f6ba66', procedure: '#c49aff', synthesis: '#ff7f96' };
+  let wikiGraphRenderer = null;
+  function ensureWikiGraph() {
+    if (wikiGraphRenderer) return wikiGraphRenderer;
+    wikiGraphRenderer = window.createNeuralWikiGraph($('wikiGraph'), {
+      colors: WIKI_COLORS,
+      onSelect: (id) => showWikiPage(id),
+      onHover: (node, point) => {
+        const tip = $('wikiGraphTip');
+        tip.hidden = !node;
+        if (!node) return;
+        tip.innerHTML = `<b>${esc(node.title)}</b><span>${node.degree} collegamenti · ${esc(node.type)}</span>`;
+        tip.style.left = `${Math.min(point.x + 16, $('wikiGraph').clientWidth - 190)}px`;
+        tip.style.top = `${Math.max(54, point.y - 8)}px`;
+      },
+    });
+    return wikiGraphRenderer;
+  }
+  async function openWiki() {
+    $('wiki').hidden = false; $('wikiBrain').textContent = config.brain?.name || `${config.provider || ''} · ${config.model || ''}`; $('wikiStatus').hidden = true; await refreshWiki();
+  }
+  async function refreshWiki() {
+    const r = await wikiApi('state', {});
+    if (r.error) { $('wikiStatus').hidden = false; $('wikiStatus').textContent = r.error; return; }
+    wikiData = r; $('wikiPageCount').textContent = r.notes.length; $('wikiSourceCount').textContent = r.sources; $('wikiPendingCount').textContent = r.pendingSources; $('wikiLinkCount').textContent = r.edges.length; $('wikiPath').textContent = `Workspace: ${r.workspace} · raw: ${r.rawPath} · wiki: ${r.path}`;
+    $('wikiEmpty').hidden = !!r.notes.length; $('wikiGraph').hidden = !r.notes.length;
+    if (!r.notes.length) {
+      wikiSelectedPage = null;
+      $('wikiNote').hidden = true;
+      $('wikiNoteEmpty').hidden = false;
+      $('wikiNoteEmpty').innerHTML = '<strong>Nessuna nota Wiki da eliminare</strong><span>La struttura è pronta. Carica una fonte in raw e chiedi a Gemma di fare ingest: ogni nota generata mostrerà sempre il cestino.</span>';
+    } else if (!wikiSelectedPage) {
+      $('wikiNoteEmpty').innerHTML = '<span>Seleziona un nodo per leggere la pagina. Il cestino accanto a ogni nota è sempre visibile.</span>';
+    }
+    $('wikiPages').innerHTML = r.notes.map((n) => `<div class="wiki-page-row"><button class="wiki-page-open" data-wiki-page="${esc(n.id)}"><i style="--node:${WIKI_COLORS[n.type] || WIKI_COLORS.concept}"></i><span><b>${esc(n.title)}</b><small>${esc(n.summary || n.type)}</small></span></button><button class="wiki-page-delete" data-wiki-delete="${esc(n.id)}" title="Elimina ${esc(n.title)}" aria-label="Elimina ${esc(n.title)}">${svg('trash')}</button></div>`).join('');
+    drawWikiGraph(r.notes, r.edges);
+  }
+  function drawWikiGraph(notes, edges) {
+    ensureWikiGraph().setData(notes, edges);
+  }
+  async function showWikiPage(ref) {
+    const r=await wikiApi('note',{page:ref});if(r.error)return;wikiSelectedPage=r;ensureWikiGraph().select(r.id);$('wikiNoteDelete').hidden=false;$('wikiNoteEmpty').hidden=true;$('wikiNote').hidden=false;$('wikiNoteType').textContent=r.type;$('wikiNoteTitle').textContent=r.title;$('wikiNoteMeta').textContent=`${r.brain||r.model||'Cervello'} · ${r.sources.length} fonti`;$('wikiNoteBody').innerHTML=md(r.markdown.replace(/^---[\s\S]*?---\s*/,'').replace(/^#\s+.*\n/,''));document.querySelectorAll('[data-wiki-page]').forEach((b)=>b.classList.toggle('on',b.dataset.wikiPage===r.id));
+  }
+  const setWikiGraphMode=(mode)=>{ensureWikiGraph().setMode(mode);$('wikiGraph2d').classList.toggle('on',mode==='2d');$('wikiGraph3d').classList.toggle('on',mode==='3d');$('wikiGesture').textContent=mode==='3d'?'Sinistro: orbita · Shift/centrale/destro: trasla · rotella: zoom · doppio clic: centra':'Trascina: sposta · rotella: zoom · doppio clic: centra';};
+  $('wikiGraph2d').onclick=()=>setWikiGraphMode('2d');
+  $('wikiGraph3d').onclick=()=>setWikiGraphMode('3d');
+  $('wikiGraphMotion').onclick=()=>{const on=$('wikiGraphMotion').classList.toggle('on');ensureWikiGraph().setMotion(on);};
+  $('wikiGraphReset').onclick=()=>ensureWikiGraph().resetView();
+  $('wikiGraphExpand').onclick=()=>{const map=$('wikiGraph').closest('.wiki-map'),expanded=map.classList.toggle('expanded');$('wikiGraphExpand').textContent=expanded?'Riduci':'Espandi';$('wikiGraphExpand').title=expanded?'Riduci il grafo':'Espandi il grafo';setTimeout(()=>ensureWikiGraph().resize(),40);};
+  addEventListener('keydown',(e)=>{if(e.key==='Escape'){const map=$('wikiGraph').closest('.wiki-map');if(map.classList.contains('expanded')){$('wikiGraphExpand').click();}}});
+  async function deleteWikiPageFromUi(ref) {
+    const page=wikiData.notes.find((note)=>note.id===ref)||wikiSelectedPage;
+    if(!page||!confirm(`Eliminare “${page.title}” dalla Wiki? La fonte raw resterà disponibile.`))return;
+    const r=await wikiApi('page:delete',{page:ref});if(r.error){$('wikiStatus').hidden=false;$('wikiStatus').textContent=r.error;return;}
+    wikiSelectedPage=null;ensureWikiGraph().select(null);$('wikiNote').hidden=true;$('wikiNoteEmpty').hidden=false;$('wikiStatus').hidden=false;$('wikiStatus').textContent=`Pagina “${page.title}” eliminata. La fonte raw è intatta.`;await refreshWiki();
+  }
+  $('wikiNoteDelete').onclick=()=>{if(wikiSelectedPage)deleteWikiPageFromUi(wikiSelectedPage.id);};
+  $('wikiPages').onclick=(e)=>{const del=e.target.closest('[data-wiki-delete]');if(del)return deleteWikiPageFromUi(del.dataset.wikiDelete);const b=e.target.closest('[data-wiki-page]');if(b)showWikiPage(b.dataset.wikiPage);};
+  $('wikiClose').onclick=()=>{$('wiki').hidden=true;};
+  $('wiki').addEventListener('mousedown',(e)=>{if(e.target.id==='wiki')$('wiki').hidden=true;});
+  $('wikiAsk').onsubmit=async(e)=>{e.preventDefault();const q=$('wikiQuestion').value.trim();if(!q)return;const save=$('wikiSaveAnswer').checked;await wikiApi('query:log',{question:q,save});$('wiki').hidden=true;input.value=`Consulta la LLM Wiki del progetto. Parti da index.md, segui i wikilink pertinenti, confronta le pagine e cita pagine e fonti usate. Domanda: ${q}${save?'\nDopo la risposta, se emerge una sintesi durevole, salvala nella Wiki con lo strumento wiki action=write, includendo wikilink e fonti.':''}`;send();};
+  async function ingestSelected(fileList) {
+    const picked=[...fileList];if(!picked.length)return;const total=picked.reduce((n,f)=>n+f.size,0);if(total>40*1024*1024)return alert('Le fonti selezionate superano 40 MB. Importale in gruppi più piccoli.');
+    if(picked.some((f)=>f.size>30*1024*1024))return alert('Un file supera il limite di 30 MB.');
+    $('wikiStatus').hidden=false;$('wikiStatus').innerHTML='<span class="spinner"></span> Salvo le fonti in raw…';
+    try {
+      const files=await Promise.all(picked.map(async(f)=>{const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(f);});return{name:f.name,path:f.webkitRelativePath||f.name,type:f.type,data:String(dataUrl).split(',')[1]||''};}));
+      const r=await wikiApi('upload',{files});if(r.error){$('wikiStatus').textContent=r.error;return;}$('wikiStatus').innerHTML=`<b>${r.stored.length}</b> ${r.stored.length===1?'fonte salvata':'fonti salvate'} in raw. Ora chiedi a Gemma: “fai ingest dei nuovi file”.`;await refreshWiki();
+    } catch (error) {
+      $('wikiStatus').textContent = `Caricamento non riuscito: ${error.message}`;
+    } finally {
+      $('wikiFiles').value='';
+    }
+  }
+  $('wikiFiles').onchange=(e)=>ingestSelected(e.target.files);$('wikiDrop').ondragover=(e)=>{e.preventDefault();$('wikiDrop').classList.add('over');};$('wikiDrop').ondragleave=()=>$('wikiDrop').classList.remove('over');$('wikiDrop').ondrop=(e)=>{e.preventDefault();$('wikiDrop').classList.remove('over');ingestSelected(e.dataTransfer.files);};
+  function showWikiDocument(title, content) {
+    wikiSelectedPage=null;$('wikiNoteDelete').hidden=true;$('wikiNoteEmpty').hidden=true;$('wikiNote').hidden=false;$('wikiNoteType').textContent='manutenzione';$('wikiNoteTitle').textContent=title;$('wikiNoteMeta').textContent='LLM Wiki';$('wikiNoteBody').innerHTML=md(content||'');
+  }
+  $('wikiLint').onclick=async()=>{$('wikiStatus').hidden=false;$('wikiStatus').innerHTML='<span class="spinner"></span> Il cervello cerca contraddizioni, pagine superate e lacune…';const r=await wikiApi('health',{});if(r.error){$('wikiStatus').textContent=r.error;return;}const l=r.structural;$('wikiStatus').textContent=`Controllo completato · ${l.broken.length} link rotti · ${l.orphans.length} pagine isolate`;showWikiDocument('Controllo della Wiki',r.report);};
+  $('wikiLog').onclick=async()=>{const r=await wikiApi('log',{});if(r.error)return;showWikiDocument('Registro',r.log);};
+  $('wikiSchema').onclick=async()=>{const r=await wikiApi('schema:get',{});if(r.error)return;wikiSelectedPage=null;$('wikiNoteDelete').hidden=true;$('wikiNoteEmpty').hidden=true;$('wikiNote').hidden=false;$('wikiNoteType').textContent='regole del cervello';$('wikiNoteTitle').textContent='Schema della Wiki';$('wikiNoteMeta').textContent='Definisce struttura, ingestione, query e manutenzione';$('wikiNoteBody').innerHTML=`<textarea class="wiki-schema-editor" id="wikiSchemaEditor">${esc(r.schema)}</textarea><button class="wiki-schema-save" id="wikiSchemaSave">Salva schema</button>`;$('wikiSchemaSave').onclick=async()=>{const out=await wikiApi('schema:save',{schema:$('wikiSchemaEditor').value});$('wikiStatus').hidden=false;$('wikiStatus').textContent=out.error||'Schema aggiornato.';};};
+
   /* ───────── laboratorio del branco ───────── */
   const brancoApi = async (action, body) => {
     const r = await post(`/api/branco/${action}`, body).then(x => x.json()).catch(e => ({ error: e.message }));
@@ -1341,10 +1523,10 @@
     $('bcStart').hidden = !!bcRunning;
     $('bcStop').hidden = !bcRunning;
     for (const el of $('bcForm').querySelectorAll('select, input:not([name=modello])')) el.disabled = !!bcRunning;
-    $('bcList').innerHTML = r.corse.length ? r.corse.map((c) => `<div class="br-item bc-item ${c.stato === 'in corso' ? 'active' : ''}">
+    $('bcList').innerHTML = r.corse.length ? r.corse.map((c) => `<div class="br-item bc-item ${['in corso', 'in pausa'].includes(c.stato) ? 'active' : ''}">
         <div><div class="n">${esc(c.creato)} · ${c.obiettivo === 'intelligenza' ? 'solo intelligenza' : 'intelligenza + velocità'} · ${esc(c.stato)}</div>
         <div class="m">${esc(c.modello)} · ${c.esaminati}/${c.previsti} agenti${c.alfa ? ` · ★ alfa ${esc(c.alfa.nome)} ${c.alfa.voto} in ${c.alfa.secondi}s${c.alfa.segreto ? ` · esame segreto ${c.alfa.segreto}` : ''}` : ''}</div></div>
-        <div class="acts"><button class="use" data-graph="${esc(c.id)}">Grafo</button></div></div>`).join('')
+        <div class="acts"><button class="use" data-graph="${esc(c.id)}">Grafo</button>${c.stato === 'in corso' ? '' : `<button class="danger" data-delete-run="${esc(c.id)}" title="Elimina questa corsa">Elimina</button>`}</div></div>`).join('')
       : '<span class="muted">Nessuna corsa ancora. Serve un modello locale attivo (es. Qwen su LM Studio): una corsa da 4 generazioni dura circa un\'ora.</span>';
   }
   function openBranco() {
@@ -1378,10 +1560,54 @@
     openGraph(r.id);
   };
   $('bcStop').onclick = async () => { if (confirm('Fermare la corsa? Gli agenti già esaminati restano salvati.')) { await brancoApi('stop', {}); setTimeout(refreshBranco, 500); } };
-  $('bcList').onclick = (e) => { const b = e.target.closest('[data-graph]'); if (b) openGraph(b.dataset.graph); };
-  function openGraph(id) { $('bcFrame').src = `/branco.html?corsa=${encodeURIComponent(id)}`; $('bcGraph').hidden = false; }
-  function closeGraph() { $('bcGraph').hidden = true; $('bcFrame').src = 'about:blank'; }
+  $('bcList').onclick = async (e) => {
+    const graph = e.target.closest('[data-graph]');
+    if (graph) return openGraph(graph.dataset.graph);
+    const del = e.target.closest('[data-delete-run]');
+    if (!del || !confirm('Eliminare definitivamente questa corsa e tutti i suoi risultati?')) return;
+    del.disabled = true;
+    const r = await brancoApi('delete', { id: del.dataset.deleteRun });
+    if (!r.error) refreshBranco(); else del.disabled = false;
+  };
+  let graphReturnFocus = null;
+  let graphRunId = null;
+  async function refreshGraphActions() {
+    if (!graphRunId || $('bcGraph').hidden) return;
+    const r = await brancoApi('list', {});
+    if (r.error) return;
+    const run = r.corse.find((c) => c.id === graphRunId);
+    const pausable = run && ['in corso', 'in pausa'].includes(run.stato);
+    $('bcGraphPause').hidden = !pausable;
+    $('bcGraphPause').dataset.paused = run?.stato === 'in pausa' ? 'true' : 'false';
+    $('bcGraphPause').textContent = run?.stato === 'in pausa' ? '▶ Riprendi' : 'Ⅱ Metti in pausa';
+    $('bcGraphDelete').hidden = !run;
+  }
+  function openGraph(id) {
+    graphReturnFocus = document.activeElement;
+    graphRunId = id;
+    $('bcFrame').src = `/branco.html?corsa=${encodeURIComponent(id)}`;
+    $('bcGraph').hidden = false;
+    refreshGraphActions();
+    requestAnimationFrame(() => $('bcGraphClose').focus());
+  }
+  function closeGraph() {
+    $('bcGraph').hidden = true;
+    $('bcFrame').src = 'about:blank';
+    graphRunId = null;
+    graphReturnFocus?.focus?.();
+    graphReturnFocus = null;
+  }
   $('bcGraphClose').onclick = closeGraph;
+  $('bcGraphPause').onclick = async () => {
+    const action = $('bcGraphPause').dataset.paused === 'true' ? 'resume' : 'pause';
+    const r = await brancoApi(action, {});
+    if (!r.error) { refreshBranco(); refreshGraphActions(); }
+  };
+  $('bcGraphDelete').onclick = async () => {
+    if (!graphRunId || !confirm('Eliminare questa corsa? Se è ancora attiva verrà fermata e tutti i risultati saranno rimossi.')) return;
+    const r = await brancoApi('delete', { id: graphRunId });
+    if (!r.error) { closeGraph(); refreshBranco(); }
+  };
 
   /* ───────── cartella di lavoro ───────── */
   function renderWsMenu() {
@@ -1403,7 +1629,8 @@
     if (pkey(dir) !== pkey(config.workspace)) await setWorkspace(dir);
     post('/api/chat/new');
   }
-  $('newProject').onclick = async () => {
+  const newProjectBtn = $('newProject');
+  if (newProjectBtn) newProjectBtn.onclick = async () => {
     const dir = desk?.pickFolder ? await desk.pickFolder(config.workspace) : prompt('Cartella del nuovo progetto:', '');
     if (dir) { await setWorkspace(dir); post('/api/chat/new'); }
   };

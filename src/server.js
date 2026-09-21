@@ -13,6 +13,7 @@ import { Harness } from './harness.js';
 import { shutdownShells } from './tools/shell.js';
 import { shutdownComputer } from './tools/computer.js';
 import { useSafeStorage } from './secrets.js';
+import { appendWikiLog, deleteWikiPage, getWikiLog, getWikiSchema, ingestWiki, lintWiki, readWiki, removeWikiSource, saveWikiSchema, semanticLintWiki, storeWikiRaw, wikiState } from './wiki-core.js';
 
 const UI = path.join(ROOT, 'ui');
 const MIME = {
@@ -22,7 +23,7 @@ const MIME = {
 
 const readBody = (req) => new Promise((resolve) => {
   let data = '';
-  req.on('data', (c) => { data += c; if (data.length > 12 * 1024 * 1024) req.destroy(); });
+  req.on('data', (c) => { data += c; if (data.length > 64 * 1024 * 1024) req.destroy(); });
   req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { resolve({}); } });
 });
 const json = (res, obj, status = 200) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
@@ -124,6 +125,9 @@ export async function startServer({ port, safeStorage } = {}) {
       case 'list': return { corse: b.list(), inCorso: b.runId };
       case 'start': return { ...b.start(body), corse: b.list(), inCorso: b.runId };
       case 'stop': b.stop(); return { ok: true };
+      case 'pause': b.pause(); return { ok: true, corse: b.list(), inCorso: b.runId };
+      case 'resume': b.resume(); return { ok: true, corse: b.list(), inCorso: b.runId };
+      case 'delete': await b.delete(body.id); return { ok: true, corse: b.list(), inCorso: b.runId };
       case 'mondo:get':      return b.mondoGet();
       case 'mondo:save':     return b.mondoSave(body);
       case 'mondo:genera':   return await b.mondoGenera(body, h.providerInfo());
@@ -136,6 +140,36 @@ export async function startServer({ port, safeStorage } = {}) {
         const d = b.data(id);
         if (id !== b.runId && d.stato !== 'finito') d.stato = 'interrotta'; // processo fermato a metà
         return { data: d };
+      }
+      default: throw new Error('azione sconosciuta');
+    }
+  }
+
+  // LLM Wiki: compila fonti raw in Markdown collegato usando il cervello attivo.
+  async function wikiApi(action, body) {
+    switch (action) {
+      case 'state': return wikiState(h.cfg.workspace);
+      case 'note': return readWiki(h.cfg.workspace, body.page);
+      case 'lint': return { lint: lintWiki(h.cfg.workspace) };
+      case 'health': return await semanticLintWiki(h.cfg.workspace, { ...h.providerInfo(), contextLimit: h.limits.contextLimit, maxTokens: h.limits.maxTokens });
+      case 'schema:get': return { schema: getWikiSchema(h.cfg.workspace) };
+      case 'schema:save': return { schema: saveWikiSchema(h.cfg.workspace, body.schema) };
+      case 'log': return { log: getWikiLog(h.cfg.workspace) };
+      case 'query:log': appendWikiLog(h.cfg.workspace, 'query', String(body.question || 'Domanda').slice(0, 120), [body.save ? 'Risposta richiesta come pagina persistente.' : 'Risposta richiesta solo in chat.']); return { ok: true };
+      case 'source:delete': return removeWikiSource(h.cfg.workspace, body.raw);
+      case 'page:delete': return deleteWikiPage(h.cfg.workspace, body.page);
+      case 'upload': {
+        const notify = (progress) => h.broadcast('wiki_progress', progress);
+        const files = Array.isArray(body.files) ? body.files : [];
+        if (!files.length) throw new Error('Seleziona almeno un file.');
+        if (files.length > 20) throw new Error('Importa al massimo 20 fonti per volta.');
+        const stored = [];
+        for (let i = 0; i < files.length; i++) {
+          const raw = storeWikiRaw(h.cfg.workspace, files[i] || {});
+          stored.push(raw);
+          notify({ phase: 'raw', current: i + 1, total: files.length, name: raw.name });
+        }
+        return { stored, ...wikiState(h.cfg.workspace) };
       }
       default: throw new Error('azione sconosciuta');
     }
@@ -173,13 +207,16 @@ export async function startServer({ port, safeStorage } = {}) {
       if (url.pathname === '/api/chat/new') { h.newChat(); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/open') { h.openSession(body.id); return json(res, { ok: true }); }
       if (url.pathname === '/api/chat/delete') { h.removeSession(body.id); return json(res, { ok: true }); }
-      if (url.pathname === '/api/chat/delete-project') { h.removeProjectSessions(body.workspace); return json(res, { ok: true }); }
+      if (url.pathname === '/api/chat/delete-project') return json(res, { ok: true, ...h.removeProjectSessions(body.workspace) });
       if (url.pathname === '/api/chat/rename') { h.renameSession(body.id, body.title); return json(res, { ok: true }); }
       if (url.pathname.startsWith('/api/tasks/')) {
         try { return json(res, taskApi(url.pathname.slice(11), body)); } catch (e) { return json(res, { error: e.message }); }
       }
       if (url.pathname.startsWith('/api/branco/')) {
         try { return json(res, await brancoApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
+      }
+      if (url.pathname.startsWith('/api/wiki/')) {
+        try { return json(res, await wikiApi(url.pathname.slice(10), body)); } catch (e) { return json(res, { error: e.message }); }
       }
       if (url.pathname.startsWith('/api/remote/')) {
         try { return json(res, await remoteApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message, remote: h.remote?.publicState() }); }

@@ -8,3 +8,4 @@ assets/raw/_*.jpg
 .tmp-home/
 *.log
 __pycache__/
+release-dist/

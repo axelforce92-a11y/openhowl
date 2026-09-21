@@ -196,7 +196,7 @@ function toOpenAIMessages(system, messages, p) {
   return out;
 }
 
-async function openaiChat(p, { system, messages, tools = [], signal, onDelta = () => {}, maxTokens = 16000 }) {
+async function openaiChat(p, { system, messages, tools = [], signal, onDelta = () => {}, maxTokens = 16000, reasoningEffort = null }) {
   const body = {
     model: p.model,
     messages: toOpenAIMessages(system, messages, p),
@@ -205,6 +205,8 @@ async function openaiChat(p, { system, messages, tools = [], signal, onDelta = (
     max_tokens: maxTokens,
   };
   if (tools.length) body.tools = tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.input_schema } }));
+  // I modelli che ragionano (Qwen3.5, DeepSeek-R1...) accettano reasoning_effort: "none" spegne il ragionamento.
+  if (reasoningEffort) body.reasoning_effort = reasoningEffort;
 
   const res = await post(`${p.baseUrl}/chat/completions`, { authorization: `Bearer ${p.apiKey}` }, body, signal);
   let text = '', reasoning = '', finish = null;

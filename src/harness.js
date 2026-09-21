@@ -20,6 +20,14 @@ import { loadHooks, runHook, HOOKS_DIR } from './hooks.js';
 import { Scheduler, describe as describeSchedule, parseWhen } from './schedule.js';
 import { RemoteHub, touchesSecrets } from './remote/hub.js';
 import { BrancoManager } from './branco/manager.js';
+import { ingestStoredWikiSources, wikiState } from './wiki-core.js';
+
+const explicitWikiIngest = (text) => {
+  const value = String(text || '');
+  if (/\b(non|evita|senza)\b.{0,24}\bingest/i.test(value)) return false;
+  return /\b(fai|esegui|avvia|lancia|procedi)\b.{0,40}\bingest/i.test(value) ||
+    /\bingest\b.{0,40}\b(raw|file|cartella|pdf|document)/i.test(value);
+};
 
 export const COMMANDS = [
   ['/goal <obiettivo> [--max N]', 'Loop engineering: pianifica → esegue → verifica → ripete fino al risultato'],
@@ -27,6 +35,7 @@ export const COMMANDS = [
   ['/goal resume [--max N]', 'Riprende l\'ultimo goal non completato'],
   ['/stop', 'Interrompe il lavoro in corso'],
   ['/mode ask|auto|readonly', 'Permessi: chiedi / autonomo / sola lettura'],
+  ['/think on|off', 'Accende o spegne il ragionamento del modello (lampadina)'],
   ['/brain [nome]', 'Elenca o attiva un modello salvato'],
   ['/skills', 'Elenca le skill che Howl sa usare'],
   ['/soul', 'Dove modificare identità e carattere di Howl'],
@@ -53,6 +62,7 @@ export class Harness {
     this.pending = new Map();
     this.alwaysAllow = new Set();
     this.todos = [];
+    this.think = cfg.think !== 'off';
     this.busy = false;
     this.abort = null;
     this.mcpTools = [];
@@ -145,8 +155,15 @@ export class Harness {
     const ids = listSessions().filter((s) => key(s.workspace) === target).map((s) => s.id);
     const active = ids.includes(this.session.id);
     ids.forEach(deleteSession);
+    try {
+      const file = path.join(DATA_DIR, 'workspace.json');
+      const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+      saved.recenti = (saved.recenti || []).filter((p) => key(p) !== target || key(p) === key(this.cfg.workspace));
+      fs.writeFileSync(file, JSON.stringify(saved, null, 2));
+    } catch {}
     if (active) this.newChat();
     else this.sendSessions();
+    return { removed: ids.length, active: target === key(this.cfg.workspace) };
   }
 
   renameSession(id, title) {
@@ -217,7 +234,9 @@ export class Harness {
     return {
       maxTokens: Number(b?.maxTokens) || this.cfg.maxTokens,
       contextLimit: Number(b?.contextLimit) || this.cfg.contextLimit,
-      thinkingBudget: b ? 0 : this.cfg.thinkingBudget,
+      thinkingBudget: b ? 0 : this.think ? this.cfg.thinkingBudget : 0,
+      // "none" spegne il ragionamento sui modelli che lo supportano (Qwen3.5 e simili via LM Studio).
+      reasoningEffort: this.think ? null : 'none',
     };
   }
 
@@ -228,6 +247,7 @@ export class Harness {
       provider: this.cfg.provider, model: p.model, mode: this.cfg.mode, workspace: this.cfg.workspace,
       sandbox: this.cfg.sandbox !== false, recentWorkspaces: this.recentWorkspaces(),
       hasKey: !!p.apiKey, keyEnv: p.keyEnv, providers: Object.keys(PRESETS), vision: p.vision,
+      think: this.think,
       brain: this.cfg.brain ? { id: this.cfg.brain.id, name: this.cfg.brain.name } : null,
       brains: brains.list.map(maskBrain),
       tools: this.allTools().map((t) => t.name),
@@ -239,6 +259,10 @@ export class Harness {
   saveBrain(input, activate = false) {
     const store = loadBrains();
     const old = store.list.find((b) => b.id === input.id);
+    const willActivate = activate || (!!old && this.cfg.brain?.id === old.id);
+    if (willActivate && (this.busy || this.remoteBusy)) {
+      throw new Error('Howl sta lavorando: aspetta che finisca prima di cambiare modello.');
+    }
     const brain = {
       id: old?.id || `b${Date.now().toString(36)}`,
       name: String(input.name || input.model || 'Cervello').slice(0, 60),
@@ -254,7 +278,7 @@ export class Harness {
     if (!brain.baseUrl || !brain.model) throw new Error('Servono almeno indirizzo (base URL) e modello.');
     store.list = old ? store.list.map((b) => (b.id === brain.id ? brain : b)) : [...store.list, brain];
     saveBrains(store);
-    if (activate || this.cfg.brain?.id === brain.id) this.activateBrain(brain.id);
+    if (willActivate) this.activateBrain(brain.id);
     else this.send('config', { config: this.publicConfig() });
     return brain;
   }
@@ -266,6 +290,9 @@ export class Harness {
 
   deleteBrain(id) {
     const store = loadBrains();
+    if (store.active === id && (this.busy || this.remoteBusy)) {
+      throw new Error('Howl sta lavorando: aspetta che finisca prima di rimuovere il modello attivo.');
+    }
     store.list = store.list.filter((b) => b.id !== id);
     if (store.active === id) { store.active = null; this.cfg.brain = null; }
     saveBrains(store);
@@ -273,13 +300,16 @@ export class Harness {
   }
 
   activateBrain(id) {
+    if (this.busy || this.remoteBusy) throw new Error('Howl sta lavorando: aspetta che finisca prima di cambiare modello.');
     const store = loadBrains();
     const brain = store.list.find((b) => b.id === id);
     if (!brain) throw new Error('Cervello non trovato');
     store.active = id;
     saveBrains(store);
     this.cfg.brain = brain;
+    this.context = { ...this.context, limit: this.limits.contextLimit };
     this.send('config', { config: this.publicConfig() });
+    this.send('context', { context: this.context });
     this.send('info', { text: `🧠 Cervello attivo: **${brain.name}** — \`${brain.model}\` (${brain.baseUrl})` });
   }
 
@@ -444,6 +474,10 @@ export class Harness {
     if (this.remoteBusy) return this.send('info', { text: 'Sto lavorando a una richiesta arrivata dal telefono: aspetta che finisca oppure fermala dal riquadro Telefono.' });
     if (!this.agent.messages.length) { this.session.title = titleFrom(text || 'Immagine allegata'); this.sendSessions(); }
     this.send('user', { text: text || 'Immagine allegata', images: images.map((im) => ({ mediaType: im.source.media_type, data: im.source.data })) });
+    if (!images.length && explicitWikiIngest(text)) {
+      await this.runTask((signal) => this.runExplicitWikiIngest(text, signal));
+      return;
+    }
     const hooked = await runHook(this, 'onUserMessage', { text });
     let prompt = hooked.text || text;
     const relevant = matchSkills(prompt);
@@ -454,6 +488,36 @@ export class Harness {
     const content = images.length ? [{ type: 'text', text: prompt || 'Analizza queste immagini.' }, ...images] : prompt;
     await this.runTask((signal) => this.agent.run(content, { signal }));
   }
+
+  async runExplicitWikiIngest(text, signal) {
+    if (signal?.aborted) throw Object.assign(new Error('Interrotto'), { name: 'AbortError' });
+    this.agent.messages.push({ role: 'user', content: text });
+    const before = wikiState(this.cfg.workspace);
+    const lower = text.toLowerCase().replace(/\\/g, '/');
+    const named = before.rawSources.filter((source) => lower.includes(source.name.toLowerCase()) || lower.includes(source.raw.toLowerCase()));
+    const files = named.length ? named.map((source) => source.raw) : undefined;
+    const id = `wiki-ingest-${Date.now()}`;
+    const input = { action: 'ingest', ...(files ? { files } : {}) };
+    this.send('tool_start', { id, name: 'wiki', input });
+    this.send('state', { state: 'tool', tool: 'wiki' });
+    try {
+      const provider = { ...this.providerInfo(), contextLimit: this.limits.contextLimit, maxTokens: this.limits.maxTokens };
+      const result = await ingestStoredWikiSources(this.cfg.workspace, files, provider, (event) => this.broadcast('wiki_progress', event));
+      const processed = (files || before.rawSources.filter((source) => !source.ingested).map((source) => source.raw));
+      const summary = result.created.length
+        ? `Ingestione completata sui file reali: ${processed.map((file) => `\`${file}\``).join(', ')}. Ho creato o aggiornato ${result.created.length} pagine Wiki; ora ci sono ${result.notes.length} pagine e ${result.edges.length} collegamenti.`
+        : result.message || `Nessuna nuova pagina creata. Fonti già elaborate: ${result.skipped.join(', ') || 'nessuna'}.`;
+      this.send('tool_end', { id, ok: true, output: JSON.stringify({ processed, created: result.created, skipped: result.skipped }), ms: 0 });
+      this.send('assistant_text', { seg: id, text: summary });
+      this.agent.messages.push({ role: 'assistant', content: summary });
+      this.persist();
+      return summary;
+    } catch (error) {
+      this.send('tool_end', { id, ok: false, output: error.message, ms: 0 });
+      throw error;
+    }
+  }
+
   async runTask(fn) {
     if (this.remoteBusy) return this.send('info', { text: '📱 Sto lavorando a una richiesta arrivata dal telefono: riprova tra poco.' });
     this.busy = true;
@@ -529,6 +593,15 @@ export class Harness {
         this.cfg.mode = arg;
         this.send('config', { config: this.publicConfig() });
         return info(`Modalità permessi: **${arg}**${arg === 'auto' ? ' — i comandi pericolosi chiedono comunque conferma.' : ''}`);
+
+      case 'think': {
+        if (arg && !['on', 'off'].includes(arg)) return info('Uso: `/think on|off`');
+        this.think = arg ? arg === 'on' : !this.think;
+        this.send('config', { config: this.publicConfig() });
+        return info(this.think
+          ? 'Ragionamento **acceso**: il modello pensa prima di rispondere — più preciso, più lento.'
+          : 'Ragionamento **spento**: risposte dirette, molti token risparmiati.');
+      }
 
       case 'brain': {
         const list = loadBrains().list;

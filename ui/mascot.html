@@ -9,7 +9,7 @@
     .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
 
     .bubble {
-      position: relative; max-width: 210px; margin-bottom: 6px; padding: 8px 12px; border-radius: 14px;
+      position: relative; max-width: 154px; margin-bottom: 4px; padding: 7px 10px; border-radius: 12px;
       background: rgba(255, 255, 255, .97); color: #1e293b; font-size: 12.5px; line-height: 1.35;
       box-shadow: 0 6px 20px rgba(15, 23, 42, .18), 0 0 0 1px rgba(15, 23, 42, .06);
       opacity: 0; transform: translateY(6px) scale(.96); transition: opacity .25s, transform .25s;
@@ -35,10 +35,10 @@
     .stop:hover { filter: brightness(1.1); }
     body.busy .stop { display: grid; }
 
-    .wolf { position: relative; width: 200px; height: 232px; cursor: grab; -webkit-user-drag: none; }
+    .wolf { position: relative; width: 132px; height: 142px; cursor: grab; -webkit-user-drag: none; }
     .wolf:active { cursor: grabbing; }
     .body { position: absolute; inset: 0; }
-    .glow { position: absolute; left: 50%; bottom: 2px; width: 120px; height: 16px; margin-left: -60px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 184, 166, .35), transparent); opacity: 0; transition: opacity .4s; }
+    .glow { position: absolute; left: 50%; bottom: 2px; width: 82px; height: 11px; margin-left: -41px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 184, 166, .35), transparent); opacity: 0; transition: opacity .4s; }
 
     body[data-state=tool] .glow, body[data-state=thinking] .glow { opacity: 1; }
 

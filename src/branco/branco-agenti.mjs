@@ -91,8 +91,23 @@ Termina SEMPRE con una riga nel formato: RISPOSTA: ${format}.`;
 }
 /* ───────── chiamate al modello ───────── */
 const stats = { chiamate: 0, token: 0 };
+let paused = false;
+let resumeWaiters = [];
+process.on('message', (msg) => {
+  if (msg?.type === 'pause') paused = true;
+  if (msg?.type === 'resume') {
+    paused = false;
+    const waiters = resumeWaiters;
+    resumeWaiters = [];
+    waiters.forEach((resolve) => resolve());
+  }
+});
+async function waitIfPaused() {
+  while (paused) await new Promise((resolve) => resumeWaiters.push(resolve));
+}
 async function chat(body) {
   for (let attempt = 0; attempt < 3; attempt++) {
+    await waitIfPaused();
     try {
       const r = await fetch(`${CFG.url}/chat/completions`, {
         method: 'POST', headers: { 'content-type': 'application/json' },

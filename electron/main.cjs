@@ -62,18 +62,19 @@ function createMain() {
     e.preventDefault(); // chiudere la finestra non spegne l'agente: resta nell'area di notifica
     mainWin.hide();
   });
+  mainWin.on('closed', () => { mainWin = null; });
 }
 
 function openMain() {
-  if (!mainWin) createMain();
+  if (!mainWin || mainWin.isDestroyed()) return createMain();
   if (mainWin.isMinimized()) mainWin.restore();
-  mainWin.show();
+  if (!mainWin.isVisible()) mainWin.show();
   mainWin.focus();
 }
 
 /* ── mascotte sul desktop ── */
-const MASCOT_W = 240;
-const MASCOT_H = 320;
+const MASCOT_W = 176;
+const MASCOT_H = 224;
 
 function mascotPosition() {
   const p = prefs.mascotPos;

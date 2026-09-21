@@ -19,6 +19,7 @@ export class BrancoManager {
     this.h = h;
     this.child = null;
     this.runId = null;
+    this.paused = false;
     this.log = [];
   }
 
@@ -43,7 +44,7 @@ export class BrancoManager {
       const N = d.esame?.length || 1;
       return {
         id, creato: d.creato, modello: d.modello, obiettivo: d.config?.obiettivo, generazioni: d.config?.generations,
-        stato: id === this.runId ? 'in corso' : d.stato === 'finito' ? 'finita' : 'interrotta',
+        stato: id === this.runId ? (this.paused ? 'in pausa' : 'in corso') : d.stato === 'finito' ? 'finita' : 'interrotta',
         esaminati: done.length, previsti: 6 + (d.config?.generations || 0) * (d.config?.kidsPerGen || 0),
         alfa: alpha ? { nome: alpha.nome, voto: `${Math.round(alpha.voto * N)}/${N}`, secondi: Math.round(alpha.secondi), segreto: alpha.votoSegreto != null ? `${Math.round(alpha.votoSegreto * (d.segreto?.length || 1))}/${d.segreto?.length}` : null } : null,
       };
@@ -55,6 +56,31 @@ export class BrancoManager {
     const d = readJson(path.join(BRANCO_DIR, safe, 'risultati.json'));
     if (!d) throw new Error('Corsa non trovata.');
     return d;
+  }
+
+  async delete(id) {
+    const raw = String(id || '');
+    const safe = raw.replace(/[^\w-]/g, '');
+    if (!safe || safe !== raw) throw new Error('Corsa non valida.');
+    const root = path.resolve(BRANCO_DIR);
+    const target = path.resolve(root, safe);
+    const rel = path.relative(root, target);
+    if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) throw new Error('Corsa non valida.');
+    if (!fs.existsSync(path.join(target, 'risultati.json'))) throw new Error('Corsa non trovata.');
+    if (safe === this.runId && this.child) {
+      const child = this.child;
+      await new Promise((resolve) => {
+        if (child.exitCode != null) return resolve();
+        let timer;
+        const done = () => { clearTimeout(timer); resolve(); };
+        child.once('exit', done);
+        child.kill();
+        timer = setTimeout(() => child.kill('SIGKILL'), 2000);
+        timer.unref?.();
+      });
+    }
+    fs.rmSync(target, { recursive: true, force: false });
+    return true;
   }
 
   start({ obiettivo = 'equilibrio', generazioni = 4, figli = 6, riprendi = true, famiglie = 1, migrazione = 2, crossbreed = false, useDefault = true } = {}) {
@@ -85,6 +111,7 @@ export class BrancoManager {
       if (prev) args.push('--riprendi', path.join(BRANCO_DIR, prev.id, 'risultati.json'));
     }
     this.log = [];
+    this.paused = false;
     this.child = fork(SCRIPT, args, { cwd: out, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
     this.runId = id;
     const onLine = (buf) => {
@@ -101,12 +128,28 @@ export class BrancoManager {
       this.h.broadcast('branco', { id, fine: true, code });
       this.child = null;
       this.runId = null;
+      this.paused = false;
     });
     return { id };
   }
 
+  pause() {
+    if (!this.child) throw new Error('Nessuna corsa in corso.');
+    if (!this.paused) this.child.send({ type: 'pause' });
+    this.paused = true;
+    return true;
+  }
+
+  resume() {
+    if (!this.child) throw new Error('Nessuna corsa in corso.');
+    if (this.paused) this.child.send({ type: 'resume' });
+    this.paused = false;
+    return true;
+  }
+
   stop() {
     if (!this.child) return false;
+    this.paused = false;
     this.child.kill();
     return true;
   }

@@ -9,6 +9,7 @@ import { browserTool } from './browser.js';
 import { computerTool } from './computer.js';
 import { skillTool } from '../skills.js';
 import { scheduleTool } from '../schedule.js';
+import { wikiTool } from '../wiki-core.js';
 
 export const MEMORY_FILE = path.join(DATA_DIR, 'memory.md');
 
@@ -64,4 +65,4 @@ const metaTools = [
   },
 ];
 
-export const builtinTools = () => [...fsTools, ...shellTools, ...webTools, browserTool, computerTool, skillTool, scheduleTool, ...metaTools];
+export const builtinTools = () => [...fsTools, ...shellTools, ...webTools, browserTool, computerTool, skillTool, scheduleTool, wikiTool, ...metaTools];

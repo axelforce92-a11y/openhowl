@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "openhowl",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/server.js"],
+      "port": 7777
+    },
+    {
       "name": "grafo-branco",
       "runtimeExecutable": "node",
       "runtimeArgs": ["lab/branco-agenti/serve.mjs", "7811"],

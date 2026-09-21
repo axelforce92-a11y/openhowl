@@ -9,6 +9,15 @@
 }
 .hw-pose.on { opacity: 1; }
 .hw-pose img { position: absolute; inset: 0; width: 100%; height: 100%; -webkit-user-drag: none; user-select: none; }
+.hw-sprite {
+  position: absolute; inset: 0;
+  background-image: url('wolf/howl-atlas.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  image-rendering: pixelated;
+  transform-origin: 50% 72%;
+  transition: transform .7s cubic-bezier(.35, .1, .25, 1), filter .2s ease;
+}
 .hw-shadow .hw-pose { filter: drop-shadow(0 8px 10px rgba(15, 23, 42, .28)); }
 .hw-mini .hw-pose { filter: drop-shadow(0 3px 5px rgba(15, 23, 42, .18)); }
 
@@ -16,6 +25,8 @@
 .hw-pose .lids, .hw-pose .lidshalf { opacity: 0; transition: opacity 40ms linear; }
 .hw.blink .hw-pose.on .lids { opacity: 1; }
 .hw.drowsy .hw-pose.on .lidshalf { opacity: 1; }
+.hw.blink .hw-pose.on .hw-sprite { transform: scaleY(.975) translateY(.5%); filter: brightness(.96); }
+.hw.drowsy .hw-pose.on .hw-sprite { transform: rotate(-1.5deg) translateY(1%); filter: saturate(.88); }
 
 /* pezzi del rig: ruotano attorno al loro perno (impostato da JS in transform-origin) */
 .hw-pose .p-tail { animation: hw-wag 2.6s ease-in-out infinite; }
@@ -63,6 +74,7 @@
 .hw[data-pose=howling] .hw-body { animation: hw-howl 1.6s ease-out 2; }
 .hw[data-pose=yawning] .hw-body { animation: hw-stretch 1.5s ease-in-out; }
 .hw[data-pose=hello] .hw-body, .hw[data-pose=pointing] .hw-body { animation: hw-bounce 1s ease-in-out 2; }
+.hw.waving .hw-body { animation: hw-bounce .8s ease-in-out 2; }
 .hw[data-pose=worried] .hw-pose.on img { filter: saturate(.9); }
 
 /* effetti: le Z del sonno */
@@ -75,8 +87,8 @@
 .hw[data-pose=sleeping] .hw-fx i:nth-child(2) { animation-delay: 1s; font-size: .8em; }
 .hw[data-pose=sleeping] .hw-fx i:nth-child(3) { animation-delay: 2s; font-size: .65em; }
 @keyframes hw-z { 0% { opacity: 0; transform: translate(0, 0) rotate(-8deg); } 15% { opacity: .95; } 100% { opacity: 0; transform: translate(60%, -140%) rotate(12deg) scale(1.3); } }
-.hw-mini .hw-fx { font-size: 11px; }
-.hw-shadow .hw-fx { font-size: 22px; }
+.hw-mini .hw-fx { font-size: 9px; }
+.hw-shadow .hw-fx { font-size: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
   .hw *, .hw-body { animation: none !important; transition: opacity .2s !important; }

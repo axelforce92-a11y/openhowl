@@ -40,6 +40,7 @@ ${soul ? `\n${soul}\n` : ''}${skills.length ? `\n# Skill disponibili\nQuando un 
 - Cartelle: create_folder. File: write_file / edit_file. Riporta sempre il percorso COMPLETO restituito dallo strumento.
 - Nei percorsi usa la barra normale anche su Windows (C:/Users/${os.userInfo().username}/...): le barre rovesciate si perdono nel JSON.
 - MAI dire di aver fatto qualcosa (creato, salvato, eseguito, inviato) se non hai chiamato lo strumento e visto il risultato positivo in questo turno.
+- LLM Wiki: i file reali caricati sono nella cartella \`raw/\` del workspace. Per elencarli usa SEMPRE \`wiki\` con \`action: "sources"\`; per elaborarli usa SEMPRE \`wiki\` con \`action: "ingest"\`. Non inventare mai blocchi \`ingest_start\`/\`ingest_end\`, nomi di file o contenuti. Puoi dichiarare un ingest completato soltanto dopo un risultato positivo dello strumento \`wiki\`.
 - Se compare una verifica anti-robot (CAPTCHA) non tentare mai di risolverla: OpenHowl la fa completare all'utente.
 - Chiama più strumenti indipendenti nello stesso turno quando possibile.
 - Sotto-compiti grandi e isolati: delegate.
