@@ -6,9 +6,7 @@
   <meta name="howl-token" content="%%HOWL_TOKEN%%">
   <title>OpenHowl</title>
   <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="preload" as="image" href="wolf/idle.png">
-  <link rel="preload" as="image" href="wolf/thinking.png">
-  <link rel="preload" as="image" href="wolf/working.png">
+  <link rel="preload" as="image" href="wolf/howl-atlas.png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="wolf.css">
 </head>
@@ -171,7 +169,7 @@
   <div class="modal" id="approval" hidden>
     <div class="modal-card">
       <div class="ap-head">
-        <img src="wolf/approval.png" alt="">
+        <img src="wolf/px/approval.png" alt="">
         <div><h3>Howl chiede il permesso</h3><p id="apAgent" class="muted"></p></div>
       </div>
       <div class="ap-tool" id="apTool"></div>
@@ -189,7 +187,7 @@
   <div class="modal" id="userAction" hidden>
     <div class="modal-card">
       <div class="ap-head">
-        <img src="wolf/approval.png" alt="">
+        <img src="wolf/px/approval.png" alt="">
         <div><h3 id="uaTitle">Serve il tuo aiuto</h3><p class="muted">Howl è in pausa e ti aspetta.</p></div>
       </div>
       <p id="uaMessage"></p>
@@ -435,7 +433,7 @@
   <div class="modal" id="pairAsk" hidden>
     <div class="modal-card">
       <div class="ap-head">
-        <img src="wolf/approval.png" alt="">
+        <img src="wolf/px/approval.png" alt="">
         <div><h3>Collegare questo account Telegram?</h3><p class="muted">Qualcuno ha appena inserito il codice di abbinamento.</p></div>
       </div>
       <div class="ap-tool" id="paWho"></div>
@@ -491,7 +489,26 @@
       <div class="modal-h"><h3>Modello di Howl</h3><button class="x" id="brClose" title="Chiudi">✕</button></div>
       <p class="muted">Collega qualsiasi modello: locale (LM Studio, Ollama, vLLM, llama.cpp) o cloud (Qwen, OpenRouter, DeepSeek, OpenAI, Claude).</p>
 
-      <div class="sec-h">Rilevati sul tuo computer <button class="link" id="brRescan">Riscansiona</button></div>
+      <section class="engine" id="engine">
+        <div class="eng-head">
+          <div>
+            <div class="eng-title"><span class="eng-dot" id="engDot"></span>Motore locale <small>LM Studio</small></div>
+            <div class="eng-sub" id="engSub">Controllo il server…</div>
+          </div>
+          <button class="link" id="engRefresh">Aggiorna</button>
+        </div>
+        <div class="vram" id="engVram" hidden>
+          <div class="vram-bar"><i class="vram-sys" id="engVramSys"></i><i class="vram-model" id="engVramModel"></i></div>
+          <div class="vram-legend"><span><i class="k-sys"></i>Sistema e app</span><span><i class="k-model"></i>Modello</span><b id="engVramText"></b></div>
+        </div>
+        <div class="eng-job" id="engJob" hidden>
+          <div class="eng-job-top"><span class="spinner"></span><span id="engJobText"></span><button class="link" id="engCancel">Annulla</button></div>
+          <div class="trials" id="engTrials"></div>
+        </div>
+        <div class="eng-models" id="engModels"></div>
+      </section>
+
+      <div class="sec-h">Altri server locali <button class="link" id="brRescan">Riscansiona</button></div>
       <div id="brDetected" class="detected"><span class="muted">Scansione…</span></div>
 
       <div class="sec-h">I miei modelli <button class="link" id="brNew">＋ Aggiungi</button></div>

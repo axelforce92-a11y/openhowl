@@ -21,6 +21,7 @@ import { Scheduler, describe as describeSchedule, parseWhen } from './schedule.j
 import { RemoteHub, touchesSecrets } from './remote/hub.js';
 import { BrancoManager } from './branco/manager.js';
 import { ingestStoredWikiSources, wikiState } from './wiki-core.js';
+import { isLmStudioUrl, loadedContext, loadModel, limitsForContext } from './engine.js';
 
 const explicitWikiIngest = (text) => {
   const value = String(text || '');
@@ -231,9 +232,11 @@ export class Harness {
 
   get limits() {
     const b = this.cfg.brain;
+    // Con LM Studio il tetto vero è il contesto con cui il modello è caricato: oltre, il server rifiuta la richiesta.
+    const server = this.serverCtx && isLmStudioUrl(b?.baseUrl) ? limitsForContext(this.serverCtx) : null;
     return {
-      maxTokens: Number(b?.maxTokens) || this.cfg.maxTokens,
-      contextLimit: Number(b?.contextLimit) || this.cfg.contextLimit,
+      maxTokens: Math.min(Number(b?.maxTokens) || this.cfg.maxTokens, server?.maxTokens ?? Infinity),
+      contextLimit: Math.min(Number(b?.contextLimit) || this.cfg.contextLimit, server?.contextLimit ?? Infinity),
       thinkingBudget: b ? 0 : this.think ? this.cfg.thinkingBudget : 0,
       // "none" spegne il ragionamento sui modelli che lo supportano (Qwen3.5 e simili via LM Studio).
       reasoningEffort: this.think ? null : 'none',
@@ -518,12 +521,49 @@ export class Harness {
     }
   }
 
+  // Modello locale su LM Studio: se non è in memoria lo carichiamo noi con il profilo ottimizzato
+  // (il caricamento automatico di LM Studio usa impostazioni generiche e può creare copie doppie in VRAM).
+  async prepareLocalModel() {
+    const b = this.cfg.brain;
+    if (!isLmStudioUrl(b?.baseUrl)) { this.serverCtx = null; return; }
+    let ctx = await loadedContext(b.model);
+    if (!ctx) {
+      this.send('info', { text: `⚡ Carico **${b.model}** in VRAM con il profilo del Motore…` });
+      this.send('state', { state: 'thinking' });
+      try {
+        const r = await loadModel(b.model);
+        ctx = r.config.context_length;
+        this.broadcast('engine_changed', {});
+      } catch (e) {
+        throw new Error(`Non riesco a caricare il modello locale: ${e.message}`);
+      }
+    }
+    this.serverCtx = ctx;
+    if (this.context.limit !== this.limits.contextLimit) {
+      this.context = { ...this.context, limit: this.limits.contextLimit };
+      this.send('context', { context: this.context });
+    }
+  }
+
+  // Motore: carica un modello di LM Studio e lo rende il cervello di Howl, con limiti coerenti col contesto caricato.
+  useLocalModel(model, ctx, { name, vision = false } = {}) {
+    const store = loadBrains();
+    const existing = store.list.find((x) => isLmStudioUrl(x.baseUrl) && x.model === model);
+    const lim = limitsForContext(ctx);
+    this.serverCtx = ctx;
+    return this.saveBrain({
+      ...(existing ? { ...existing, apiKey: MASK } : { name: name || `${model.split('/').pop()} (locale)`, kind: 'openai', baseUrl: 'http://127.0.0.1:1234/v1', apiKey: '', vision }),
+      model, contextLimit: lim.contextLimit, maxTokens: lim.maxTokens,
+    }, true);
+  }
+
   async runTask(fn) {
     if (this.remoteBusy) return this.send('info', { text: '📱 Sto lavorando a una richiesta arrivata dal telefono: riprova tra poco.' });
     this.busy = true;
     this.abort = new AbortController();
     this.send('busy', { busy: true });
     try {
+      await this.prepareLocalModel();
       await fn(this.abort.signal);
       this.send('state', { state: 'success' });
     } catch (e) {

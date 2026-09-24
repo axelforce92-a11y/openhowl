@@ -9,3 +9,7 @@ assets/raw/_*.jpg
 *.log
 __pycache__/
 release-dist/
+lab/den/corse/
+lab/placenta/geni/
+lab/placenta/*.log
+lab/placenta/stato.json

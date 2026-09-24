@@ -496,7 +496,10 @@
         break;
       }
       case 'assistant_text': { const s = assistantEl(ev); s.raw = ev.text; s.el.classList.remove('live'); renderSeg(s); break; }
-      case 'response_metrics': renderResponseMetrics(ev); break;
+      case 'response_metrics': renderResponseMetrics(ev); showLiveSpeed(ev); break;
+      case 'engine_job': onEngineJob(ev); break;
+      case 'engine_progress': onEngineProgress(ev); break;
+      case 'engine_changed': if (!$('brains').hidden) refreshEngine(); break;
       case 'thinking_delta': { const s = thinkingEl(ev); s.raw += ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'thinking': { const s = thinkingEl(ev); s.raw = ev.text; s.el.lastElementChild.textContent = s.raw; break; }
       case 'tool_start': toolStart(ev); wolf('tool', TOOL_SAY[ev.name] || ev.name, { tool: ev.name }); break;
@@ -864,10 +867,11 @@
   async function scan() {
     $('brDetected').innerHTML = '<span class="muted">Cerco modelli sul tuo computer…</span>';
     const { servers = [] } = await brainApi('detect', {});
-    const items = servers.flatMap((s) => s.models.map((m) => ({ s, m })));
+    // LM Studio è gestito dal Motore qui sopra: qui solo gli altri server.
+    const items = servers.filter((s) => s.name !== 'LM Studio').flatMap((s) => s.models.map((m) => ({ s, m })));
     $('brDetected').innerHTML = items.length
       ? items.map(({ s, m }, i) => `<span class="det"><small>${esc(s.name)}</small><b>${esc(m)}</b><button data-det="${i}">Usa</button></span>`).join('')
-      : '<span class="muted">Nessun server locale attivo. In LM Studio avvia il server dalla scheda Developer.</span>';
+      : '<span class="muted">Nessun altro server attivo (Ollama, vLLM, llama.cpp, Jan).</span>';
     $('brDetected').onclick = async (e) => {
       const b = e.target.closest('[data-det]');
       if (!b) return;
@@ -881,7 +885,7 @@
       $('brains').hidden = true;
     };
   }
-  $('brainBtn').onclick = () => { $('brains').hidden = false; renderBrainList(); form.hidden = true; scan(); };
+  $('brainBtn').onclick = () => { $('brains').hidden = false; renderBrainList(); form.hidden = true; scan(); refreshEngine(); startEnginePoll(); };
   $('brClose').onclick = () => { $('brains').hidden = true; };
   $('brCancel').onclick = () => { form.hidden = true; };
   $('brNew').onclick = () => openForm(null);
@@ -915,6 +919,160 @@
   }
   form.onsubmit = (e) => { e.preventDefault(); save(false); };
   $('brSaveUse').onclick = () => save(true);
+
+  /* ───────── motore locale (LM Studio) ───────── */
+  // Un modello alla volta in VRAM, caricato con il profilo misurato su questa GPU. Tutto passa da /api/engine.
+  const engineApi = (action, body = {}) => post(`/api/engine/${action}`, body).then((r) => r.json());
+  const GB = (b) => (b / 2 ** 30).toFixed(1);
+  const JOB_VERB = { caricamento: 'Carico', ottimizzazione: 'Ottimizzo', 'misura della velocità': 'Misuro' };
+  let eng = null, engJob = null, engTrials = [], engPending = null, engPoll = null;
+
+  async function refreshEngine() {
+    const r = await engineApi('status').catch((e) => ({ error: e.message }));
+    eng = r.error ? { online: false, error: r.error, models: [] } : r;
+    if (r.job && !engJob) engJob = { label: r.job.label, model: r.job.model };
+    if (!r.job && engJob && !engJob.done) engJob = null;
+    renderEngine();
+  }
+  function startEnginePoll() {
+    clearInterval(engPoll);
+    engPoll = setInterval(() => { if ($('brains').hidden) clearInterval(engPoll); else refreshEngine(); }, 6000);
+  }
+
+  function modelFit(m) {
+    if (!eng?.vram) return null;
+    const room = eng.vram.total - 0.9 * 2 ** 30; // Windows e le app tengono sempre almeno ~1 GB
+    if (m.sizeBytes < room * 0.9) return ['ok', 'Sta in VRAM'];
+    if (m.sizeBytes < room) return ['tight', 'Al limite della VRAM'];
+    return ['big', 'Troppo grande: userà la RAM (lento)'];
+  }
+  const isActiveLocal = (m) => {
+    const b = config.brain && (config.brains || []).find((x) => x.id === config.brain.id);
+    return !!b && b.model === m.key && /:1234(\/|$)/.test(b.baseUrl || '');
+  };
+
+  function renderEngine() {
+    const on = !!eng?.online;
+    $('engDot').className = `eng-dot ${on ? 'on' : 'off'}`;
+    const loaded = (eng?.models || []).filter((m) => m.instances.length);
+    const copies = loaded.reduce((n, m) => n + m.instances.length, 0);
+    $('engSub').innerHTML = !eng ? 'Controllo il server…'
+      : !on ? esc(eng.error || 'LM Studio non è attivo.')
+      : loaded.length ? `In VRAM: <b>${loaded.map((m) => esc(m.name)).join(', ')}</b>${copies > 1 ? ' · <span class="warn-t">più copie caricate: premi Usa per sistemare</span>' : ''}`
+      : 'Nessun modello in VRAM: scegline uno e premi <b>Usa</b>.';
+
+    const v = eng?.vram;
+    $('engVram').hidden = !v;
+    if (v) {
+      const model = Math.min(v.used, loaded.reduce((n, m) => n + m.sizeBytes, 0));
+      $('engVramModel').style.width = `${(model / v.total) * 100}%`;
+      $('engVramSys').style.width = `${(Math.max(0, v.used - model) / v.total) * 100}%`;
+      const full = v.used / v.total > 0.97;
+      $('engVram').classList.toggle('full', full);
+      $('engVramText').textContent = `${GB(v.used)} / ${GB(v.total)} GB · ${v.name}${full ? ' · piena' : ''}`;
+    }
+
+    $('engJob').hidden = !engJob;
+    if (engJob) {
+      const m = eng?.models.find((x) => x.key === engJob.model);
+      $('engJobText').innerHTML = engJob.done
+        ? engJob.text
+        : `${JOB_VERB[engJob.label] || 'Lavoro su'} <b>${esc(m?.name || engJob.model || '')}</b>${engJob.label === 'ottimizzazione' ? ' — provo configurazioni reali sulla tua GPU, qualche minuto' : '…'}`;
+      $('engJob').classList.toggle('done', !!engJob.done);
+      $('engCancel').hidden = !!engJob.done;
+      renderTrials();
+    }
+
+    const busy = !!engJob && !engJob.done;
+    const dis = busy ? 'disabled' : '';
+    const models = [...(eng?.models || [])].sort((a, b) =>
+      (b.instances.length > 0) - (a.instances.length > 0) || isActiveLocal(b) - isActiveLocal(a) || b.tools - a.tools || a.sizeBytes - b.sizeBytes);
+    $('engModels').innerHTML = !on ? '<div class="eng-empty">Apri <b>LM Studio</b> → scheda <b>Developer</b> → <b>Start server</b>, poi premi Aggiorna.</div>'
+      : models.map((m) => {
+        const inst = m.instances[0];
+        const active = isActiveLocal(m);
+        const fit = modelFit(m);
+        const b = m.profile?.bench;
+        const speed = b
+          ? `<div class="ec-speed"><div class="gauge" title="Velocità di scrittura (scala 60 tok/s)"><i style="width:${Math.min(100, (b.genTps / 60) * 100)}%"></i></div><b>${b.genTps}</b> tok/s<span>lettura ${b.readTps} tok/s</span>${m.profile.tunedAt ? '<span class="tuned" title="Configurazione scelta misurando sulla tua GPU">ottimizzato</span>' : ''}</div>`
+          : '<div class="ec-speed none">Velocità non ancora misurata</div>';
+        const k = esc(m.key);
+        return `<div class="eng-card ${inst ? 'loaded' : ''} ${active ? 'active' : ''}">
+          <div class="ec-top"><b title="${k}">${esc(m.name)}</b>${inst ? `<span class="ec-state">● in VRAM · ${Math.round(inst.config.context_length / 1024)}k${m.instances.length > 1 ? ` · ${m.instances.length} copie` : ''}</span>` : ''}</div>
+          <div class="ec-meta">${[m.params, m.quant, `${GB(m.sizeBytes)} GB`].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="ec-tags">${active ? '<span class="t-on">in uso da Howl</span>' : ''}${m.tools ? '<span>strumenti</span>' : '<span class="t-warn" title="Non addestrato per chiamare strumenti: come agente sarà limitato">no strumenti</span>'}${m.vision ? '<span>vista</span>' : ''}${m.reasoning ? '<span>ragiona</span>' : ''}${fit ? `<span class="fit-${fit[0]}">${fit[1]}</span>` : ''}</div>
+          ${speed}
+          <div class="ec-acts">
+            ${active && inst && m.instances.length === 1 ? '' : `<button class="btn sm primary" data-eng="load" data-m="${k}" ${dis}>Usa</button>`}
+            <button class="btn sm" data-eng="tune" data-m="${k}" ${dis} title="Prova varie configurazioni sulla tua GPU e tiene la più veloce con più contesto">Ottimizza</button>
+            <button class="btn sm" data-eng="bench" data-m="${k}" ${dis} title="Misura velocità di scrittura e di lettura">Misura</button>
+            ${inst ? `<button class="btn sm ghost" data-eng="unload" data-m="${k}" ${dis} title="Libera la VRAM">Scarica</button>` : ''}
+          </div></div>`;
+      }).join('');
+  }
+
+  function renderTrials() {
+    const rows = [...engTrials];
+    if (engPending) rows.push({ label: engPending, pending: true });
+    const top = Math.max(1, ...rows.filter((t) => t.genTps).map((t) => t.genTps));
+    $('engTrials').innerHTML = rows.map((t) => {
+      const bad = t.error || t.spill;
+      const val = t.pending ? '<em>misuro…</em>' : t.error ? `<em title="${esc(t.error)}">non entra</em>` : t.spill ? `${t.genTps} tok/s · sfora la VRAM, scartata` : `${t.genTps} tok/s · lettura ${t.readTps}`;
+      return `<div class="trial ${t.pending ? 'pending' : ''} ${bad ? 'bad' : ''} ${t.best ? 'best' : ''}"><span class="tl">${esc(t.label)}</span><div class="tb"><i style="width:${t.pending || t.error ? 100 : (t.genTps / top) * 100}%"></i></div><span class="tv">${val}</span></div>`;
+    }).join('');
+  }
+
+  function onEngineProgress(ev) {
+    engTrials = ev.trials || [];
+    engPending = ev.phase === 'trial' ? ev.label : null;
+    if (!engJob) engJob = { label: 'ottimizzazione', model: ev.model };
+    if (!$('brains').hidden) renderEngine();
+  }
+  function onEngineJob(ev) {
+    if (ev.running) {
+      engJob = { label: ev.label, model: ev.model };
+      engTrials = []; engPending = null;
+    } else {
+      const name = eng?.models.find((x) => x.key === ev.model)?.name || ev.model;
+      let text;
+      if (!ev.ok) text = `<span class="err-t">✕ ${esc(ev.error)}</span>`;
+      else if (ev.label === 'ottimizzazione') {
+        const best = ev.result.best;
+        text = `✓ <b>${esc(name)}</b> ottimizzato: <b>${best.genTps} tok/s</b>, lettura ${best.readTps} tok/s con ${esc(best.label)}. Howl ora lo usa.`;
+        engTrials = engTrials.map((t) => ({ ...t, best: t.label === best.label }));
+      } else if (ev.label === 'caricamento') {
+        const r = ev.result;
+        text = `✓ <b>${esc(name)}</b> caricato${r.loadSeconds ? ` in ${r.loadSeconds.toFixed(1)} s` : ''} con ${Math.round(r.config.context_length / 1024)}k di contesto. Howl ora lo usa.`;
+      } else text = `✓ <b>${esc(name)}</b>: scrive a <b>${ev.result.genTps} tok/s</b>, legge a ${ev.result.readTps} tok/s, primo token in ${ev.result.ttftMs} ms.`;
+      engJob = { label: ev.label, model: ev.model, done: true, text };
+      engPending = null;
+    }
+    if (!$('brains').hidden) refreshEngine();
+  }
+
+  $('engModels').onclick = async (e) => {
+    const t = e.target.closest('[data-eng]');
+    if (!t) return;
+    const model = t.dataset.m, act = t.dataset.eng;
+    if (act === 'tune' && !confirm('L\'ottimizzazione carica il modello più volte con impostazioni diverse e ne misura la velocità: ci vogliono 3–6 minuti e la GPU resta occupata. Procedo?')) return;
+    t.disabled = true;
+    const r = await engineApi(act, { model });
+    if (r.error) engJob = { label: act, model, done: true, text: `<span class="err-t">✕ ${esc(r.error)}</span>` };
+    refreshEngine();
+  };
+  $('engRefresh').onclick = refreshEngine;
+  $('engCancel').onclick = () => engineApi('cancel');
+
+  // Velocità dell'ultima risposta accanto al nome del modello: si vede subito se qualcosa rallenta.
+  function showLiveSpeed(ev) {
+    const sp = Number(ev.tokensPerSecond || 0);
+    if (!sp || (ev.agent && ev.agent !== 'main')) return;
+    let el = $('brainSpeed');
+    if (!el) { el = document.createElement('span'); el.id = 'brainSpeed'; el.className = 'live-speed'; $('brainName').after(el); }
+    el.textContent = `${sp.toFixed(sp >= 100 ? 0 : 1)} tok/s`;
+    el.title = `Ultima risposta: primo token ${Math.round(ev.ttftMs || 0)} ms · prompt ${ev.inputTokens || 0} token`;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
 
   /* ───────── automazioni ───────── */
   const taskApi = (action, body) => post(`/api/tasks/${action}`, body).then((r) => r.json());

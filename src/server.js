@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { loadConfig, providerInfo, ROOT } from './config.js';
 import { chat, detectLocal, listModels } from './providers.js';
 import { Harness } from './harness.js';
+import { autotune, benchmark, engineStatus, loadModel, unload, unloadAll } from './engine.js';
 import { shutdownShells } from './tools/shell.js';
 import { shutdownComputer } from './tools/computer.js';
 import { useSafeStorage } from './secrets.js';
@@ -69,6 +70,52 @@ export async function startServer({ port, safeStorage } = {}) {
           usage: resp.usage,
         };
       }
+      default: throw new Error('azione sconosciuta');
+    }
+  }
+
+  // Motore locale (LM Studio): un solo lavoro pesante alla volta, con avanzamento trasmesso via SSE.
+  let engineJob = null;
+  async function engineApi(action, body) {
+    const guard = () => {
+      if (engineJob) throw new Error(`Il motore è già occupato: ${engineJob.label}.`);
+      if (h.busy || h.remoteBusy) throw new Error('Howl sta lavorando: aspetta che finisca prima di cambiare modello in VRAM.');
+    };
+    const job = (label, fn) => {
+      guard();
+      const abort = new AbortController();
+      engineJob = { label, abort, model: body.model };
+      h.broadcast('engine_job', { running: true, label, model: body.model });
+      fn(abort.signal)
+        .then((result) => h.broadcast('engine_job', { running: false, ok: true, label, model: body.model, result }))
+        .catch((e) => h.broadcast('engine_job', { running: false, ok: false, label, model: body.model, error: e.message }))
+        .finally(() => { engineJob = null; h.broadcast('engine_changed', {}); });
+      return { started: true };
+    };
+    switch (action) {
+      case 'status': return { ...(await engineStatus()), job: engineJob && { label: engineJob.label, model: engineJob.model }, activeModel: h.cfg.brain?.model || null };
+      case 'load': return job('caricamento', async () => {
+        const st = await engineStatus();
+        const info = st.models.find((m) => m.key === body.model);
+        const r = await loadModel(body.model);
+        if (body.use !== false) h.useLocalModel(body.model, r.config.context_length, { name: info && `${info.name} (locale)`, vision: !!info?.vision });
+        return r;
+      });
+      case 'unload': guard(); body.id ? await unload(body.id) : await unloadAll(); h.serverCtx = null; return { ok: true };
+      case 'bench': return job('misura della velocità', async (signal) => {
+        const st = await engineStatus();
+        const m = st.models.find((x) => x.key === body.model);
+        if (!m?.instances.length) await loadModel(body.model);
+        return benchmark(body.model, { signal });
+      });
+      case 'tune': return job('ottimizzazione', async (signal) => {
+        const st = await engineStatus();
+        const info = st.models.find((m) => m.key === body.model);
+        const r = await autotune(body.model, { signal, onProgress: (p) => h.broadcast('engine_progress', { model: body.model, ...p }) });
+        h.useLocalModel(body.model, r.best.config.context_length, { name: info && `${info.name} (locale)`, vision: !!info?.vision });
+        return { best: { label: r.best.label, genTps: r.best.genTps, readTps: r.best.readTps } };
+      });
+      case 'cancel': engineJob?.abort.abort(); return { ok: true };
       default: throw new Error('azione sconosciuta');
     }
   }
@@ -221,6 +268,9 @@ export async function startServer({ port, safeStorage } = {}) {
       if (url.pathname.startsWith('/api/remote/')) {
         try { return json(res, await remoteApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message, remote: h.remote?.publicState() }); }
       }
+      if (url.pathname.startsWith('/api/engine/')) {
+        try { return json(res, await engineApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
+      }
       if (url.pathname.startsWith('/api/brains/')) {
         try { return json(res, await brainApi(url.pathname.slice(12), body)); } catch (e) { return json(res, { error: e.message }); }
       }
@@ -257,6 +307,7 @@ export async function startServer({ port, safeStorage } = {}) {
       h.scheduler?.stop();
       h.remote?.shutdown();
       h.branco?.stop();
+      engineJob?.abort.abort();
       for (const c of h.mcpClients) c.close();
       shutdownShells();
       shutdownComputer();
