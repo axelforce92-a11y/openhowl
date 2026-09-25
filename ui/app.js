@@ -49,12 +49,13 @@
     trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
     edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>',
     clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.3 1.4M9 2h6"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
     wiki: '<circle cx="6" cy="7" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="17" r="2"/><path d="m8 7 8-.7M7.3 8.6l3.5 6.7M16.8 7.7l-3.7 7.7"/>',
   };
   const ICON_OF = {
     read_file: 'file', write_file: 'pen', edit_file: 'pen', create_folder: 'folder', list_dir: 'folder', glob: 'search', grep: 'search',
     run_command: 'term', process_output: 'term', web_search: 'globe', web_fetch: 'globe', browser: 'compass',
-    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale', schedule_task: 'clock', wiki: 'wiki',
+    computer: 'mouse', todo_write: 'list', remember: 'brain', delegate: 'paw', submit_verdict: 'scale', schedule_task: 'clock', wiki: 'wiki', generate_image: 'image',
   };
   const svg = (k) => `<svg viewBox="0 0 24 24">${P[k]}</svg>`;
   const icon = (name) => svg(ICON_OF[name] || (name.startsWith('mcp__') ? 'plug' : 'cog'));
@@ -64,7 +65,7 @@
     run_command: 'Esegue un comando', web_search: 'Cerca sul web', web_fetch: 'Legge una pagina', browser: 'Naviga nel browser',
     computer: 'Usa il computer', delegate: 'Chiama il branco', grep: 'Cerca nel codice', glob: 'Cerca file',
     todo_write: 'Aggiorna il piano', remember: 'Prende nota', submit_verdict: 'Verifica il lavoro', schedule_task: 'Programma un\'automazione',
-    list_dir: 'Esplora una cartella', process_output: 'Segue un comando', wiki: 'Consulta la Wiki', skill: 'Prepara una competenza',
+    list_dir: 'Esplora una cartella', process_output: 'Segue un comando', wiki: 'Consulta la Wiki', skill: 'Prepara una competenza', generate_image: 'Disegna un\'immagine',
   };
   const STATE_LABEL = { idle: 'Inattivo', thinking: 'Sta ragionando', streaming: 'Sta rispondendo', tool: 'Al lavoro', approval: 'Attende il tuo permesso', waiting: 'In pausa, attende te', success: 'Completato', goal: 'Obiettivo raggiunto', error: 'Errore' };
   const MODES = [

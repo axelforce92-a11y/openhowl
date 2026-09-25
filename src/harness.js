@@ -360,6 +360,9 @@ export class Harness {
     if (['write_file', 'edit_file', 'create_folder'].includes(name) && !this.insideWorkspace(input.path)) {
       return `«${input.path}» è fuori dalla cartella di lavoro (${ws}): lì non si può scrivere. Lavora dentro la cartella, oppure chiedi all'utente di sceglierne un'altra.`;
     }
+    if (name === 'generate_image' && input.path && !this.insideWorkspace(input.path)) {
+      return `«${input.path}» è fuori dalla cartella di lavoro (${ws}): salva l'immagine dentro la cartella.`;
+    }
     if (name === 'run_command' && input.cwd && !this.insideWorkspace(input.cwd)) {
       return `I comandi girano solo dentro la cartella di lavoro (${ws}).`;
     }
